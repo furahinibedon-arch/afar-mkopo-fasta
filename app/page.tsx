@@ -1,5 +1,5 @@
-
 'use client';
+
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -7,18 +7,19 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import { loginUser, registerUser } from '@/lib/api';
 import Layout from '@/components/Layout';
+import { useLanguage } from '@/context/LanguageContext';
 
 const loginSchema = z.object({
-  email: z.string().email('Please enter a valid email'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
+  email: z.string().email(),
+  password: z.string().min(6),
 });
 
 const registerSchema = z.object({
-  email: z.string().email('Please enter a valid email'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
-  firstName: z.string().min(2, 'First name must be at least 2 characters'),
-  lastName: z.string().min(2, 'Last name must be at least 2 characters'),
-  phone: z.string().min(10, 'Phone number must be at least 10 characters'),
+  email: z.string().email(),
+  password: z.string().min(6),
+  firstName: z.string().min(2),
+  lastName: z.string().min(2),
+  phone: z.string().min(10),
 });
 
 type LoginFormData = z.infer<typeof loginSchema>;
@@ -26,33 +27,35 @@ type RegisterFormData = z.infer<typeof registerSchema>;
 
 export default function Home() {
   const [mode, setMode] = useState<'login' | 'register'>('login');
+  const { t } = useLanguage();
+
   return (
     <Layout>
       <div className="max-w-md mx-auto mt-12">
         <div className="bg-white rounded-2xl shadow-2xl p-8">
           <h2 className="text-2xl font-bold text-center text-gray-800 mb-8">
-            Welcome to AFAR MKOPO FASTA
+            {t.appName}
           </h2>
           <div className="flex bg-gray-100 rounded-lg p-1 mb-6">
             <button
               className={`flex-1 py-3 rounded-md font-semibold transition-all duration-200 ${
-                mode === 'login' 
-                  ? 'bg-white text-blue-600 shadow-md' 
+                mode === 'login'
+                  ? 'bg-white text-blue-600 shadow-md'
                   : 'text-gray-600 hover:text-gray-800'
               }`}
               onClick={() => setMode('login')}
             >
-              Login
+              {t.login}
             </button>
             <button
               className={`flex-1 py-3 rounded-md font-semibold transition-all duration-200 ${
-                mode === 'register' 
-                  ? 'bg-white text-blue-600 shadow-md' 
+                mode === 'register'
+                  ? 'bg-white text-blue-600 shadow-md'
                   : 'text-gray-600 hover:text-gray-800'
               }`}
               onClick={() => setMode('register')}
             >
-              Register
+              {t.register}
             </button>
           </div>
           {mode === 'login' ? <LoginForm /> : <RegisterForm />}
@@ -66,12 +69,9 @@ function LoginForm() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  
-  const { 
-    register, 
-    handleSubmit, 
-    formState: { errors } 
-  } = useForm<LoginFormData>({
+  const { t } = useLanguage();
+
+  const { register, handleSubmit, formState: { errors } } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
   });
 
@@ -80,7 +80,7 @@ function LoginForm() {
     setError(null);
     try {
       const result = await loginUser(data);
-      localStorage.setItem('token', result.token);
+      localStorage.setItem('token', (await result).token);
       router.push('/borrower');
     } catch (err: any) {
       setError(err.message || 'Login failed');
@@ -97,31 +97,29 @@ function LoginForm() {
         </div>
       )}
       <div>
-        <label className="block text-sm font-semibold text-gray-700 mb-2">Email Address</label>
+        <label className="block text-sm font-semibold text-gray-700 mb-1">{t.email}</label>
         <input
           type="email"
           {...register('email')}
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-          placeholder="you@example.com"
+          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
         />
-        {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>}
+        {errors.email && <p className="text-red-500 text-sm">{errors.email.message}</p>}
       </div>
       <div>
-        <label className="block text-sm font-semibold text-gray-700 mb-2">Password</label>
+        <label className="block text-sm font-semibold text-gray-700 mb-1">{t.password}</label>
         <input
           type="password"
           {...register('password')}
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-          placeholder="••••••••"
+          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
         />
-        {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password.message}</p>}
+        {errors.password && <p className="text-red-500 text-sm">{errors.password.message}</p>}
       </div>
       <button
         type="submit"
         disabled={isLoading}
-        className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 disabled:opacity-50"
+        className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200"
       >
-        {isLoading ? 'Logging in...' : 'Login'}
+        {isLoading ? 'Logging in...' : t.login}
       </button>
     </form>
   );
@@ -131,12 +129,9 @@ function RegisterForm() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  
-  const { 
-    register, 
-    handleSubmit, 
-    formState: { errors } 
-  } = useForm<RegisterFormData>({
+  const { t } = useLanguage();
+
+  const { register, handleSubmit, formState: { errors } } = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
   });
 
@@ -145,7 +140,7 @@ function RegisterForm() {
     setError(null);
     try {
       const result = await registerUser(data);
-      localStorage.setItem('token', result.token);
+      localStorage.setItem('token', (await result).token);
       router.push('/borrower');
     } catch (err: any) {
       setError(err.message || 'Registration failed');
@@ -163,54 +158,54 @@ function RegisterForm() {
       )}
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-2">First Name</label>
+          <label className="block text-sm font-semibold text-gray-700 mb-1">{t.firstName}</label>
           <input
             {...register('firstName')}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
           />
-          {errors.firstName && <p className="text-red-500 text-sm mt-1">{errors.firstName.message}</p>}
+          {errors.firstName && <p className="text-red-500 text-sm">{errors.firstName.message}</p>}
         </div>
         <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-2">Last Name</label>
+          <label className="block text-sm font-semibold text-gray-700 mb-1">{t.lastName}</label>
           <input
             {...register('lastName')}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
           />
-          {errors.lastName && <p className="text-red-500 text-sm mt-1">{errors.lastName.message}</p>}
+          {errors.lastName && <p className="text-red-500 text-sm">{errors.lastName.message}</p>}
         </div>
       </div>
       <div>
-        <label className="block text-sm font-semibold text-gray-700 mb-2">Email</label>
+        <label className="block text-sm font-semibold text-gray-700 mb-1">{t.email}</label>
         <input
           type="email"
           {...register('email')}
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
         />
-        {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>}
+        {errors.email && <p className="text-red-500 text-sm">{errors.email.message}</p>}
       </div>
       <div>
-        <label className="block text-sm font-semibold text-gray-700 mb-2">Phone Number</label>
+        <label className="block text-sm font-semibold text-gray-700 mb-1">{t.phone}</label>
         <input
           {...register('phone')}
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
         />
-        {errors.phone && <p className="text-red-500 text-sm mt-1">{errors.phone.message}</p>}
+        {errors.phone && <p className="text-red-500 text-sm">{errors.phone.message}</p>}
       </div>
       <div>
-        <label className="block text-sm font-semibold text-gray-700 mb-2">Password</label>
+        <label className="block text-sm font-semibold text-gray-700 mb-1">{t.password}</label>
         <input
           type="password"
           {...register('password')}
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
         />
-        {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password.message}</p>}
+        {errors.password && <p className="text-red-500 text-sm">{errors.password.message}</p>}
       </div>
       <button
         type="submit"
         disabled={isLoading}
-        className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 disabled:opacity-50"
+        className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200"
       >
-        {isLoading ? 'Creating account...' : 'Create Account'}
+        {isLoading ? 'Creating account...' : t.createAccount}
       </button>
     </form>
   );
