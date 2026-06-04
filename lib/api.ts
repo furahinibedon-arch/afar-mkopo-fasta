@@ -1,11 +1,24 @@
 const BASE=process.env.NEXT_PUBLIC_API_URL||"";
+
 function ah():Record<string,string>{
   const t=typeof window!=="undefined"?localStorage.getItem("token"):null;
   return{"Content-Type":"application/json",...(t?{Authorization:`Bearer ${t}`}:{})};
 }
-async function ok(r:Response){const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||d.message||`Error ${r.status}`);return d;}
-export const loginUser=(d:{email:string;password:string})=>fetch(`${BASE}/api/auth/login`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(d)}).then(ok);
-export const registerUser=(d:{email:string;password:string;firstName:string;lastName:string;phone:string})=>fetch(`${BASE}/api/auth/register`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(d)}).then(ok);
+
+async function ok(r:Response){
+  const d=await r.json().catch(()=>({}));
+  if(!r.ok)throw new Error(d.error||d.message||`Error ${r.status}`);
+  return d;
+}
+
+export async function loginUser(d:{email:string;password:string}){
+  return fetch(`${BASE}/api/auth/login`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(d)}).then(ok);
+}
+
+export async function registerUser(d:{email:string;password:string;firstName:string;lastName:string;phone:string}){
+  return fetch(`${BASE}/api/auth/register`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(d)}).then(ok);
+}
+
 export const getMe=()=>fetch(`${BASE}/api/me`,{headers:ah()}).then(ok);
 export const submitLoan=(d:Record<string,unknown>)=>fetch(`${BASE}/api/loans`,{method:"POST",headers:ah(),body:JSON.stringify(d)}).then(ok);
 export const getMyLoans=()=>fetch(`${BASE}/api/loans`,{headers:ah()}).then(ok);
