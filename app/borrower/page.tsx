@@ -1,404 +1,66 @@
-'use client';
-
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { z } from 'zod';
-import { zodResolver } from '@hookform/resolvers/zod';
-import Layout from '@/components/Layout';
-import { useLanguage } from '@/context/LanguageContext';
-import { generateLoanApplicationPDF, type LoanApplicationData } from '@/lib/pdfGenerator';
-
-const loanSchema = z.object({
-  firstName: z.string().min(2),
-  lastName: z.string().min(2),
-  dateOfBirth: z.string().min(1),
-  gender: z.string().min(1),
-  maritalStatus: z.string().min(1),
-  address: z.string().min(2),
-  houseNumber: z.string().min(1),
-  spouseName: z.string().optional(),
-  phone: z.string().min(10),
-  businessName: z.string().min(2),
-  businessLocation: z.string().min(2),
-  businessSince: z.string().min(2),
-  loanPurpose: z.string().min(5),
-  loanAmount: z.number().min(1000),
-  loanAmountWords: z.string().min(5),
-  dailyPayment: z.number().min(100),
-  guarantor1Name: z.string().optional(),
-  guarantor1Address: z.string().optional(),
-  guarantor1HouseNumber: z.string().optional(),
-  guarantor1Business: z.string().optional(),
-  guarantor1Relationship: z.string().optional(),
-  guarantor1Phone: z.string().optional(),
-  guarantor1Collateral: z.string().optional(),
-  guarantor2Name: z.string().optional(),
-  guarantor2Address: z.string().optional(),
-  guarantor2HouseNumber: z.string().optional(),
-  guarantor2Business: z.string().optional(),
-  guarantor2Relationship: z.string().optional(),
-  guarantor2Phone: z.string().optional(),
-  guarantor2Collateral: z.string().optional(),
+"use client";
+import{useState,useEffect}from"react";
+import{useForm}from"react-hook-form";
+import{z}from"zod";
+import{zodResolver}from"@hookform/resolvers/zod";
+import{useRouter}from"next/navigation";
+import Layout from"@/components/Layout";
+import{useLanguage}from"@/context/LanguageContext";
+import{submitLoan,getMe}from"@/lib/api";
+import{generateLoanApplicationPDF}from"@/lib/pdfGenerator";
+const STEPS=["Borrower Info","Business","Loan Amount","Guarantors"];
+const S=z.object({
+  firstName:z.string().min(2,"Required"),lastName:z.string().min(2,"Required"),
+  dateOfBirth:z.string().min(1,"Required"),gender:z.string().min(1,"Required"),
+  maritalStatus:z.string().min(1,"Required"),address:z.string().min(2,"Required"),
+  houseNumber:z.string().min(1,"Required"),spouseName:z.string().optional(),
+  phone:z.string().min(10,"Min 10 digits"),
+  businessName:z.string().min(2,"Required"),businessLocation:z.string().min(2,"Required"),
+  businessSince:z.string().min(2,"Required"),loanPurpose:z.string().min(5,"Required"),
+  loanAmount:z.number({invalid_type_error:"Enter amount"}).min(1000,"Min Tsh 1,000"),
+  loanAmountWords:z.string().min(3,"Required"),dailyPayment:z.number().optional(),
+  guarantor1Name:z.string().optional(),guarantor1Address:z.string().optional(),
+  guarantor1HouseNumber:z.string().optional(),guarantor1Business:z.string().optional(),
+  guarantor1Relationship:z.string().optional(),guarantor1Phone:z.string().optional(),
+  guarantor1Collateral:z.string().optional(),
+  guarantor2Name:z.string().optional(),guarantor2Address:z.string().optional(),
+  guarantor2HouseNumber:z.string().optional(),guarantor2Business:z.string().optional(),
+  guarantor2Relationship:z.string().optional(),guarantor2Phone:z.string().optional(),
+  guarantor2Collateral:z.string().optional(),
 });
-
-type LoanFormData = z.infer<typeof loanSchema>;
-
-export default function BorrowerPortal() {
-  const [activeTab, setActiveTab] = useState<'apply' | 'loans' | 'profile'>('apply');
-  const { t } = useLanguage();
-
-  return (
-    <Layout>
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-800 mb-2">{t.borrowerPortal}</h1>
-      </div>
-      
-      <div className="flex gap-4 mb-8">
-        <button
-          onClick={() => setActiveTab('apply')}
-          className={`px-6 py-3 rounded-lg font-semibold transition-all ${
-            activeTab === 'apply'
-              ? 'bg-blue-600 text-white shadow-md'
-              : 'bg-white text-gray-700 hover:bg-gray-50 border'
-          }`}
-        >
-          {t.applyForLoan}
-        </button>
-        <button
-          onClick={() => setActiveTab('loans')}
-          className={`px-6 py-3 rounded-lg font-semibold transition-all ${
-            activeTab === 'loans'
-              ? 'bg-blue-600 text-white shadow-md'
-              : 'bg-white text-gray-700 hover:bg-gray-50 border'
-          }`}
-        >
-          {t.myLoans}
-        </button>
-        <button
-          onClick={() => setActiveTab('profile')}
-          className={`px-6 py-3 rounded-lg font-semibold transition-all ${
-            activeTab === 'profile'
-              ? 'bg-blue-600 text-white shadow-md'
-              : 'bg-white text-gray-700 hover:bg-gray-50 border'
-          }`}
-        >
-          {t.myProfile}
-        </button>
-      </div>
-
-      {activeTab === 'apply' && <LoanApplicationForm />}
-      {activeTab === 'loans' && <MyLoansList />}
-      {activeTab === 'profile' && <MyProfile />}
+type FD=z.infer<typeof S>;
+export default function BorrowerPortal(){
+  const router=useRouter(),{t}=useLanguage();
+  const[user,setUser]=useState<any>(null);
+  const[step,setStep]=useState(0);
+  const[done,setDone]=useState(false);
+  const[busy,setBusy]=useState(false);
+  const[err,setErr]=useState<string|null>(null);
+  useEffect(()=>{const u=localStorage.getItem("user");if(!u){router.push("/");return;}setUser(JSON.parse(u));getMe().then(setUser).catch(()=>router.push("/"));},[router]);
+  const{register,handleSubmit,watch,trigger,formState:{errors}}=useForm<FD>({resolver:zodResolver(S),defaultValues:{loanAmount:undefined}});
+  const amt=watch("loanAmount")||0;
+  const total=amt*1.2,daily=amt>0?Math.ceil(total/30):0;
+  const sf:any[][]=[["firstName","lastName","dateOfBirth","gender","maritalStatus","address","houseNumber","phone"],["businessName","businessLocation","businessSince","loanPurpose"],["loanAmount","loanAmountWords"],[]];
+  const next=async()=>{if(await trigger(sf[step]))setStep(s=>Math.min(s+1,STEPS.length-1));};
+  const prev=()=>setStep(s=>Math.max(s-1,0));
+  const sub=async(data:FD)=>{setBusy(true);setErr(null);try{await submitLoan({...data,dailyPayment:daily,interestRate:20,repaymentPeriod:30});generateLoanApplicationPDF({...data,interestRate:20,dailyPayment:daily});setDone(true);}catch(e:any){setErr(e.message);}finally{setBusy(false);}}; 
+  if(done)return(<Layout portal="borrower"><div className="max-w-lg mx-auto text-center py-16 animate-fade-in"><div className="w-20 h-20 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-6"><svg className="w-10 h-10 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg></div><h2 className="text-3xl font-black text-navy-800 mb-3">{t.applicationSubmitted}</h2><p className="text-slate-500 mb-8">{t.applicationSuccessMsg}</p><div className="flex gap-3 justify-center"><button onClick={()=>{setDone(false);setStep(0);}} className="btn-primary">New Application</button><a href="/borrower/loans" className="btn-secondary">View My Loans</a></div></div></Layout>);
+  return(
+    <Layout portal="borrower">
+      <div className="mb-8"><p className="text-slate-500 text-sm mb-1">Welcome back, <span className="font-semibold text-navy-800">{user?.firstName}</span></p><h1 className="text-3xl font-black text-navy-800">{t.applyForLoan}</h1></div>
+      <div className="card mb-6 p-4"><div className="flex items-center">{STEPS.map((label,i)=>(<div key={i} className="flex items-center flex-1 last:flex-none"><div className="flex flex-col items-center gap-1"><div className={i<step?"wizard-step-done":i===step?"wizard-step-active":"wizard-step-inactive"}>{i<step?"":i+1}</div><span className={`text-xs font-semibold hidden sm:block ${i===step?"text-brand-500":"text-slate-400"}`}>{label}</span></div>{i<STEPS.length-1&&<div className={`flex-1 h-0.5 mx-2 rounded-full ${i<step?"bg-emerald-400":"bg-slate-200"}`}/>}</div>))}</div></div>
+      {err&&<div className="mb-4 flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-xl"> {err}</div>}
+      <form onSubmit={handleSubmit(sub)}>
+        <div className="card">
+          {step===0&&<div className="animate-fade-in"><h2 className="text-lg font-black text-navy-800 mb-6 pb-2 border-b border-slate-100">01. Taarifa za Mkopaji</h2><div className="grid grid-cols-1 sm:grid-cols-2 gap-4"><Fi l="Jina (First)" r={register("firstName")} e={errors.firstName?.message}/><Fi l="Jina (Last)" r={register("lastName")} e={errors.lastName?.message}/><Fi l="Tarehe ya kuzaliwa" t="date" r={register("dateOfBirth")} e={errors.dateOfBirth?.message}/><Sel l="Jinsia" r={register("gender")} e={errors.gender?.message} opts={[["male","Mwanaume"],["female","Mwanamke"]]}/><div className="sm:col-span-2"><Sel l="Hali ya ndoa" r={register("maritalStatus")} e={errors.maritalStatus?.message} opts={[["married","Ameoa/Ameolewa"],["single","Hajaoa/Hajaolewa"],["divorced","Talaka/Mjane"]]}/></div><Fi l="Makazi/Mtaa" r={register("address")} e={errors.address?.message}/><Fi l="Nyumba No." r={register("houseNumber")} e={errors.houseNumber?.message}/><Fi l="Jina la mwenzi" r={register("spouseName")}/><Fi l="Simu" r={register("phone")} e={errors.phone?.message} p="07XXXXXXXX"/></div></div>}
+          {step===1&&<div className="animate-fade-in"><h2 className="text-lg font-black text-navy-800 mb-6 pb-2 border-b border-slate-100">02. Taarifa za Biashara</h2><div className="grid grid-cols-1 sm:grid-cols-2 gap-4"><Fi l="Jina la biashara" r={register("businessName")} e={errors.businessName?.message}/><Fi l="Mahali pa biashara" r={register("businessLocation")} e={errors.businessLocation?.message}/><div className="sm:col-span-2"><Fi l="Biashara tangu lini" r={register("businessSince")} e={errors.businessSince?.message}/></div><div className="sm:col-span-2"><label className="label">Dhamuni la mkopo</label><textarea {...register("loanPurpose")} rows={3} className="input-field"/>{errors.loanPurpose&&<p className="text-red-500 text-xs mt-1">{errors.loanPurpose.message}</p>}</div></div></div>}
+          {step===2&&<div className="animate-fade-in"><h2 className="text-lg font-black text-navy-800 mb-6 pb-2 border-b border-slate-100">03. Kiasi cha Mkopo</h2><div className="grid grid-cols-1 sm:grid-cols-2 gap-4"><div><label className="label">Kiasi (Tsh)</label><input type="number" {...register("loanAmount",{valueAsNumber:true})} className="input-field" placeholder="e.g. 500000"/>{errors.loanAmount&&<p className="text-red-500 text-xs mt-1">{errors.loanAmount.message}</p>}</div><div><label className="label">Malipo ya siku (auto)</label><input readOnly value={daily>0?`Tsh ${daily.toLocaleString()}`:""} className="input-field bg-slate-50 text-slate-500"/></div><div className="sm:col-span-2"><Fi l="Kiasi kwa maneno" r={register("loanAmountWords")} e={errors.loanAmountWords?.message} p="e.g. Elfu mia tano"/></div></div>{amt>0&&<div className="mt-6 bg-navy-800 rounded-2xl p-5 text-white"><p className="text-xs font-semibold text-slate-400 mb-3 uppercase tracking-wide">Loan Summary</p><div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">{[{l:"Principal",v:`Tsh ${amt.toLocaleString()}`},{l:"Interest 20%",v:`Tsh ${(amt*0.2).toLocaleString()}`},{l:"Total",v:`Tsh ${total.toLocaleString()}`},{l:"Daily",v:`Tsh ${daily.toLocaleString()}`}].map(({l,v})=><div key={l}><p className="text-brand-400 font-black text-lg">{v}</p><p className="text-slate-400 text-xs mt-0.5">{l}</p></div>)}</div></div>}</div>}
+          {step===3&&<div className="animate-fade-in space-y-6"><div><h2 className="text-lg font-black text-navy-800 mb-4 pb-2 border-b border-slate-100">06. Mdhamini wa Kwanza</h2><div className="grid grid-cols-1 sm:grid-cols-2 gap-4"><Fi l="Majina" r={register("guarantor1Name")}/><Fi l="Makazi" r={register("guarantor1Address")}/><Fi l="Nyumba No." r={register("guarantor1HouseNumber")}/><Fi l="Biashara" r={register("guarantor1Business")}/><Fi l="Uhusiano" r={register("guarantor1Relationship")}/><Fi l="Simu" r={register("guarantor1Phone")}/><div className="sm:col-span-2"><label className="label">Dhamana</label><textarea {...register("guarantor1Collateral")} rows={2} className="input-field"/></div></div></div><div><h2 className="text-lg font-black text-navy-800 mb-4 pb-2 border-b border-slate-100">08. Mdhamini wa Pili</h2><div className="grid grid-cols-1 sm:grid-cols-2 gap-4"><Fi l="Majina" r={register("guarantor2Name")}/><Fi l="Makazi" r={register("guarantor2Address")}/><Fi l="Nyumba No." r={register("guarantor2HouseNumber")}/><Fi l="Biashara" r={register("guarantor2Business")}/><Fi l="Uhusiano" r={register("guarantor2Relationship")}/><Fi l="Simu" r={register("guarantor2Phone")}/><div className="sm:col-span-2"><label className="label">Dhamana</label><textarea {...register("guarantor2Collateral")} rows={2} className="input-field"/></div></div></div></div>}
+        </div>
+        <div className="flex items-center justify-between mt-6"><button type="button" onClick={prev} disabled={step===0} className="btn-secondary disabled:opacity-30"> Back</button><span className="text-xs text-slate-400 font-medium">Step {step+1} of {STEPS.length}</span>{step<STEPS.length-1?<button type="button" onClick={next} className="btn-primary">Next </button>:<button type="submit" disabled={busy} className="btn-primary">{busy?"Saving":"Submit & Print PDF"}</button>}</div>
+      </form>
     </Layout>
   );
 }
-
-function LoanApplicationForm() {
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const { t } = useLanguage();
-  
-  const { register, handleSubmit, watch, formState: { errors } } = useForm<LoanFormData>({
-    resolver: zodResolver(loanSchema),
-  });
-
-  const loanAmount = watch('loanAmount') || 0;
-  const interestRate = 20;
-  const totalRepayment = loanAmount * (1 + interestRate / 100);
-  const dailyPayment = Math.ceil(totalRepayment / 30);
-
-  const onSubmit = async (data: LoanFormData) => {
-    setIsSubmitting(true);
-    try {
-      const pdfData: LoanApplicationData = {
-        ...data,
-        interestRate,
-        dailyPayment: data.dailyPayment || dailyPayment,
-      };
-      generateLoanApplicationPDF(pdfData);
-      setSuccess(true);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  if (success) {
-    return (
-      <div className="max-w-2xl mx-auto bg-green-50 border border-green-200 rounded-2xl p-8 text-center">
-        <h2 className="text-2xl font-bold text-green-700 mb-4">{t.applicationSubmitted}</h2>
-        <p className="text-green-600">{t.applicationSuccessMsg}</p>
-        <button
-          onClick={() => setSuccess(false)}
-          className="mt-6 px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-        >
-          Make Another Application
-        </button>
-      </div>
-    );
-  }
-
-  return (
-    <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-lg p-8">
-      <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">FOMU YA MAOMBI YA MKOPO</h2>
-      
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
-        {/* Section 1: Borrower Info */}
-        <div className="border border-gray-200 rounded-xl p-6">
-          <h3 className="text-lg font-bold text-gray-700 mb-4">01. TAARIFA ZA MKOPAJI</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Majina kamili (First Name)</label>
-              <input {...register('firstName')} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
-              {errors.firstName && <p className="text-red-500 text-sm">{errors.firstName.message}</p>}
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Majina kamili (Last Name)</label>
-              <input {...register('lastName')} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
-              {errors.lastName && <p className="text-red-500 text-sm">{errors.lastName.message}</p>}
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Tarehe ya kuzaliwa</label>
-              <input type="date" {...register('dateOfBirth')} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
-              {errors.dateOfBirth && <p className="text-red-500 text-sm">{errors.dateOfBirth.message}</p>}
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Jinsia</label>
-              <select {...register('gender')} className="w-full px-4 py-2 border border-gray-300 rounded-lg">
-                <option value="">Select...</option>
-                <option value="male">Mwanaume</option>
-                <option value="female">Mwanamke</option>
-              </select>
-              {errors.gender && <p className="text-red-500 text-sm">{errors.gender.message}</p>}
-            </div>
-            <div className="md:col-span-2">
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Halya ndoa</label>
-              <select {...register('maritalStatus')} className="w-full px-4 py-2 border border-gray-300 rounded-lg">
-                <option value="">Select...</option>
-                <option value="married">Ameoa/Ameolewa</option>
-                <option value="single">Hajaoa/Hajaolewa</option>
-                <option value="divorced">Mjane/Mgane</option>
-              </select>
-              {errors.maritalStatus && <p className="text-red-500 text-sm">{errors.maritalStatus.message}</p>}
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Sehemu ya makazi/mtaa</label>
-              <input {...register('address')} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
-              {errors.address && <p className="text-red-500 text-sm">{errors.address.message}</p>}
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Nyumba no.</label>
-              <input {...register('houseNumber')} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
-              {errors.houseNumber && <p className="text-red-500 text-sm">{errors.houseNumber.message}</p>}
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Jina kamili la mwenzi</label>
-              <input {...register('spouseName')} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Namba za simu</label>
-              <input {...register('phone')} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
-              {errors.phone && <p className="text-red-500 text-sm">{errors.phone.message}</p>}
-            </div>
-          </div>
-        </div>
-
-        {/* Section 2: Business Info */}
-        <div className="border border-gray-200 rounded-xl p-6">
-          <h3 className="text-lg font-bold text-gray-700 mb-4">02. TAARIFA ZA BIASHARA YA MKOPAJI</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Aina/jina la biashara</label>
-              <input {...register('businessName')} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
-              {errors.businessName && <p className="text-red-500 text-sm">{errors.businessName.message}</p>}
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Mahali pa biashara</label>
-              <input {...register('businessLocation')} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
-              {errors.businessLocation && <p className="text-red-500 text-sm">{errors.businessLocation.message}</p>}
-            </div>
-            <div className="md:col-span-2">
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Umefanya biashara tangu lini</label>
-              <input {...register('businessSince')} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
-              {errors.businessSince && <p className="text-red-500 text-sm">{errors.businessSince.message}</p>}
-            </div>
-            <div className="md:col-span-2">
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Dhumuni la mkopo</label>
-              <textarea {...register('loanPurpose')} rows={3} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
-              {errors.loanPurpose && <p className="text-red-500 text-sm">{errors.loanPurpose.message}</p>}
-            </div>
-          </div>
-        </div>
-
-        {/* Section 3: Loan Details */}
-        <div className="border border-gray-200 rounded-xl p-6">
-          <h3 className="text-lg font-bold text-gray-700 mb-4">03. KIASI CHA MKOPO KWA ASILIMIA TATU POINT TANO TU.</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Kiasi cha mkopo</label>
-              <input
-                type="number"
-                {...register('loanAmount', { valueAsNumber: true })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-              />
-              {errors.loanAmount && <p className="text-red-500 text-sm">{errors.loanAmount.message}</p>}
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Kiasi cha kurejesha kwa siku (autocalculated)</label>
-              <input
-                type="number"
-                readOnly
-                value={dailyPayment}
-                {...register('dailyPayment', { valueAsNumber: true })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50"
-              />
-            </div>
-            <div className="md:col-span-2">
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Kiasi kwa maneno</label>
-              <input {...register('loanAmountWords')} className="w-full px-4 py-2 border border-gray-300 rounded-lg" placeholder="e.g., Elfu mia tano" />
-              {errors.loanAmountWords && <p className="text-red-500 text-sm">{errors.loanAmountWords.message}</p>}
-            </div>
-            {loanAmount > 0 && (
-              <div className="md:col-span-2 bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h4 className="font-bold text-blue-800 mb-2">Loan Summary</h4>
-                <div className="grid grid-cols-2 gap-2 text-sm">
-                  <p><span className="font-semibold">Loan Amount:</span> Tsh {loanAmount.toLocaleString()}</p>
-                  <p><span className="font-semibold">Interest (20%):</span> Tsh {(loanAmount * 0.2).toLocaleString()}</p>
-                  <p><span className="font-semibold">Total Repayment:</span> Tsh {totalRepayment.toLocaleString()}</p>
-                  <p><span className="font-semibold">Daily Payment:</span> Tsh {dailyPayment.toLocaleString()}</p>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Section 4: Guarantor 1 */}
-        <div className="border border-gray-200 rounded-xl p-6">
-          <h3 className="text-lg font-bold text-gray-700 mb-4">06. TAARIFA ZA WADHAMINI - MDHAMINI WA KWANZA</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Majina ya mdhamini</label>
-              <input {...register('guarantor1Name')} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Sehemu ya makazi</label>
-              <input {...register('guarantor1Address')} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Nyumba no.</label>
-              <input {...register('guarantor1HouseNumber')} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Sehemu ya biashara</label>
-              <input {...register('guarantor1Business')} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Uhusiano wake na mkopaji</label>
-              <input {...register('guarantor1Relationship')} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Namba za simu</label>
-              <input {...register('guarantor1Phone')} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
-            </div>
-            <div className="md:col-span-2">
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Dhamana anazoandikisha</label>
-              <textarea {...register('guarantor1Collateral')} rows={2} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
-            </div>
-          </div>
-        </div>
-
-        {/* Section 5: Guarantor 2 */}
-        <div className="border border-gray-200 rounded-xl p-6">
-          <h3 className="text-lg font-bold text-gray-700 mb-4">08. MDHAMINI WA PILI</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Majina ya mdhamini</label>
-              <input {...register('guarantor2Name')} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Sehemu ya makazi</label>
-              <input {...register('guarantor2Address')} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Nyumba no.</label>
-              <input {...register('guarantor2HouseNumber')} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Sehemu ya biashara</label>
-              <input {...register('guarantor2Business')} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Uhusiano wake na mkopaji</label>
-              <input {...register('guarantor2Relationship')} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Namba za simu</label>
-              <input {...register('guarantor2Phone')} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
-            </div>
-            <div className="md:col-span-2">
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Dhamana anazoandikisha</label>
-              <textarea {...register('guarantor2Collateral')} rows={2} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
-            </div>
-          </div>
-        </div>
-
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 disabled:opacity-50"
-        >
-          {isSubmitting ? 'Submitting...' : 'Submit & Print PDF'}
-        </button>
-      </form>
-    </div>
-  );
-}
-
-function MyLoansList() {
-  const { t } = useLanguage();
-  return (
-    <div className="bg-white rounded-2xl shadow-lg p-8">
-      <h2 className="text-2xl font-bold text-gray-800 mb-6">{t.loanApplications}</h2>
-      <div className="space-y-4">
-        <div className="border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow">
-          <div className="flex justify-between items-center">
-            <div>
-              <h3 className="font-semibold text-gray-800">Loan #1</h3>
-              <p className="text-gray-600">Amount: Tsh 500,000</p>
-              <p className="text-gray-500 text-sm">Applied on 2026-06-01</p>
-            </div>
-            <div className="text-right">
-              <span className="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-sm font-semibold">
-                {t.pendingReview}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function MyProfile() {
-  const { t } = useLanguage();
-  return (
-    <div className="bg-white rounded-2xl shadow-lg p-8">
-      <h2 className="text-2xl font-bold text-gray-800 mb-6">{t.myProfile}</h2>
-      <div className="grid grid-cols-2 gap-6">
-        <div>
-          <p className="text-sm font-semibold text-gray-700">{t.firstName}</p>
-          <p className="text-gray-800">John</p>
-        </div>
-        <div>
-          <p className="text-sm font-semibold text-gray-700">{t.lastName}</p>
-          <p className="text-gray-800">Doe</p>
-        </div>
-        <div>
-          <p className="text-sm font-semibold text-gray-700">{t.phone}</p>
-          <p className="text-gray-800">0712345678</p>
-        </div>
-      </div>
-    </div>
-  );
-}
+function Fi({l,t="text",r,e,p}:{l:string;t?:string;r:any;e?:string;p?:string}){return<div><label className="label">{l}</label><input type={t} {...r} placeholder={p} className="input-field"/>{e&&<p className="text-red-500 text-xs mt-1">{e}</p>}</div>;}
+function Sel({l,r,e,opts}:{l:string;r:any;e?:string;opts:[string,string][]}){return<div><label className="label">{l}</label><select {...r} className="input-field"><option value="">Select</option>{opts.map(([v,lbl])=><option key={v} value={v}>{lbl}</option>)}</select>{e&&<p className="text-red-500 text-xs mt-1">{e}</p>}</div>;}
