@@ -1,129 +1,115 @@
 
-"use client";
+'use client';
+import Layout from '@/components/Layout';
+
 export default function AnalyticsDashboard() {
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-gray-800">Management Dashboard</h1>
-          <nav className="flex gap-4">
-            <a href="/admin/analytics" className="text-blue-600 font-medium">Analytics</a>
-            <a href="/admin/loans" className="text-gray-600">Loan Review</a>
-            <a href="/" className="text-gray-600">Logout</a>
-          </nav>
-        </div>
-      </header>
-      <main className="max-w-7xl mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <StatCard title="Total Disbursed" value="1,250,000" color="blue" />
-          <StatCard title="Total Repaid" value="890,500" color="green" />
-          <StatCard title="Current Balance" value="359,500" color="purple" />
-        </div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <div className="bg-white rounded-xl shadow p-6">
-            <h2 className="text-lg font-semibold mb-4">Individual Debts (Ledger)</h2>
-            <DebtLedger />
-          </div>
-          <div className="bg-white rounded-xl shadow p-6">
-            <h2 className="text-lg font-semibold mb-4">Payment Aging / Arrears</h2>
-            <AgingReport />
-          </div>
-        </div>
-        <div className="mt-8 bg-white rounded-xl shadow p-6">
-          <h2 className="text-lg font-semibold mb-4">Profit & Loss</h2>
-          <ProfitLoss />
-        </div>
-      </main>
-    </div>
-  );
-}
-
-function StatCard({ title, value, color }) {
-  const colors = {
-    blue: "bg-blue-50 border-blue-200 text-blue-800",
-    green: "bg-green-50 border-green-200 text-green-800",
-    purple: "bg-purple-50 border-purple-200 text-purple-800",
-  };
-  return (
-    <div className={`border rounded-xl p-6 ${colors[color]}`}>
-      <p className="text-sm font-medium opacity-80">{title}</p>
-      <p className="text-3xl font-bold mt-2">{value}</p>
-    </div>
-  );
-}
-
-function DebtLedger() {
-  const debtors = [
-    { name: "John Doe", phone: "0712345678", amount: 50000, dueDate: "2024-12-15" },
-    { name: "Jane Smith", phone: "0723456789", amount: 35000, dueDate: "2024-12-20" },
-    { name: "Bob Johnson", phone: "0734567890", amount: 80000, dueDate: "2024-12-25" },
+  const stats = [
+    { label: 'Total Disbursed', value: 'Ksh 800,000', color: 'blue' },
+    { label: 'Total Repaid', value: 'Ksh 250,000', color: 'green' },
+    { label: 'Outstanding Balance', value: 'Ksh 550,000', color: 'purple' },
+    { label: 'Active Borrowers', value: '12', color: 'yellow' },
   ];
-  return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b">
-            <th className="text-left py-2 px-3">Name</th>
-            <th className="text-left py-2 px-3">Phone</th>
-            <th className="text-left py-2 px-3">Outstanding</th>
-            <th className="text-left py-2 px-3">Due Date</th>
-          </tr>
-        </thead>
-        <tbody>
-          {debtors.map((d, i) => (
-            <tr key={i} className="border-b hover:bg-gray-50">
-              <td className="py-2 px-3">{d.name}</td>
-              <td className="py-2 px-3">{d.phone}</td>
-              <td className="py-2 px-3 font-medium">{d.amount.toLocaleString()}</td>
-              <td className="py-2 px-3">{d.dueDate}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
 
-function AgingReport() {
-  const overdue = [
-    { name: "John Doe", phone: "0712345678", amount: 15000, daysOverdue: 15 },
-    { name: "Bob Johnson", phone: "0734567890", amount: 20000, daysOverdue: 7 },
+  const borrowers = [
+    { name: 'John Doe', outstanding: 50000, dueDate: '2026-07-01', status: 'current' },
+    { name: 'Jane Smith', outstanding: 30000, dueDate: '2026-06-15', status: 'overdue' },
+    { name: 'Bob Johnson', outstanding: 100000, dueDate: '2026-08-01', status: 'current' },
   ];
+
   return (
-    <div className="space-y-4">
-      {overdue.map((item, i) => (
-        <div key={i} className="flex justify-between items-center p-3 bg-red-50 rounded-lg">
-          <div>
-            <p className="font-medium">{item.name}</p>
-            <p className="text-sm text-gray-600">{item.phone}</p>
+    <Layout>
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-800 mb-2">Analytics Dashboard</h1>
+        <p className="text-gray-600">Financial overview and reporting.</p>
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        {stats.map((stat, idx) => (
+          <div key={idx} className="bg-white rounded-2xl shadow-lg p-6">
+            <h3 className="text-sm font-semibold text-gray-600">{stat.label}</h3>
+            <p className="text-3xl font-bold text-gray-800 mt-2">{stat.value}</p>
           </div>
-          <div className="text-right">
-            <p className="font-semibold text-red-700">{item.amount.toLocaleString()}</p>
-            <p className="text-xs text-red-600">{item.daysOverdue} days overdue</p>
+        ))}
+      </div>
+      
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        <div className="bg-white rounded-2xl shadow-lg p-8">
+          <h2 className="text-xl font-bold text-gray-800 mb-6">Individual Debtor Ledger</h2>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-gray-200">
+                  <th className="text-left py-3 text-sm font-semibold text-gray-700">Borrower</th>
+                  <th className="text-left py-3 text-sm font-semibold text-gray-700">Outstanding</th>
+                  <th className="text-left py-3 text-sm font-semibold text-gray-700">Due Date</th>
+                  <th className="text-left py-3 text-sm font-semibold text-gray-700">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {borrowers.map((borrower, idx) => (
+                  <tr key={idx} className="border-b border-gray-100">
+                    <td className="py-4 text-gray-800">{borrower.name}</td>
+                    <td className="py-4 font-semibold text-gray-800">Ksh {borrower.outstanding.toLocaleString()}</td>
+                    <td className="py-4 text-gray-600">{borrower.dueDate}</td>
+                    <td className="py-4">
+                      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                        borrower.status === 'overdue' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
+                      }`}>
+                        {borrower.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
-      ))}
-    </div>
-  );
-}
-
-function ProfitLoss() {
-  return (
-    <div className="grid grid-cols-2 gap-8">
-      <div>
-        <h3 className="font-medium mb-3 text-green-700">Expected Profit (Interest)</h3>
-        <div className="space-y-2">
-          <div className="flex justify-between"><span>Total Interest Earned</span><span>187,500</span></div>
-          <div className="flex justify-between"><span>Projected Interest</span><span>53,925</span></div>
+        
+        <div className="bg-white rounded-2xl shadow-lg p-8">
+          <h2 className="text-xl font-bold text-gray-800 mb-6">Payment Aging Report</h2>
+          <div className="space-y-4">
+            <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded">
+              <div className="flex justify-between">
+                <span className="font-semibold text-gray-800">Current (0-30 days)</span>
+                <span className="font-bold text-gray-800">10 loans</span>
+              </div>
+              <p className="text-gray-600 text-sm">Total: Ksh 450,000</p>
+            </div>
+            <div className="bg-orange-50 border-l-4 border-orange-400 p-4 rounded">
+              <div className="flex justify-between">
+                <span className="font-semibold text-gray-800">31-60 days overdue</span>
+                <span className="font-bold text-gray-800">2 loans</span>
+              </div>
+              <p className="text-gray-600 text-sm">Total: Ksh 100,000</p>
+            </div>
+            <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded">
+              <div className="flex justify-between">
+                <span className="font-semibold text-gray-800">60+ days overdue</span>
+                <span className="font-bold text-gray-800">0 loans</span>
+              </div>
+              <p className="text-gray-600 text-sm">Total: Ksh 0</p>
+            </div>
+          </div>
         </div>
       </div>
-      <div>
-        <h3 className="font-medium mb-3 text-red-700">Losses (Bad Debts)</h3>
-        <div className="space-y-2">
-          <div className="flex justify-between"><span>Written Off</span><span>35,000</span></div>
-          <div className="flex justify-between"><span>At Risk</span><span>20,000</span></div>
+      
+      <div className="bg-white rounded-2xl shadow-lg p-8">
+        <h2 className="text-xl font-bold text-gray-800 mb-6">Profit and Loss Overview</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="bg-green-50 p-6 rounded-xl">
+            <h3 className="text-sm font-semibold text-green-700">Expected Interest</h3>
+            <p className="text-2xl font-bold text-green-800">Ksh 120,000</p>
+          </div>
+          <div className="bg-red-50 p-6 rounded-xl">
+            <h3 className="text-sm font-semibold text-red-700">Bad Debts (Expected)</h3>
+            <p className="text-2xl font-bold text-red-800">Ksh 0</p>
+          </div>
+          <div className="bg-blue-50 p-6 rounded-xl">
+            <h3 className="text-sm font-semibold text-blue-700">Net Profit (Expected)</h3>
+            <p className="text-2xl font-bold text-blue-800">Ksh 120,000</p>
+          </div>
         </div>
       </div>
-    </div>
+    </Layout>
   );
 }

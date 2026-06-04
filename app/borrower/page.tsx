@@ -1,185 +1,219 @@
 
-"use client";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
-
-const kycSchema = z.object({
-  idNumber: z.string().min(5),
-  address: z.string().min(5),
-  dateOfBirth: z.string(),
-  guarantorName: z.string().min(2),
-  guarantorPhone: z.string().min(10),
-  guarantorAddress: z.string().min(5),
-});
+'use client';
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
+import Layout from '@/components/Layout';
 
 const loanSchema = z.object({
-  amount: z.number().min(1000),
-  repaymentPeriod: z.number().min(1).max(24),
-  purpose: z.string().min(5),
+  amount: z.number().min(1000, 'Minimum loan amount is 1000'),
+  repaymentPeriod: z.number().min(1, 'Minimum 1 month'),
+  purpose: z.string().min(5, 'Please provide a purpose'),
 });
 
-type LoanFormValues = z.infer<typeof loanSchema>;
-type KycFormValues = z.infer<typeof kycSchema>;
+type LoanFormData = z.infer<typeof loanSchema>;
 
-export default function BorrowerDashboard() {
+export default function BorrowerPortal() {
+  const [activeTab, setActiveTab] = useState<'apply' | 'loans' | 'profile'>('apply');
+  
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-gray-800">AFAR MKOPO FASTA</h1>
-          <nav className="flex gap-4">
-            <a href="/borrower" className="text-blue-600 font-medium">Dashboard</a>
-            <a href="/" className="text-gray-600">Logout</a>
-          </nav>
-        </div>
-      </header>
-      <main className="max-w-7xl mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <LoanApplication />
-          <KycForm />
-        </div>
-        <div className="mt-8">
-          <h2 className="text-xl font-semibold mb-4">My Loans</h2>
-          <LoanList />
-        </div>
-      </main>
-    </div>
+    <Layout>
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-800 mb-2">Borrower Portal</h1>
+        <p className="text-gray-600">Welcome back! Apply for loans and manage your account.</p>
+      </div>
+      
+      <div className="flex gap-4 mb-8">
+        <button
+          onClick={() => setActiveTab('apply')}
+          className={`px-6 py-3 rounded-lg font-semibold transition-all ${
+            activeTab === 'apply'
+              ? 'bg-blue-600 text-white shadow-md'
+              : 'bg-white text-gray-700 hover:bg-gray-50 border'
+          }`}
+        >
+          Apply for Loan
+        </button>
+        <button
+          onClick={() => setActiveTab('loans')}
+          className={`px-6 py-3 rounded-lg font-semibold transition-all ${
+            activeTab === 'loans'
+              ? 'bg-blue-600 text-white shadow-md'
+              : 'bg-white text-gray-700 hover:bg-gray-50 border'
+          }`}
+        >
+          My Loans
+        </button>
+        <button
+          onClick={() => setActiveTab('profile')}
+          className={`px-6 py-3 rounded-lg font-semibold transition-all ${
+            activeTab === 'profile'
+              ? 'bg-blue-600 text-white shadow-md'
+              : 'bg-white text-gray-700 hover:bg-gray-50 border'
+          }`}
+        >
+          My Profile
+        </button>
+      </div>
+
+      {activeTab === 'apply' && <LoanApplicationForm />}
+      {activeTab === 'loans' && <MyLoansList />}
+      {activeTab === 'profile' && <MyProfile />}
+    </Layout>
   );
 }
 
-function LoanApplication() {
-  const { register, handleSubmit, formState: { errors }, watch } = useForm<LoanFormValues>({
+function LoanApplicationForm() {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [success, setSuccess] = useState(false);
+  
+  const { register, handleSubmit, watch, formState: { errors } } = useForm<LoanFormData>({
     resolver: zodResolver(loanSchema),
-    defaultValues: { amount: 0, repaymentPeriod: 1, purpose: "" },
+    defaultValues: { interestRate: 15 },
   });
-  const amount = watch("amount");
-  const period = watch("repaymentPeriod");
-  const interestRate = 15;
-  const totalAmount = amount ? amount * (1 + interestRate / 100) : 0;
-  const monthlyPayment = period && amount ? totalAmount / period : 0;
 
-  const onSubmit = (data: LoanFormValues) => console.log("Apply for loan", data);
+  const amount = watch('amount') || 0;
+  const repaymentPeriod = watch('repaymentPeriod') || 1;
+  const interestRate = 15;
+  const totalAmount = amount * (1 + interestRate / 100);
+  const monthlyPayment = totalAmount / repaymentPeriod;
+
+  const onSubmit = async (data: LoanFormData) => {
+    setIsSubmitting(true);
+    setTimeout(() => {
+      setSuccess(true);
+      setIsSubmitting(false);
+      setTimeout(() => setSuccess(false), 3000);
+    }, 1500);
+  };
+
+  if (success) {
+    return (
+      <div className="max-w-2xl mx-auto bg-green-50 border border-green-200 rounded-2xl p-8 text-center">
+        <h2 className="text-2xl font-bold text-green-700 mb-4">Loan Application Submitted!</h2>
+        <p className="text-green-600">Your loan application has been received. We will review it and notify you soon.</p>
+      </div>
+      );
+  }
+
   return (
-    <div className="bg-white rounded-xl shadow p-6">
-      <h2 className="text-lg font-semibold mb-4">Apply for Loan</h2>
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+    <div className="max-w-2xl mx-auto bg-white rounded-2xl shadow-lg p-8">
+      <h2 className="text-2xl font-bold text-gray-800 mb-6">Apply for a New Loan</h2>
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         <div>
-          <label className="block text-sm font-medium text-gray-700">Loan Amount</label>
+          <label className="block text-sm font-semibold text-gray-700 mb-2">Loan Amount</label>
           <input
             type="number"
-            {...register("amount", { valueAsNumber: true })}
-            className="w-full mt-1 px-4 py-2 border rounded-lg"
+            {...register('amount', { valueAsNumber: true })}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            placeholder="Enter loan amount"
           />
-          {errors.amount && <p className="text-red-500 text-sm">{errors.amount.message as string}</p>}
+          {errors.amount && <p className="text-red-500 text-sm mt-1">{errors.amount.message}</p>}
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700">Repayment Period (Months)</label>
+          <label className="block text-sm font-semibold text-gray-700 mb-2">Repayment Period (Months)</label>
           <input
             type="number"
-            {...register("repaymentPeriod", { valueAsNumber: true })}
-            className="w-full mt-1 px-4 py-2 border rounded-lg"
+            {...register('repaymentPeriod', { valueAsNumber: true })}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            placeholder="12"
           />
-          {errors.repaymentPeriod && <p className="text-red-500 text-sm">{errors.repaymentPeriod.message as string}</p>}
+          {errors.repaymentPeriod && <p className="text-red-500 text-sm mt-1">{errors.repaymentPeriod.message}</p>}
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700">Purpose</label>
+          <label className="block text-sm font-semibold text-gray-700 mb-2">Purpose of Loan</label>
           <textarea
-            {...register("purpose")}
-            className="w-full mt-1 px-4 py-2 border rounded-lg"
+            {...register('purpose')}
             rows={3}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            placeholder="What will you use this loan for?"
           />
+          {errors.purpose && <p className="text-red-500 text-sm mt-1">{errors.purpose.message}</p>}
         </div>
-        <div className="bg-blue-50 p-4 rounded-lg">
-          <p className="text-sm"><strong>Interest Rate:</strong> 15%</p>
-          <p className="text-sm"><strong>Total Repayment:</strong> {totalAmount.toFixed(2)}</p>
-          <p className="text-sm"><strong>Monthly Payment:</strong> {monthlyPayment.toFixed(2)}</p>
-        </div>
+        
+        {amount > 0 && (
+          <div className="bg-blue-50 border border-blue-100 rounded-xl p-6">
+            <h3 className="text-lg font-semibold text-blue-800 mb-4">Loan Summary</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-gray-600">Principal Amount</p>
+                <p className="text-xl font-bold text-blue-800">Ksh {amount.toLocaleString()}</p>
+              </div>
+              <div>
+                <p className="text-gray-600">Interest Rate</p>
+                <p className="text-xl font-bold text-blue-800">{interestRate}%</p>
+              </div>
+              <div>
+                <p className="text-gray-600">Total Repayment</p>
+                <p className="text-xl font-bold text-blue-800">Ksh {totalAmount.toLocaleString()}</p>
+              </div>
+              <div>
+                <p className="text-gray-600">Monthly Payment</p>
+                <p className="text-xl font-bold text-blue-800">Ksh {monthlyPayment.toFixed(2)}</p>
+              </div>
+            </div>
+          </div>
+        )}
+        
         <button
           type="submit"
-          className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700"
+          disabled={isSubmitting}
+          className="w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 disabled:opacity-50"
         >
-          Submit Application
+          {isSubmitting ? 'Submitting...' : 'Submit Application'}
         </button>
       </form>
     </div>
   );
 }
 
-function KycForm() {
-  const { register, handleSubmit, formState: { errors } } = useForm<KycFormValues>({ resolver: zodResolver(kycSchema) });
-  const onSubmit = (data: KycFormValues) => console.log("Update KYC", data);
+function MyLoansList() {
   return (
-    <div className="bg-white rounded-xl shadow p-6">
-      <h2 className="text-lg font-semibold mb-4">KYC Information</h2>
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
-        <div>
-          <label className="block text-sm font-medium text-gray-700">ID Number</label>
-          <input {...register("idNumber")} className="w-full mt-1 px-3 py-2 border rounded" />
+    <div className="bg-white rounded-2xl shadow-lg p-8">
+      <h2 className="text-2xl font-bold text-gray-800 mb-6">My Loan Applications</h2>
+      <div className="space-y-4">
+        <div className="border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow">
+          <div className="flex justify-between items-center">
+            <div>
+              <h3 className="font-semibold text-gray-800">Loan #1</h3>
+              <p className="text-gray-600">Amount: Ksh 50,000</p>
+              <p className="text-gray-500 text-sm">Applied on 2026-06-01</p>
+            </div>
+            <div className="text-right">
+              <span className="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-sm font-semibold">
+                Pending
+              </span>
+            </div>
+          </div>
         </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700">Address</label>
-          <textarea {...register("address")} className="w-full mt-1 px-3 py-2 border rounded" rows={2} />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700">Date of Birth</label>
-          <input type="date" {...register("dateOfBirth")} className="w-full mt-1 px-3 py-2 border rounded" />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700">Guarantor Name</label>
-          <input {...register("guarantorName")} className="w-full mt-1 px-3 py-2 border rounded" />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700">Guarantor Phone</label>
-          <input {...register("guarantorPhone")} className="w-full mt-1 px-3 py-2 border rounded" />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700">Guarantor Address</label>
-          <textarea {...register("guarantorAddress")} className="w-full mt-1 px-3 py-2 border rounded" rows={2} />
-        </div>
-        <button type="submit" className="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700">
-          Save KYC Details
-        </button>
-      </form>
+      </div>
     </div>
   );
 }
 
-function LoanList() {
-  const loans = [
-    { id: "1", amount: 50000, status: "PENDING", createdAt: new Date().toISOString() },
-    { id: "2", amount: 30000, status: "APPROVED", createdAt: new Date(Date.now() - 86400000 * 30).toISOString() },
-  ];
+function MyProfile() {
   return (
-    <div className="bg-white rounded-xl shadow overflow-hidden">
-      <table className="w-full">
-        <thead className="bg-gray-50">
-          <tr>
-            <th className="px-6 py-3 text-left text-sm font-medium text-gray-500">Loan ID</th>
-            <th className="px-6 py-3 text-left text-sm font-medium text-gray-500">Amount</th>
-            <th className="px-6 py-3 text-left text-sm font-medium text-gray-500">Status</th>
-            <th className="px-6 py-3 text-left text-sm font-medium text-gray-500">Date</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-gray-100">
-          {loans.map(loan => (
-            <tr key={loan.id} className="hover:bg-gray-50">
-              <td className="px-6 py-4 text-sm">{loan.id}</td>
-              <td className="px-6 py-4 text-sm">{loan.amount.toLocaleString()}</td>
-              <td className="px-6 py-4">
-                <span className={`px-2 py-1 rounded text-xs font-medium ${
-                  loan.status === "PENDING" ? "bg-yellow-100 text-yellow-800" :
-                  loan.status === "APPROVED" ? "bg-green-100 text-green-800" :
-                  "bg-gray-100 text-gray-800"
-                }`}>
-                  {loan.status}
-                </span>
-              </td>
-              <td className="px-6 py-4 text-sm">{new Date(loan.createdAt).toLocaleDateString()}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div className="bg-white rounded-2xl shadow-lg p-8">
+      <h2 className="text-2xl font-bold text-gray-800 mb-6">My Profile</h2>
+      <div className="grid grid-cols-2 gap-6">
+        <div>
+          <p className="text-sm font-semibold text-gray-700">First Name</p>
+          <p className="text-gray-800">John</p>
+        </div>
+        <div>
+          <p className="text-sm font-semibold text-gray-700">Last Name</p>
+          <p className="text-gray-800">Doe</p>
+        </div>
+        <div>
+          <p className="text-sm font-semibold text-gray-700">Email</p>
+          <p className="text-gray-800">john@example.com</p>
+        </div>
+        <div>
+          <p className="text-sm font-semibold text-gray-700">Phone</p>
+          <p className="text-gray-800">0712345678</p>
+        </div>
+      </div>
     </div>
   );
 }
