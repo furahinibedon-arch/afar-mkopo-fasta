@@ -1,7 +1,7 @@
 
 {
-  "name": "afar-mkopo-fasta",
-  "version": "1.0.0",
+  "name": "afar-mkopo-fasta-frontend",
+  "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
