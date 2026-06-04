@@ -70,7 +70,6 @@ function LoanApplicationForm() {
   
   const { register, handleSubmit, watch, formState: { errors } } = useForm<LoanFormData>({
     resolver: zodResolver(loanSchema),
-    defaultValues: { interestRate: 15 },
   });
 
   const amount = watch('amount') || 0;
