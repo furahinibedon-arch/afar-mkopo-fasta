@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useRouter } from "next/navigation";
+import { loginUser, registerUser } from "@/lib/api";
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -51,12 +53,30 @@ export default function Home() {
 }
 
 function LoginForm() {
+  const router = useRouter();
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const { register, handleSubmit, formState: { errors } } = useForm({
     resolver: zodResolver(loginSchema),
   });
-  const onSubmit = (data) => console.log("Login", data);
+
+  const onSubmit = async (data: any) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const result = await loginUser(data);
+      localStorage.setItem("token", result.token);
+      router.push("/borrower");
+    } catch (err: any) {
+      setError(err.message || "Login failed");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      {error && <p className="text-red-600 text-center">{error}</p>}
       <div>
         <label className="block text-sm font-medium text-gray-700">Email</label>
         <input
@@ -78,21 +98,40 @@ function LoginForm() {
       </div>
       <button
         type="submit"
-        className="w-full py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors"
+        disabled={isLoading}
+        className="w-full py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
       >
-        Login
+        {isLoading ? "Logging in..." : "Login"}
       </button>
     </form>
   );
 }
 
 function RegisterForm() {
+  const router = useRouter();
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const { register, handleSubmit, formState: { errors } } = useForm({
     resolver: zodResolver(registerSchema),
   });
-  const onSubmit = (data) => console.log("Register", data);
+
+  const onSubmit = async (data: any) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const result = await registerUser(data);
+      localStorage.setItem("token", result.token);
+      router.push("/borrower");
+    } catch (err: any) {
+      setError(err.message || "Registration failed");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      {error && <p className="text-red-600 text-center">{error}</p>}
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700">First Name</label>
@@ -138,9 +177,10 @@ function RegisterForm() {
       </div>
       <button
         type="submit"
-        className="w-full py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors"
+        disabled={isLoading}
+        className="w-full py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
       >
-        Create Account
+        {isLoading ? "Creating account..." : "Create Account"}
       </button>
     </form>
   );
