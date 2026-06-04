@@ -1,0 +1,147 @@
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum UserRole {
+  BORROWER
+  LOAN_OFFICER
+  ADMIN
+}
+
+enum LoanStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  DISBURSED
+  REPAID
+  DEFAULTED
+}
+
+enum TransactionType {
+  DISBURSEMENT
+  REPAYMENT
+  FEE
+}
+
+enum PaymentStatus {
+  PAID
+  PENDING
+  OVERDUE
+}
+
+model User {
+  id               String            @id @default(cuid())
+  email            String            @unique
+  password         String
+  firstName        String
+  lastName         String
+  phone            String            @unique
+  role             UserRole          @default(BORROWER)
+  isActive         Boolean           @default(true)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  borrowerProfile  BorrowerProfile?
+  loans            Loan[]            @relation("BorrowerLoans")
+  staffActions     StaffAction[]     @relation("StaffActions")
+
+  @@map("users")
+}
+
+model BorrowerProfile {
+  id               String   @id @default(cuid())
+  userId           String   @unique
+  idNumber         String   @unique
+  address          String
+  dateOfBirth      DateTime
+  kycVerified      Boolean  @default(false)
+  kycDocuments     Json?
+  guarantorName    String?
+  guarantorPhone   String?
+  guarantorAddress String?
+  creditScore      Int?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("borrower_profiles")
+}
+
+model Loan {
+  id               String          @id @default(cuid())
+  borrowerId       String
+  amount           Decimal         @db.Decimal(15, 2)
+  interestRate     Decimal         @db.Decimal(5, 2)
+  repaymentPeriod  Int
+  totalAmount      Decimal         @db.Decimal(15, 2)
+  monthlyPayment   Decimal         @db.Decimal(15, 2)
+  status           LoanStatus      @default(PENDING)
+  purpose          String?
+  disbursedAt      DateTime?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  borrower         User            @relation("BorrowerLoans", fields: [borrowerId], references: [id], onDelete: Cascade)
+  transactions     Transaction[]
+  repayments       Repayment[]
+  staffActions     StaffAction[]
+
+  @@map("loans")
+}
+
+model Repayment {
+  id               String          @id @default(cuid())
+  loanId           String
+  amount           Decimal         @db.Decimal(15, 2)
+  dueDate          DateTime
+  paidDate         DateTime?
+  status           PaymentStatus   @default(PENDING)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  loan             Loan            @relation(fields: [loanId], references: [id], onDelete: Cascade)
+
+  @@map("repayments")
+}
+
+model Transaction {
+  id               String          @id @default(cuid())
+  loanId           String
+  type             TransactionType
+  amount           Decimal         @db.Decimal(15, 2)
+  description      String?
+  reference        String?
+  createdAt        DateTime        @default(now())
+  loan             Loan            @relation(fields: [loanId], references: [id], onDelete: Cascade)
+
+  @@map("transactions")
+}
+
+model StaffAction {
+  id               String   @id @default(cuid())
+  loanId           String
+  staffId          String
+  action           String
+  notes            String?
+  createdAt        DateTime @default(now())
+  loan             Loan     @relation(fields: [loanId], references: [id], onDelete: Cascade)
+  staff            User     @relation("StaffActions", fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@map("staff_actions")
+}
+
+model FinancialLog {
+  id               String   @id @default(cuid())
+  type             String
+  amount           Decimal  @db.Decimal(15, 2)
+  description      String?
+  reference        String?
+  date             DateTime @default(now())
+  createdAt        DateTime @default(now())
+
+  @@map("financial_logs")
+}
