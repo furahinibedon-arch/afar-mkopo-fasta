@@ -19,6 +19,9 @@ const loanSchema = z.object({
   purpose: z.string().min(5),
 });
 
+type LoanFormValues = z.infer<typeof loanSchema>;
+type KycFormValues = z.infer<typeof kycSchema>;
+
 export default function BorrowerDashboard() {
   return (
     <div className="min-h-screen bg-gray-50">
@@ -46,9 +49,9 @@ export default function BorrowerDashboard() {
 }
 
 function LoanApplication() {
-  const { register, handleSubmit, formState: { errors }, watch } = useForm({
+  const { register, handleSubmit, formState: { errors }, watch } = useForm<LoanFormValues>({
     resolver: zodResolver(loanSchema),
-    defaultValues: { interestRate: 15 },
+    defaultValues: { amount: 0, repaymentPeriod: 1, purpose: "" },
   });
   const amount = watch("amount");
   const period = watch("repaymentPeriod");
@@ -56,7 +59,7 @@ function LoanApplication() {
   const totalAmount = amount ? amount * (1 + interestRate / 100) : 0;
   const monthlyPayment = period && amount ? totalAmount / period : 0;
 
-  const onSubmit = (data) => console.log("Apply for loan", data);
+  const onSubmit = (data: LoanFormValues) => console.log("Apply for loan", data);
   return (
     <div className="bg-white rounded-xl shadow p-6">
       <h2 className="text-lg font-semibold mb-4">Apply for Loan</h2>
@@ -104,8 +107,8 @@ function LoanApplication() {
 }
 
 function KycForm() {
-  const { register, handleSubmit, formState: { errors } } = useForm({ resolver: zodResolver(kycSchema) });
-  const onSubmit = (data) => console.log("Update KYC", data);
+  const { register, handleSubmit, formState: { errors } } = useForm<KycFormValues>({ resolver: zodResolver(kycSchema) });
+  const onSubmit = (data: KycFormValues) => console.log("Update KYC", data);
   return (
     <div className="bg-white rounded-xl shadow p-6">
       <h2 className="text-lg font-semibold mb-4">KYC Information</h2>
