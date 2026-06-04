@@ -2,37 +2,37 @@ import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
 export interface LoanApplicationData {
-  firstName: string;
-  lastName: string;
-  dateOfBirth: string;
-  gender: string;
-  maritalStatus: string;
-  address: string;
-  houseNumber: string;
-  spouseName: string;
-  phone: string;
-  businessName: string;
-  businessLocation: string;
-  businessSince: string;
-  loanPurpose: string;
-  loanAmount: number;
-  loanAmountWords: string;
-  dailyPayment: number;
-  interestRate: number;
-  guarantor1Name: string;
-  guarantor1Address: string;
-  guarantor1HouseNumber: string;
-  guarantor1Business: string;
-  guarantor1Relationship: string;
-  guarantor1Phone: string;
-  guarantor1Collateral: string;
-  guarantor2Name: string;
-  guarantor2Address: string;
-  guarantor2HouseNumber: string;
-  guarantor2Business: string;
-  guarantor2Relationship: string;
-  guarantor2Phone: string;
-  guarantor2Collateral: string;
+  firstName?: string;
+  lastName?: string;
+  dateOfBirth?: string;
+  gender?: string;
+  maritalStatus?: string;
+  address?: string;
+  houseNumber?: string;
+  spouseName?: string;
+  phone?: string;
+  businessName?: string;
+  businessLocation?: string;
+  businessSince?: string;
+  loanPurpose?: string;
+  loanAmount?: number;
+  loanAmountWords?: string;
+  dailyPayment?: number;
+  interestRate?: number;
+  guarantor1Name?: string;
+  guarantor1Address?: string;
+  guarantor1HouseNumber?: string;
+  guarantor1Business?: string;
+  guarantor1Relationship?: string;
+  guarantor1Phone?: string;
+  guarantor1Collateral?: string;
+  guarantor2Name?: string;
+  guarantor2Address?: string;
+  guarantor2HouseNumber?: string;
+  guarantor2Business?: string;
+  guarantor2Relationship?: string;
+  guarantor2Phone?: string;
+  guarantor2Collateral?: string;
 }
 
 export function generateLoanApplicationPDF(data: LoanApplicationData) {
@@ -62,14 +62,14 @@ export function generateLoanApplicationPDF(data: LoanApplicationData) {
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
   const tableData1 = [
-    ['Majina kamili:', `${data.firstName} ${data.lastName}`],
-    ['Tarehe ya kuzaliwa:', data.dateOfBirth],
-    ['Jinsia:', data.gender],
-    ['Halya ndoa:', data.maritalStatus],
-    ['Sehemu ya makazi/mtaa:', data.address],
-    ['Nyumba no:', data.houseNumber],
-    ['Jina kamili la mwenzi:', data.spouseName],
-    ['Namba za simu:', data.phone],
+    ['Majina kamili:', `${data.firstName || ''} ${data.lastName || ''}`],
+    ['Tarehe ya kuzaliwa:', data.dateOfBirth || ''],
+    ['Jinsia:', data.gender || ''],
+    ['Halya ndoa:', data.maritalStatus || ''],
+    ['Sehemu ya makazi/mtaa:', data.address || ''],
+    ['Nyumba no:', data.houseNumber || ''],
+    ['Jina kamili la mwenzi:', data.spouseName || ''],
+    ['Namba za simu:', data.phone || ''],
   ];
   
   autoTable(doc, {
@@ -95,10 +95,10 @@ export function generateLoanApplicationPDF(data: LoanApplicationData) {
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
   const tableData2 = [
-    ['Aina/jina la biashara:', data.businessName],
-    ['Mahali pa biashara:', data.businessLocation],
-    ['Umefanya biashara tangu lini:', data.businessSince],
-    ['Dhumuni la mkopo:', data.loanPurpose],
+    ['Aina/jina la biashara:', data.businessName || ''],
+    ['Mahali pa biashara:', data.businessLocation || ''],
+    ['Umefanya biashara tangu lini:', data.businessSince || ''],
+    ['Dhumuni la mkopo:', data.loanPurpose || ''],
   ];
   
   autoTable(doc, {
@@ -125,10 +125,10 @@ export function generateLoanApplicationPDF(data: LoanApplicationData) {
   doc.setFont('helvetica', 'normal');
   const tableData3 = [
     ['Mimi Nakubali kupokea:', ''],
-    ['Kiasi kwa tarakimu:', `Tsh ${data.loanAmount.toLocaleString()}`],
-    ['Kiasi kwa maneno:', data.loanAmountWords],
-    ['Kiasi cha kurejesha kwa siku:', `Tsh ${data.dailyPayment.toLocaleString()}`],
-    ['Riba ya mkopo:', `${data.interestRate}%`],
+    ['Kiasi kwa tarakimu:', data.loanAmount ? `Tsh ${data.loanAmount.toLocaleString()}` : ''],
+    ['Kiasi kwa maneno:', data.loanAmountWords || ''],
+    ['Kiasi cha kurejesha kwa siku:', data.dailyPayment ? `Tsh ${data.dailyPayment.toLocaleString()}` : ''],
+    ['Riba ya mkopo:', data.interestRate ? `${data.interestRate}%` : ''],
   ];
   
   autoTable(doc, {
@@ -153,7 +153,7 @@ export function generateLoanApplicationPDF(data: LoanApplicationData) {
   yPosition += 8;
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
-  doc.text('Gharama ya fomu (10% ya mkopo): Tsh ' + (data.loanAmount * 0.1).toLocaleString(), 14, yPosition);
+  doc.text('Gharama ya fomu (10% ya mkopo): Tsh ' + (data.loanAmount ? (data.loanAmount * 0.1).toLocaleString() : '0'), 14, yPosition);
   yPosition += 7;
   doc.text('Riba ya mkopo itakuwa asilimia ishirini (20%)', 14, yPosition);
   yPosition += 7;
@@ -173,12 +173,12 @@ export function generateLoanApplicationPDF(data: LoanApplicationData) {
     doc.setFont('helvetica', 'normal');
     const tableData4 = [
       ['Majina ya mdhamini:', data.guarantor1Name],
-      ['Sehemu ya makazi:', data.guarantor1Address],
-      ['Nyumba no:', data.guarantor1HouseNumber],
-      ['Sehemu ya biashara:', data.guarantor1Business],
-      ['Uhusiano wake na mkopaji:', data.guarantor1Relationship],
-      ['Namba za simu:', data.guarantor1Phone],
-      ['Dhamana anazoandikisha:', data.guarantor1Collateral],
+      ['Sehemu ya makazi:', data.guarantor1Address || ''],
+      ['Nyumba no:', data.guarantor1HouseNumber || ''],
+      ['Sehemu ya biashara:', data.guarantor1Business || ''],
+      ['Uhusiano wake na mkopaji:', data.guarantor1Relationship || ''],
+      ['Namba za simu:', data.guarantor1Phone || ''],
+      ['Dhamana anazoandikisha:', data.guarantor1Collateral || ''],
     ];
     
     autoTable(doc, {
@@ -207,12 +207,12 @@ export function generateLoanApplicationPDF(data: LoanApplicationData) {
     doc.setFont('helvetica', 'normal');
     const tableData5 = [
       ['Majina ya mdhamini:', data.guarantor2Name],
-      ['Sehemu ya makazi:', data.guarantor2Address],
-      ['Nyumba no:', data.guarantor2HouseNumber],
-      ['Sehemu ya biashara:', data.guarantor2Business],
-      ['Uhusiano wake na mkopaji:', data.guarantor2Relationship],
-      ['Namba za simu:', data.guarantor2Phone],
-      ['Dhamana anazoandikisha:', data.guarantor2Collateral],
+      ['Sehemu ya makazi:', data.guarantor2Address || ''],
+      ['Nyumba no:', data.guarantor2HouseNumber || ''],
+      ['Sehemu ya biashara:', data.guarantor2Business || ''],
+      ['Uhusiano wake na mkopaji:', data.guarantor2Relationship || ''],
+      ['Namba za simu:', data.guarantor2Phone || ''],
+      ['Dhamana anazoandikisha:', data.guarantor2Collateral || ''],
     ];
     
     autoTable(doc, {
@@ -255,5 +255,5 @@ export function generateLoanApplicationPDF(data: LoanApplicationData) {
     headStyles: { fillColor: [66, 153, 225], textColor: 255 },
   });
 
-  doc.save(`Loan_Application_${data.firstName}_${data.lastName}.pdf`);
+  doc.save(`Loan_Application_${data.firstName || 'Unknown'}_${data.lastName || 'Unknown'}.pdf`);
 }
