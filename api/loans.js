@@ -13,13 +13,13 @@ module.exports=async(req,res)=>{
       return res.json(loans);
     }
     if(req.method==='POST'){
-      const{loanAmount,amount,interestRate=20,repaymentPeriod=30,loanPurpose,purpose,...rest}=req.body;
+      const{loanAmount,amount,interestRate=20,repaymentPeriod=30,loanPurpose,purpose}=req.body;
       const amt=parseFloat(loanAmount||amount||0);
       const rate=parseFloat(interestRate);
       const period=parseInt(repaymentPeriod);
       const total=amt*(1+rate/100);
       const monthly=total/period;
-      const loan=await prisma.loan.create({data:{borrowerId:user.userId,amount:amt,interestRate:rate,repaymentPeriod:period,totalAmount:total,monthlyPayment:monthly,purpose:loanPurpose||purpose||'',applicationData:rest}});
+      const loan=await prisma.loan.create({data:{borrowerId:user.userId,amount:amt,interestRate:rate,repaymentPeriod:period,totalAmount:total,monthlyPayment:monthly,purpose:loanPurpose||purpose||''}});
       return res.status(201).json(loan);
     }
     res.status(405).json({error:'Method not allowed'});
