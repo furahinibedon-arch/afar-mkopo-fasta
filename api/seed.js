@@ -3,8 +3,6 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 module.exports = async (req, res) => {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
-
   try {
     const email = 'kaisiroby12@gmail.com';
     const password = 'Admin@1234';
@@ -12,9 +10,8 @@ module.exports = async (req, res) => {
     const existing = await prisma.user.findUnique({ where: { email } });
 
     if (existing) {
-      // Already exists  just make sure role is ADMIN
       await prisma.user.update({ where: { email }, data: { role: 'ADMIN' } });
-      return res.json({ message: 'Admin role confirmed', email, password });
+      return res.json({ message: 'Admin role confirmed!', email, password });
     }
 
     const hashed = await bcrypt.hash(password, 10);
