@@ -1,4 +1,4 @@
-const jwt=require('jsonwebtoken');const bcrypt=require('bcrypt');const prisma=require('./_lib/prisma');
+const jwt=require('jsonwebtoken');const bcrypt=require('bcrypt');const prisma=require('../../_lib/prisma');
 async function guard(req,res){const t=(req.headers['authorization']||'').split(' ')[1];if(!t){res.status(401).json({error:'No token'});return null;}try{const u=jwt.verify(t,process.env.JWT_SECRET);if(u.role!=='ADMIN'){res.status(403).json({error:'Admins only'});return null;}return u;}catch(e){res.status(401).json({error:'Invalid token'});return null;}}
 module.exports=async(req,res)=>{
   const u=await guard(req,res);if(!u)return;
