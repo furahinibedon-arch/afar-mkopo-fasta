@@ -1,5 +1,16 @@
 const BASE=process.env.NEXT_PUBLIC_API_URL||"";
 
+export type AppUser = {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
+  role: "ADMIN" | "LOAN_OFFICER" | "BORROWER";
+  isActive: boolean;
+  createdAt: string;
+};
+
 function ah():Record<string,string>{
   const t=typeof window!=="undefined"?localStorage.getItem("token"):null;
   return{"Content-Type":"application/json",...(t?{Authorization:`Bearer ${t}`}:{})};
@@ -25,3 +36,5 @@ export const getMyLoans=()=>fetch(`${BASE}/api/loans`,{headers:ah()}).then(ok);
 export const getAllLoans=()=>fetch(`${BASE}/api/loans/all`,{headers:ah()}).then(ok);
 export const updateLoanStatus=(id:string,status:string,notes?:string)=>fetch(`${BASE}/api/loans/${id}/status`,{method:"PATCH",headers:ah(),body:JSON.stringify({status,notes})}).then(ok);
 export const getAnalytics=()=>fetch(`${BASE}/api/dashboard/analytics`,{headers:ah()}).then(ok);
+export const getUsers=():Promise<AppUser[]>=>fetch(`${BASE}/api/users`,{headers:ah()}).then(ok);
+export const updateUserRole=(id:string,role:AppUser["role"]):Promise<AppUser>=>fetch(`${BASE}/api/users/${id}/role`,{method:"PATCH",headers:ah(),body:JSON.stringify({role})}).then(ok);

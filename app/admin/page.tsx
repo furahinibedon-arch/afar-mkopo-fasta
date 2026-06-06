@@ -9,7 +9,7 @@ export default function AdminDashboard(){
   const[data,setData]=useState<any>(null);
   const[loading,setLoading]=useState(true);
   const[err,setErr]=useState<string|null>(null);
-  useEffect(()=>{const u=localStorage.getItem("user");if(!u){router.push("/");return;}const role=JSON.parse(u).role;if(role==="BORROWER"){router.push("/borrower");return;}getAnalytics().then(setData).catch((e:any)=>setErr(e.message)).finally(()=>setLoading(false));},[router]);
+  useEffect(()=>{const u=localStorage.getItem("user");if(!u){router.push("/");return;}const role=JSON.parse(u).role;if(role!=="ADMIN"){router.push(role==="LOAN_OFFICER"?"/staff":"/borrower");return;}getAnalytics().then(setData).catch((e:any)=>setErr(e.message)).finally(()=>setLoading(false));},[router]);
   const badge=(s:string)=><span className={`badge-${s.toLowerCase()}`}>{s}</span>;
   if(loading)return<Layout portal="admin"><div className="flex items-center justify-center py-32"><div className="w-10 h-10 rounded-full border-4 border-brand-500 border-t-transparent animate-spin"/></div></Layout>;
   if(err)return<Layout portal="admin"><div className="bg-red-50 border border-red-200 text-red-700 p-6 rounded-2xl"> {err}</div></Layout>;
