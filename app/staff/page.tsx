@@ -37,12 +37,12 @@ export default function StaffPortal(){
 
   const badge=(s:string)=><span className={`badge-${s.toLowerCase()}`}>{s}</span>;
 
-  const Row=({label,value}:{label:string;value:any})=>value?(
+  const Row=({label,value}:{label:string;value:any})=>(
     <div className="flex gap-2 py-1.5 border-b border-slate-100 last:border-0">
       <span className="text-xs font-semibold text-slate-400 uppercase w-40 shrink-0">{label}</span>
-      <span className="text-sm text-navy-800 font-medium">{value}</span>
+      <span className="text-sm text-navy-800 font-medium">{value||<span className="text-slate-300 italic"></span>}</span>
     </div>
-  ):null;
+  );
 
   return(
     <Layout portal="staff">
@@ -140,6 +140,11 @@ export default function StaffPortal(){
                 </div>
               </div>
 
+              {Object.keys(viewing.applicationData||{}).length===0&&(
+                <div className="bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded-xl text-sm">
+                   This loan was submitted before the full form system was enabled. Only basic info is available below.
+                </div>
+              )}
               {/* Borrower details */}
               <div>
                 <h3 className="text-sm font-black text-slate-500 uppercase tracking-wide mb-3">01. Borrower Information</h3>
