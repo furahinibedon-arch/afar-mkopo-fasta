@@ -15,9 +15,9 @@ export async function GET(request: NextRequest) {
     if (decoded.role === 'BORROWER') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     const [disbAgg, repaidAgg, loans, overdueRepayments] = await Promise.all([
       prisma.transaction.aggregate({ where: { type: 'DISBURSEMENT' }, _sum: { amount: true } }) as any,
-      prisma.transaction.aggregate({ where: { type: 'REPAYMENT' }, _sum: { amount: true }) as any,
+      prisma.transaction.aggregate({ where: { type: 'REPAYMENT' }, _sum: { amount: true } }) as any,
       prisma.loan.findMany({ orderBy: { createdAt: 'desc' }, include: { borrower: { select: { firstName: true, lastName: true, email: true, phone: true } }, repayments: true }),
-      prisma.repayment.findMany({ where: { status: 'OVERDUE' }, include: { loan: { include: { borrower: { select: { firstName: true, lastName: true } } } }),
+      prisma.repayment.findMany({ where: { status: 'OVERDUE' }, include: { loan: { include: { borrower: { select: { firstName: true, lastName: true } } } } }),
     ]);
     return NextResponse.json({ totalDisbursed: disbAgg._sum?.amount || 0, totalRepaid: repaidAgg._sum?.amount || 0, loans, overdueRepayments });
   } catch (e: any) { return NextResponse.json({ error: e.message }, { status: 500 }); }
