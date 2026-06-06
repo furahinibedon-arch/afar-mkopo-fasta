@@ -132,13 +132,22 @@ export default function BorrowerPortal(){
   const prev=()=>setStep(s=>Math.max(s-1,0));
 
   const sub=async(data:FD)=>{
-    setBusy(true);setErr(null);
+    console.log("Submitting loan application:", data);
+    setBusy(true);
+    setErr(null);
     try{
       const rp=data.repaymentType==="DAILY"?30:data.repaymentType==="WEEKLY"?4:1;
-      await submitLoan({...data,interestRate:rate,repaymentPeriod:rp,payment,repaymentType:data.repaymentType});
+      const loanData={...data,interestRate:rate,repaymentPeriod:rp,payment,repaymentType:data.repaymentType};
+      console.log("Calling submitLoan with:", loanData);
+      const result=await submitLoan(loanData);
+      console.log("submitLoan success:", result);
       setDone(true);
-    }catch(e:any){setErr(e.message);}
-    finally{setBusy(false);}
+    }catch(e:any){
+      console.error("submitLoan failed:", e);
+      setErr(e.message || "Failed to submit application");
+    }finally{
+      setBusy(false);
+    }
   };
 
   if(done)return(
@@ -150,7 +159,12 @@ export default function BorrowerPortal(){
         <h2 className="text-3xl font-black text-navy-800 mb-3">{t.applicationSubmitted}</h2>
         <p className="text-slate-500 mb-8">{t.applicationSuccessMsg}</p>
         <div className="flex gap-3 justify-center">
-          <button onClick={()=>{setDone(false);setStep(0);}} className="btn-primary">New Application</button>
+          <button onClick={()=>{
+            setDone(false);
+            setStep(0);
+            setErr(null);
+            reset();
+          }} className="btn-primary">New Application</button>
           <a href="/borrower/loans" className="btn-secondary">View My Loans</a>
         </div>
       </div>

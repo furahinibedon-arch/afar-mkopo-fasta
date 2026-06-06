@@ -29,3 +29,4 @@ build/
 *.swo
 *~
 tsconfig.tsbuildinfo
+api-old/
