@@ -2,10 +2,12 @@
 import{useEffect,useState}from"react";
 import{useRouter}from"next/navigation";
 import Layout from"@/components/Layout";
+import{useLanguage}from"@/context/LanguageContext";
 const BASE=process.env.NEXT_PUBLIC_API_URL||"";
 function ah(){const t=typeof window!=="undefined"?localStorage.getItem("token"):null;return{"Content-Type":"application/json",...(t?{Authorization:`Bearer ${t}`}:{})};}
 function fmt(n:number){return"Tsh "+n.toLocaleString();}
 export default function CompanyBalance(){
+  const{t}=useLanguage();
   const router=useRouter();
   const[entries,setEntries]=useState<any[]>([]);
   const[loading,setLoading]=useState(true);
@@ -32,14 +34,14 @@ export default function CompanyBalance(){
         <div><label className="label">Type</label><select value={form.type} onChange={e=>setForm(f=>({...f,type:e.target.value}))} className="input-field"><option value="CREDIT"> Money In</option><option value="DEBIT"> Money Out</option></select></div>
         <div><label className="label">Amount (Tsh)</label><input type="number" required min={1} value={form.amount} onChange={e=>setForm(f=>({...f,amount:e.target.value}))} className="input-field" placeholder="e.g. 500000"/></div>
         <div><label className="label">Description</label><input value={form.description} onChange={e=>setForm(f=>({...f,description:e.target.value}))} className="input-field" placeholder="e.g. Loan disbursement"/></div>
-        <button type="submit" disabled={busy} className="btn-primary">{busy?"Saving":"Save Entry"}</button>
+        <button type="submit" disabled={busy} className="btn-primary">{busy?t.saving:t.saveEntry}</button>
       </form>
     </div>
     <div className="card overflow-x-auto">
       <h2 className="text-lg font-black text-navy-800 mb-4">Ledger ({entries.length} entries)</h2>
       {loading?<div className="flex justify-center py-10"><div className="w-6 h-6 rounded-full border-4 border-brand-500 border-t-transparent animate-spin"/></div>:
       <table className="w-full text-sm">
-        <thead><tr className="border-b border-slate-200">{["Date","Type","Amount","Description","Balance"].map(h=><th key={h} className="text-left py-3 px-3 text-xs font-semibold text-slate-500 uppercase">{h}</th>)}</tr></thead>
+        <thead><tr className="border-b border-slate-200">{["Date",t.type,"Amount",t.description,"Balance"].map(h=><th key={h} className="text-left py-3 px-3 text-xs font-semibold text-slate-500 uppercase">{h}</th>)}</tr></thead>
         <tbody>{entries.length===0&&<tr><td colSpan={5} className="text-center py-10 text-slate-400">No entries yet. Add one above.</td></tr>}
         {entries.map((e:any,i:number)=>{
           const run=entries.slice(0,i+1).reduce((s:number,x:any)=>x.type==="CREDIT"?s+Number(x.amount):s-Number(x.amount),0);

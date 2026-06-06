@@ -2,9 +2,11 @@
 import{useEffect,useState}from"react";
 import{useRouter}from"next/navigation";
 import Layout from"@/components/Layout";
+import{useLanguage}from"@/context/LanguageContext";
 import{getAnalytics}from"@/lib/api";
 function fmt(n:number){return new Intl.NumberFormat('en-TZ',{style:'currency',currency:'TZS',minimumFractionDigits:0}).format(n);}
 export default function AdminDashboard(){
+  const{t}=useLanguage();
   const router=useRouter();
   const[data,setData]=useState<any>(null);
   const[loading,setLoading]=useState(true);
@@ -23,10 +25,10 @@ export default function AdminDashboard(){
     {/* KPI Cards */}
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
       {[
-        {l:"Total Disbursed",v:fmt(disbursed),c:"text-blue-600",bg:"bg-blue-50",icon:""},
-        {l:"Total Repaid",v:fmt(repaid),c:"text-emerald-600",bg:"bg-emerald-50",icon:""},
-        {l:"Outstanding Balance",v:fmt(balance),c:"text-brand-600",bg:"bg-orange-50",icon:""},
-        {l:"Expected Interest",v:fmt(interest),c:"text-purple-600",bg:"bg-purple-50",icon:""},
+        {l:t.totalDisbursed,v:fmt(disbursed),c:"text-blue-600",bg:"bg-blue-50",icon:""},
+        {l:t.totalRepaid,v:fmt(repaid),c:"text-emerald-600",bg:"bg-emerald-50",icon:""},
+        {l:t.outstandingBalance,v:fmt(balance),c:"text-brand-600",bg:"bg-orange-50",icon:""},
+        {l:t.expectedInterest,v:fmt(interest),c:"text-purple-600",bg:"bg-purple-50",icon:""},
       ].map(({l,v,c,bg,icon})=>(
         <div key={l} className="metric-card group">
           <div className={`w-10 h-10 rounded-xl ${bg} flex items-center justify-center text-xl mb-2 group-hover:scale-110 transition-transform`}>{icon}</div>
@@ -36,7 +38,7 @@ export default function AdminDashboard(){
       ))}
     </div>
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-      {[{l:"Total Loans",v:loans.length,c:"text-navy-800"},{l:"Pending",v:pending,c:"text-amber-600"},{l:"Active",v:active,c:"text-emerald-600"},{l:"Overdue Payments",v:overdue.length,c:"text-red-600"}].map(({l,v,c})=>(
+      {[{l:t.totalLoans,v:loans.length,c:"text-navy-800"},{l:t.pending,v:pending,c:"text-amber-600"},{l:t.active,v:active,c:"text-emerald-600"},{l:t.overduePayments,v:overdue.length,c:"text-red-600"}].map(({l,v,c})=>(
         <div key={l} className="card text-center"><p className="label">{l}</p><p className={`text-4xl font-black mt-1 ${c}`}>{v}</p></div>
       ))}
     </div>

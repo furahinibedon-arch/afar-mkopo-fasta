@@ -1,150 +1,103 @@
 const fs=require('fs'),pt=require('path'),b='c:/Users/KINGKAI/.kiro/AFAR/afar-mkopo-fasta';
 function w(f,c){fs.mkdirSync(pt.dirname(pt.join(b,f)),{recursive:true});fs.writeFileSync(pt.join(b,f),c,'utf8');}
 
-// API: full user CRUD
-w('api/admin/users.js',`const jwt=require('jsonwebtoken');const bcrypt=require('bcrypt');const prisma=require('./_lib/prisma');
-async function guard(req,res){const t=(req.headers['authorization']||'').split(' ')[1];if(!t){res.status(401).json({error:'No token'});return null;}try{const u=jwt.verify(t,process.env.JWT_SECRET);if(u.role!=='ADMIN'){res.status(403).json({error:'Admins only'});return null;}return u;}catch(e){res.status(401).json({error:'Invalid token'});return null;}}
-module.exports=async(req,res)=>{
-  const u=await guard(req,res);if(!u)return;
-  if(req.method==='GET'){
-    const users=await prisma.user.findMany({orderBy:{createdAt:'desc'},select:{id:true,email:true,firstName:true,lastName:true,phone:true,role:true,isActive:true,createdAt:true}});
-    return res.json(users);
-  }
-  if(req.method==='POST'){
-    const{email,password,firstName,lastName,phone,role='BORROWER'}=req.body;
-    if(!email||!password||!firstName||!lastName||!phone)return res.status(400).json({error:'All fields required'});
-    const hashed=await bcrypt.hash(password,10);
-    try{const user=await prisma.user.create({data:{email,password:hashed,firstName,lastName,phone,role}});const{password:_,...safe}=user;return res.status(201).json(safe);}
-    catch(e){return res.status(400).json({error:'Email or phone already exists'});}
-  }
-  res.status(405).json({error:'Method not allowed'});
-};`);
+// admin/page.tsx - use t.xxx
+let c=fs.readFileSync(pt.join(b,'app/admin/page.tsx'),'utf8');
+c=c.replace('import Layout from"@/components/Layout";','import Layout from"@/components/Layout";\nimport{useLanguage}from"@/context/LanguageContext";');
+c=c.replace('export default function AdminDashboard(){','export default function AdminDashboard(){\n  const{t}=useLanguage();');
+c=c.replace('"Management Dashboard"','t.managementDashboard');
+c=c.replace('"Financial overview &amp; analytics."','t.financialOverview');
+c=c.replace('"Total Disbursed"','t.totalDisbursed');
+c=c.replace('"Total Repaid"','t.totalRepaid');
+c=c.replace('"Outstanding Balance"','t.outstandingBalance');
+c=c.replace('"Expected Interest"','t.expectedInterest');
+c=c.replace('"Total Loans"','t.totalLoans');
+c=c.replace('"Pending"','t.pending');
+c=c.replace('"Active"','t.active');
+c=c.replace('"Overdue Payments"','t.overduePayments');
+c=c.replace('"Individual Debtor Ledger"','t.debtorLedger');
+c=c.replace('"Profit &amp; Loss Overview"','t.profitLoss');
+c=c.replace('"Expected Interest"','t.expectedInterest');
+c=c.replace('"Overdue Exposure"','t.overduePayments');
+c=c.replace('"Net Position"','t.outstandingBalance');
+fs.writeFileSync(pt.join(b,'app/admin/page.tsx'),c,'utf8');
 
-w('api/admin/users/[id].js',`const jwt=require('jsonwebtoken');const bcrypt=require('bcrypt');const prisma=require('../../_lib/prisma');
-async function guard(req,res){const t=(req.headers['authorization']||'').split(' ')[1];if(!t){res.status(401).json({error:'No token'});return null;}try{const u=jwt.verify(t,process.env.JWT_SECRET);if(u.role!=='ADMIN'){res.status(403).json({error:'Admins only'});return null;}return u;}catch(e){res.status(401).json({error:'Invalid token'});return null;}}
-module.exports=async(req,res)=>{
-  const u=await guard(req,res);if(!u)return;
-  const{id}=req.query;
-  if(req.method==='PATCH'){
-    const{email,firstName,lastName,phone,role,isActive,password}=req.body;
-    const data={};
-    if(email)data.email=email;if(firstName)data.firstName=firstName;if(lastName)data.lastName=lastName;
-    if(phone)data.phone=phone;if(role)data.role=role;if(typeof isActive==='boolean')data.isActive=isActive;
-    if(password)data.password=await bcrypt.hash(password,10);
-    try{const user=await prisma.user.update({where:{id},data});const{password:_,...safe}=user;return res.json(safe);}
-    catch(e){return res.status(400).json({error:e.message});}
-  }
-  if(req.method==='DELETE'){
-    try{await prisma.user.delete({where:{id}});return res.json({message:'User deleted'});}
-    catch(e){return res.status(400).json({error:e.message});}
-  }
-  res.status(405).json({error:'Method not allowed'});
-};`);
+// admin/loans/page.tsx - use t.xxx
+let l=fs.readFileSync(pt.join(b,'app/admin/loans/page.tsx'),'utf8');
+l=l.replace('import Layout from"@/components/Layout";','import Layout from"@/components/Layout";\nimport{useLanguage}from"@/context/LanguageContext";');
+l=l.replace('export default function AdminLoans(){','export default function AdminLoans(){\n  const{t}=useLanguage();');
+l=l.replace('"Loan Management"','t.loanManagement');
+l=l.replace('"Borrower"','t.borrower');
+l=l.replace('"Status"','t.status');
+l=l.replace('"Actions"','t.actions');
+l=l.replace('"Disburse"','t.disburse');
+fs.writeFileSync(pt.join(b,'app/admin/loans/page.tsx'),l,'utf8');
 
-// Full admin users page
-w('app/admin/borrowers/page.tsx',`"use client";
-import{useEffect,useState}from"react";
-import{useRouter}from"next/navigation";
-import Layout from"@/components/Layout";
-const BASE=process.env.NEXT_PUBLIC_API_URL||"";
-function ah(){const t=typeof window!=="undefined"?localStorage.getItem("token"):null;return{"Content-Type":"application/json",...(t?{Authorization:\`Bearer \${t}\`}:{})};}
-const ROLES=["BORROWER","LOAN_OFFICER","ADMIN"];
-const EMPTY={id:"",email:"",firstName:"",lastName:"",phone:"",role:"BORROWER",password:"",isActive:true};
-export default function AdminUsers(){
-  const router=useRouter();
-  const[users,setUsers]=useState<any[]>([]);
-  const[loading,setLoading]=useState(true);
-  const[modal,setModal]=useState<"add"|"edit"|null>(null);
-  const[form,setForm]=useState<any>({...EMPTY});
-  const[busy,setBusy]=useState(false);
-  const[msg,setMsg]=useState<{text:string;ok:boolean}|null>(null);
-  const[confirm,setConfirm]=useState<string|null>(null);
-  useEffect(()=>{const u=localStorage.getItem("user");if(!u){router.push("/");return;}if(JSON.parse(u).role!=="ADMIN"){router.push("/admin");return;}load();},[router]);
-  const load=()=>{setLoading(true);fetch(\`\${BASE}/api/admin/users\`,{headers:ah()}).then(r=>r.json()).then(d=>{if(Array.isArray(d))setUsers(d);}).catch(console.error).finally(()=>setLoading(false));};
-  const toast=(text:string,ok=true)=>{setMsg({text,ok});setTimeout(()=>setMsg(null),3000);};
-  const openAdd=()=>{setForm({...EMPTY});setModal("add");};
-  const openEdit=(u:any)=>{setForm({...u,password:""});setModal("edit");};
-  const closeModal=()=>{setModal(null);setForm({...EMPTY});};
-  const save=async()=>{
-    setBusy(true);
-    const url=modal==="add"?\`\${BASE}/api/admin/users\`:\`\${BASE}/api/admin/users/\${form.id}\`;
-    const method=modal==="add"?"POST":"PATCH";
-    const body:any={email:form.email,firstName:form.firstName,lastName:form.lastName,phone:form.phone,role:form.role,isActive:form.isActive};
-    if(form.password)body.password=form.password;
-    try{const r=await fetch(url,{method,headers:ah(),body:JSON.stringify(body)});const d=await r.json();if(!r.ok)throw new Error(d.error);toast(modal==="add"?"User created!":"User updated!");closeModal();load();}
-    catch(e:any){toast(e.message,false);}finally{setBusy(false);}
-  };
-  const deleteUser=async(id:string)=>{
-    setBusy(true);
-    try{const r=await fetch(\`\${BASE}/api/admin/users/\${id}\`,{method:"DELETE",headers:ah()});const d=await r.json();if(!r.ok)throw new Error(d.error);toast("User deleted");setConfirm(null);load();}
-    catch(e:any){toast(e.message,false);}finally{setBusy(false);}
-  };
-  const toggleRestrict=async(u:any)=>{
-    try{const r=await fetch(\`\${BASE}/api/admin/users/\${u.id}\`,{method:"PATCH",headers:ah(),body:JSON.stringify({isActive:!u.isActive})});const d=await r.json();if(!r.ok)throw new Error(d.error);toast(u.isActive?"User restricted":"User activated");load();}
-    catch(e:any){toast(e.message,false);}
-  };
-  return(<Layout portal="admin">
-    <div className="mb-6 flex items-center justify-between">
-      <div><h1 className="text-3xl font-black text-navy-800">User Management</h1><p className="text-slate-500 mt-1">Add, edit, restrict or delete users.</p></div>
-      <button onClick={openAdd} className="btn-primary">+ Add User</button>
-    </div>
-    {msg&&<div className={\`mb-4 px-4 py-2.5 rounded-xl text-sm font-semibold \${msg.ok?"bg-emerald-50 border border-emerald-200 text-emerald-700":"bg-red-50 border border-red-200 text-red-700"}\`}>{msg.text}</div>}
-    {loading?<div className="flex justify-center py-20"><div className="w-8 h-8 rounded-full border-4 border-brand-500 border-t-transparent animate-spin"/></div>:
-    <div className="card overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead><tr className="border-b border-slate-200">{["Name","Email","Phone","Role","Status","Actions"].map(h=><th key={h} className="text-left py-3 px-3 text-xs font-semibold text-slate-500 uppercase">{h}</th>)}</tr></thead>
-        <tbody>
-          {users.length===0&&<tr><td colSpan={6} className="text-center py-16 text-slate-400">No users yet.</td></tr>}
-          {users.map((u:any)=>(
-            <tr key={u.id} className={\`border-b border-slate-100 hover:bg-slate-50 \${!u.isActive?"opacity-50":""}\`}>
-              <td className="py-3 px-3 font-semibold text-navy-800">{u.firstName} {u.lastName}</td>
-              <td className="py-3 px-3 text-slate-500 text-xs">{u.email}</td>
-              <td className="py-3 px-3 text-slate-500">{u.phone}</td>
-              <td className="py-3 px-3"><span className={\`badge-\${u.role==="ADMIN"?"disbursed":u.role==="LOAN_OFFICER"?"approved":"pending"}\`}>{u.role}</span></td>
-              <td className="py-3 px-3"><span className={u.isActive?"badge-approved":"badge-rejected"}>{u.isActive?"Active":"Restricted"}</span></td>
-              <td className="py-3 px-3"><div className="flex gap-1 flex-wrap">
-                <button onClick={()=>openEdit(u)} className="btn-secondary text-xs py-1 px-2"> Edit</button>
-                <button onClick={()=>toggleRestrict(u)} className={\`text-xs py-1 px-2 font-semibold rounded-lg transition-colors \${u.isActive?"bg-amber-100 text-amber-700 hover:bg-amber-200":"bg-emerald-100 text-emerald-700 hover:bg-emerald-200"}\`}>{u.isActive?" Restrict":" Activate"}</button>
-                <button onClick={()=>setConfirm(u.id)} className="btn-danger text-xs py-1 px-2"> Delete</button>
-              </div></td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>}
-    {/* Add/Edit Modal */}
-    {modal&&<div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 animate-slide-up">
-        <h2 className="text-xl font-black text-navy-800 mb-5">{modal==="add"?"Add New User":"Edit User"}</h2>
-        <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-3">
-            <div><label className="label">First Name</label><input value={form.firstName} onChange={e=>setForm((f:any)=>({...f,firstName:e.target.value}))} className="input-field"/></div>
-            <div><label className="label">Last Name</label><input value={form.lastName} onChange={e=>setForm((f:any)=>({...f,lastName:e.target.value}))} className="input-field"/></div>
-          </div>
-          <div><label className="label">Email</label><input type="email" value={form.email} onChange={e=>setForm((f:any)=>({...f,email:e.target.value}))} className="input-field"/></div>
-          <div><label className="label">Phone</label><input value={form.phone} onChange={e=>setForm((f:any)=>({...f,phone:e.target.value}))} className="input-field"/></div>
-          <div><label className="label">Role</label><select value={form.role} onChange={e=>setForm((f:any)=>({...f,role:e.target.value}))} className="input-field">{ROLES.map(r=><option key={r} value={r}>{r}</option>)}</select></div>
-          <div><label className="label">{modal==="add"?"Password":"New Password (leave blank to keep)"}</label><input type="password" value={form.password} onChange={e=>setForm((f:any)=>({...f,password:e.target.value}))} className="input-field" placeholder={modal==="edit"?"unchanged":"required"}/></div>
-          {modal==="edit"&&<div className="flex items-center gap-2"><input type="checkbox" id="active" checked={form.isActive} onChange={e=>setForm((f:any)=>({...f,isActive:e.target.checked}))}/><label htmlFor="active" className="text-sm font-semibold text-slate-600">Active (uncheck to restrict)</label></div>}
-        </div>
-        <div className="flex gap-3 mt-6">
-          <button onClick={save} disabled={busy} className="btn-primary flex-1">{busy?"Saving":modal==="add"?"Create User":"Save Changes"}</button>
-          <button onClick={closeModal} className="btn-secondary flex-1">Cancel</button>
-        </div>
-      </div>
-    </div>}
-    {/* Delete Confirm */}
-    {confirm&&<div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center animate-slide-up">
-        <div className="w-14 h-14 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4"><span className="text-2xl"></span></div>
-        <h3 className="text-lg font-black text-navy-800 mb-2">Delete User?</h3>
-        <p className="text-slate-500 text-sm mb-6">This will permanently delete the user and all their data.</p>
-        <div className="flex gap-3">
-          <button onClick={()=>deleteUser(confirm)} disabled={busy} className="btn-danger flex-1">{busy?"Deleting":"Yes, Delete"}</button>
-          <button onClick={()=>setConfirm(null)} className="btn-secondary flex-1">Cancel</button>
-        </div>
-      </div>
-    </div>}
-  </Layout>);
-}`);
-console.log('DONE');
+// staff/page.tsx - use t.xxx
+let s2=fs.readFileSync(pt.join(b,'app/staff/page.tsx'),'utf8');
+s2=s2.replace('import Layout from"@/components/Layout";','import Layout from"@/components/Layout";\nimport{useLanguage}from"@/context/LanguageContext";');
+s2=s2.replace('export default function StaffPortal(){','export default function StaffPortal(){\n  const{t}=useLanguage();');
+s2=s2.replace('"Loan Queue"','t.loanQueue');
+s2=s2.replace('"Review and process applications."','t.reviewProcess');
+s2=s2.replace('"Pending"','t.pending');
+s2=s2.replace('"Reviewed"','t.reviewed');
+s2=s2.replace('"Total"','t.total');
+s2=s2.replace('"No pending applications."','t.noPending');
+s2=s2.replace('"None yet."','t.noneYet');
+s2=s2.replace('"Amount"','t.amount');
+s2=s2.replace('"Period"','t.period');
+s2=s2.replace('"Applied"','t.applied');
+s2=s2.replace('" Approve"','t.approve');
+s2=s2.replace('" Reject"','t.reject');
+s2=s2.replace('"Notes (optional)"','t.notes');
+fs.writeFileSync(pt.join(b,'app/staff/page.tsx'),s2,'utf8');
+
+// admin/balance/page.tsx - use t.xxx
+let bal=fs.readFileSync(pt.join(b,'app/admin/balance/page.tsx'),'utf8');
+bal=bal.replace('import Layout from"@/components/Layout";','import Layout from"@/components/Layout";\nimport{useLanguage}from"@/context/LanguageContext";');
+bal=bal.replace('export default function CompanyBalance(){','export default function CompanyBalance(){\n  const{t}=useLanguage();');
+bal=bal.replace('"Company Balance"','t.companyBalance');
+bal=bal.replace('"Track money in and out of the business."','t.trackMoney');
+bal=bal.replace('"Current Balance"','t.currentBalance');
+bal=bal.replace('"Total In"','t.totalIn');
+bal=bal.replace('"Total Out"','t.totalOut');
+bal=bal.replace('"Add Entry"','t.addEntry');
+bal=bal.replace('"Type"','t.type');
+bal=bal.replace('" Money In"','t.moneyIn');
+bal=bal.replace('" Money Out"','t.moneyOut');
+bal=bal.replace('"Description"','t.description');
+bal=bal.replace('"Save Entry"','t.saveEntry');
+bal=bal.replace('"No entries yet. Add one above."','t.noEntriesYet');
+bal=bal.replace('"Positive"','t.positive');
+bal=bal.replace('"Negative"','t.negative');
+bal=bal.replace('"Saving"','t.saving');
+fs.writeFileSync(pt.join(b,'app/admin/balance/page.tsx'),bal,'utf8');
+
+// admin/borrowers/page.tsx - use t.xxx
+let usr=fs.readFileSync(pt.join(b,'app/admin/borrowers/page.tsx'),'utf8');
+usr=usr.replace('import Layout from"@/components/Layout";','import Layout from"@/components/Layout";\nimport{useLanguage}from"@/context/LanguageContext";');
+usr=usr.replace('export default function AdminUsers(){','export default function AdminUsers(){\n  const{t}=useLanguage();');
+usr=usr.replace('"User Management"','t.userManagement');
+usr=usr.replace('"Add, edit, restrict or delete users."','t.addEditUsers');
+usr=usr.replace('"+ Add User"','t.addUser');
+usr=usr.replace('"Edit User"','t.editUser');
+usr=usr.replace('"Add New User"','t.addNewUser');
+usr=usr.replace('"Role"','t.role');
+usr=usr.replace('"Delete User?"','t.deleteUser');
+usr=usr.replace('"This will permanently delete the user and all their data."','t.deleteConfirm');
+usr=usr.replace('"Yes, Delete"','t.yesDelete');
+usr=usr.replace('"Cancel"','t.cancel');
+usr=usr.replace('"Save Changes"','t.saveChanges');
+usr=usr.replace('"Create User"','t.createUser');
+usr=usr.replace('"Active"','t.active_');
+usr=usr.replace('"Restricted"','t.restricted');
+usr=usr.replace('" Restrict"','t.restrict');
+usr=usr.replace('" Activate"','t.activate');
+usr=usr.replace('"Make Admin"','t.makeAdmin');
+usr=usr.replace('"Make Staff"','t.makeStaff');
+usr=usr.replace('"Make Borrower"','t.makeBorrower');
+usr=usr.replace('"New Password (leave blank to keep)"','t.newPasswordHint');
+usr=usr.replace('"No users yet."','t.noneYet');
+fs.writeFileSync(pt.join(b,'app/admin/borrowers/page.tsx'),usr,'utf8');
+
+console.log('All pages translated');

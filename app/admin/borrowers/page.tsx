@@ -2,11 +2,13 @@
 import{useEffect,useState}from"react";
 import{useRouter}from"next/navigation";
 import Layout from"@/components/Layout";
+import{useLanguage}from"@/context/LanguageContext";
 const BASE=process.env.NEXT_PUBLIC_API_URL||"";
 function ah(){const t=typeof window!=="undefined"?localStorage.getItem("token"):null;return{"Content-Type":"application/json",...(t?{Authorization:`Bearer ${t}`}:{})};}
 const ROLES=["BORROWER","LOAN_OFFICER","ADMIN"];
 const EMPTY={id:"",email:"",firstName:"",lastName:"",phone:"",role:"BORROWER",password:"",isActive:true};
 export default function AdminUsers(){
+  const{t}=useLanguage();
   const router=useRouter();
   const[users,setUsers]=useState<any[]>([]);
   const[loading,setLoading]=useState(true);
@@ -48,7 +50,7 @@ export default function AdminUsers(){
     {loading?<div className="flex justify-center py-20"><div className="w-8 h-8 rounded-full border-4 border-brand-500 border-t-transparent animate-spin"/></div>:
     <div className="card overflow-x-auto">
       <table className="w-full text-sm">
-        <thead><tr className="border-b border-slate-200">{["Name","Email","Phone","Role","Status","Actions"].map(h=><th key={h} className="text-left py-3 px-3 text-xs font-semibold text-slate-500 uppercase">{h}</th>)}</tr></thead>
+        <thead><tr className="border-b border-slate-200">{["Name","Email","Phone",t.role,"Status","Actions"].map(h=><th key={h} className="text-left py-3 px-3 text-xs font-semibold text-slate-500 uppercase">{h}</th>)}</tr></thead>
         <tbody>
           {users.length===0&&<tr><td colSpan={6} className="text-center py-16 text-slate-400">No users yet.</td></tr>}
           {users.map((u:any)=>(
@@ -57,10 +59,10 @@ export default function AdminUsers(){
               <td className="py-3 px-3 text-slate-500 text-xs">{u.email}</td>
               <td className="py-3 px-3 text-slate-500">{u.phone}</td>
               <td className="py-3 px-3"><span className={`badge-${u.role==="ADMIN"?"disbursed":u.role==="LOAN_OFFICER"?"approved":"pending"}`}>{u.role}</span></td>
-              <td className="py-3 px-3"><span className={u.isActive?"badge-approved":"badge-rejected"}>{u.isActive?"Active":"Restricted"}</span></td>
+              <td className="py-3 px-3"><span className={u.isActive?"badge-approved":"badge-rejected"}>{u.isActive?t.active_:t.restricted}</span></td>
               <td className="py-3 px-3"><div className="flex gap-1 flex-wrap">
                 <button onClick={()=>openEdit(u)} className="btn-secondary text-xs py-1 px-2"> Edit</button>
-                <button onClick={()=>toggleRestrict(u)} className={`text-xs py-1 px-2 font-semibold rounded-lg transition-colors ${u.isActive?"bg-amber-100 text-amber-700 hover:bg-amber-200":"bg-emerald-100 text-emerald-700 hover:bg-emerald-200"}`}>{u.isActive?" Restrict":" Activate"}</button>
+                <button onClick={()=>toggleRestrict(u)} className={`text-xs py-1 px-2 font-semibold rounded-lg transition-colors ${u.isActive?"bg-amber-100 text-amber-700 hover:bg-amber-200":"bg-emerald-100 text-emerald-700 hover:bg-emerald-200"}`}>{u.isActive?t.restrict:t.activate}</button>
                 <button onClick={()=>setConfirm(u.id)} className="btn-danger text-xs py-1 px-2"> Delete</button>
               </div></td>
             </tr>
@@ -71,7 +73,7 @@ export default function AdminUsers(){
     {/* Add/Edit Modal */}
     {modal&&<div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 animate-slide-up">
-        <h2 className="text-xl font-black text-navy-800 mb-5">{modal==="add"?"Add New User":"Edit User"}</h2>
+        <h2 className="text-xl font-black text-navy-800 mb-5">{modal==="add"?t.addNewUser:t.editUser}</h2>
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div><label className="label">First Name</label><input value={form.firstName} onChange={e=>setForm((f:any)=>({...f,firstName:e.target.value}))} className="input-field"/></div>
@@ -80,11 +82,11 @@ export default function AdminUsers(){
           <div><label className="label">Email</label><input type="email" value={form.email} onChange={e=>setForm((f:any)=>({...f,email:e.target.value}))} className="input-field"/></div>
           <div><label className="label">Phone</label><input value={form.phone} onChange={e=>setForm((f:any)=>({...f,phone:e.target.value}))} className="input-field"/></div>
           <div><label className="label">Role</label><select value={form.role} onChange={e=>setForm((f:any)=>({...f,role:e.target.value}))} className="input-field">{ROLES.map(r=><option key={r} value={r}>{r}</option>)}</select></div>
-          <div><label className="label">{modal==="add"?"Password":"New Password (leave blank to keep)"}</label><input type="password" value={form.password} onChange={e=>setForm((f:any)=>({...f,password:e.target.value}))} className="input-field" placeholder={modal==="edit"?"unchanged":"required"}/></div>
+          <div><label className="label">{modal==="add"?"Password":t.newPasswordHint}</label><input type="password" value={form.password} onChange={e=>setForm((f:any)=>({...f,password:e.target.value}))} className="input-field" placeholder={modal==="edit"?"unchanged":"required"}/></div>
           {modal==="edit"&&<div className="flex items-center gap-2"><input type="checkbox" id="active" checked={form.isActive} onChange={e=>setForm((f:any)=>({...f,isActive:e.target.checked}))}/><label htmlFor="active" className="text-sm font-semibold text-slate-600">Active (uncheck to restrict)</label></div>}
         </div>
         <div className="flex gap-3 mt-6">
-          <button onClick={save} disabled={busy} className="btn-primary flex-1">{busy?"Saving":modal==="add"?"Create User":"Save Changes"}</button>
+          <button onClick={save} disabled={busy} className="btn-primary flex-1">{busy?"Saving":modal==="add"?t.createUser:t.saveChanges}</button>
           <button onClick={closeModal} className="btn-secondary flex-1">Cancel</button>
         </div>
       </div>
@@ -96,7 +98,7 @@ export default function AdminUsers(){
         <h3 className="text-lg font-black text-navy-800 mb-2">Delete User?</h3>
         <p className="text-slate-500 text-sm mb-6">This will permanently delete the user and all their data.</p>
         <div className="flex gap-3">
-          <button onClick={()=>deleteUser(confirm)} disabled={busy} className="btn-danger flex-1">{busy?"Deleting":"Yes, Delete"}</button>
+          <button onClick={()=>deleteUser(confirm)} disabled={busy} className="btn-danger flex-1">{busy?"Deleting":t.yesDelete}</button>
           <button onClick={()=>setConfirm(null)} className="btn-secondary flex-1">Cancel</button>
         </div>
       </div>
