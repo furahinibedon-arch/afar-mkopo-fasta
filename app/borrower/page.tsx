@@ -83,7 +83,7 @@ export default function BorrowerPortal(){
           gender: userData.borrowerProfile.gender,
           maritalStatus: userData.borrowerProfile.maritalStatus,
           nin: userData.borrowerProfile.nin,
-          country: userData.borrowerProfile.country,
+          country: userData.borrowerProfile.country || "Tanzania",
           region: userData.borrowerProfile.region,
           district: userData.borrowerProfile.district,
           address: userData.borrowerProfile.address,
@@ -95,7 +95,6 @@ export default function BorrowerPortal(){
           businessSince: userData.borrowerProfile.businessSince,
           loanAmountWords: "",
           repaymentType: "MONTHLY",
-          country: "Tanzania"
         });
         setSelectedRegion(userData.borrowerProfile.region);
         const region = TANZANIA_REGIONS.find(r => r.name === userData.borrowerProfile.region);
