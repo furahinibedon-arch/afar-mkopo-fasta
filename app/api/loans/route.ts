@@ -1,50 +1,91 @@
+
 import { PrismaClient } from '@prisma/client';
-import { NextResponse } from 'next/server';
+import jwt from 'jsonwebtoken';
+import { NextRequest, NextResponse } from 'next/server';
 
 const prisma = new PrismaClient();
 
-export async function GET() {
-  try {
-    const loans = await prisma.loan.findMany({
-      include: { borrower: true },
-    });
-    return NextResponse.json(loans);
-  } catch (error) {
-    console.error(error);
-    return NextResponse.json({ error: 'Failed to fetch loans' }, { status: 500 });
-  }
+async function auth(request: NextRequest) {
+  const authHeader = request.headers.get('authorization');
+  const token = authHeader?.replace('Bearer ', '').trim() || '';
+  if (!token) throw Object.assign(new Error('No token'), { status: 401 });
+  const secret = process.env.JWT_SECRET || 'afar-mkopo-fasta-secret';
+  return jwt.verify(token, secret) as { userId: string };
 }
 
-export async function POST(request: Request) {
+export async function GET(request: NextRequest) {
   try {
-    const data = await request.json();
+    const { userId } = await auth(request);
+    const loans = await prisma.loan.findMany({ where: { borrowerId: userId }, orderBy: { createdAt: 'desc' }, include: { repayments: true } });
+    const parsedLoans = loans.map(l => {
+      let appData = {};
+      try {
+        const parsed = JSON.parse(l.purpose || '{}');
+        if (parsed.__appData) {
+          appData = parsed.__appData;
+          return { ...l, purpose: parsed.purpose || '', applicationData: appData };
+        }
+      } catch (e) { }
+      return l;
+    });
+    return NextResponse.json(parsedLoans);
+  } catch (e: any) { return NextResponse.json({ error: e.message }, { status: e.status || 500 }); }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const { userId } = await auth(request);
+    const {
+      loanAmount, amount, interestRate = 20, repaymentPeriod = 30, loanPurpose, purpose,
+      firstName, lastName, phone, nin, dateOfBirth, gender, maritalStatus,
+      address, country, region, district, houseNumber, spouseName,
+      businessName, businessLocation, businessSince,
+      ...rest
+    } = await request.json();
+    const amt = Number(loanAmount || amount || 0);
+    const rate = Number(interestRate);
+    const period = Number(repaymentPeriod);
+    const total = amt * (1 + rate / 100);
+    const monthly = total / period;
+    const purposeText = loanPurpose || purpose || '';
+    const purposeField = JSON.stringify({ purpose: purposeText, __appData: rest });
+
+    // upsert borrower profile
+    if (nin && dateOfBirth && address && region && district) {
+      const profileData = {
+        userId,
+        nin,
+        dateOfBirth: new Date(dateOfBirth),
+        address,
+        country: country || 'Tanzania',
+        region,
+        district,
+        gender,
+        maritalStatus,
+        houseNumber,
+        spouseName,
+        businessName,
+        businessLocation,
+        businessSince
+      };
+      await prisma.borrowerProfile.upsert({
+        where: { userId },
+        update: profileData,
+        create: profileData
+      });
+    }
+
     const loan = await prisma.loan.create({
       data: {
-        amount: Number(data.loanAmount),
-        interestRate: Number(data.interestRate) || 20,
-        repaymentPeriod: 30,
-        totalAmount: Number(data.loanAmount) * 1.2,
-        monthlyPayment: Number(data.dailyPayment) || (Number(data.loanAmount) * 1.2 / 30),
-        status: 'PENDING',
-        purpose: data.loanPurpose || '',
-        borrower: {
-          connectOrCreate: {
-            where: { email: data.phone + '@example.com' },
-            create: {
-              email: data.phone + '@example.com',
-              password: '',
-              firstName: data.firstName || '',
-              lastName: data.lastName || '',
-              phone: data.phone || '',
-            },
-          },
-        },
-      },
-      include: { borrower: true }
+        borrowerId: userId,
+        amount: amt,
+        interestRate: rate,
+        repaymentPeriod: period,
+        totalAmount: total,
+        monthlyPayment: monthly,
+        purpose: purposeField
+      }
     });
-    return NextResponse.json(loan);
-  } catch (error) {
-    console.error(error);
-    return NextResponse.json({ error: 'Failed to create loan' }, { status: 500 });
-  }
+    return NextResponse.json(loan, { status: 201 });
+  } catch (e: any) { return NextResponse.json({ error: e.message }, { status: e.status || 500 }); }
 }
