@@ -3,14 +3,25 @@ import{useEffect,useState}from"react";
 import{useRouter}from"next/navigation";
 import Layout from"@/components/Layout";
 import{getAllLoans,updateLoanStatus}from"@/lib/api";
+import{generateLoanApplicationPDF}from"@/lib/pdfGenerator";
 export default function AdminLoans(){
   const router=useRouter();
   const[loans,setLoans]=useState<any[]>([]);
   const[loading,setLoading]=useState(true);
   const[busy,setBusy]=useState<string|null>(null);
-  useEffect(()=>{const u=localStorage.getItem("user");if(!u){router.push("/");return;}load();},[router]);
+  useEffect(()=>{const u=localStorage.getItem("user");if(!u){router.push("/");return;}const role=JSON.parse(u).role;if(role!=="ADMIN"){router.push(role==="LOAN_OFFICER"?"/staff":"/borrower");return;}load();},[router]);
   const load=()=>{getAllLoans().then(setLoans).catch(console.error).finally(()=>setLoading(false));};
   const action=async(id:string,status:string)=>{setBusy(id);try{await updateLoanStatus(id,status);load();}finally{setBusy(null);}};
+  const handlePrint=(loan:any)=>{generateLoanApplicationPDF({
+    firstName:loan.borrower?.firstName,
+    lastName:loan.borrower?.lastName,
+    phone:loan.borrower?.phone,
+    loanAmount:Number(loan.amount),
+    interestRate:Number(loan.interestRate),
+    dailyPayment:Number(loan.monthlyPayment),
+    loanPurpose:loan.purpose,
+    ...loan.applicationData
+  });};
   const badge=(s:string)=><span className={`badge-${s.toLowerCase()}`}>{s}</span>;
   const counts=["PENDING","APPROVED","REJECTED","DISBURSED","REPAID","DEFAULTED"].reduce((a:any,s)=>{a[s]=loans.filter(l=>l.status===s).length;return a;},{});
   return(<Layout portal="admin">
@@ -26,7 +37,7 @@ export default function AdminLoans(){
         <td className="py-3 px-3 text-slate-500 max-w-[140px] truncate">{l.purpose||""}</td>
         <td className="py-3 px-3">{badge(l.status)}</td>
         <td className="py-3 px-3 text-slate-400">{new Date(l.createdAt).toLocaleDateString()}</td>
-        <td className="py-3 px-3"><div className="flex gap-1">{l.status==="PENDING"&&<><button onClick={()=>action(l.id,"APPROVED")} disabled={busy===l.id} className="btn-success text-xs py-1 px-2">{busy===l.id?"":""}</button><button onClick={()=>action(l.id,"REJECTED")} disabled={busy===l.id} className="btn-danger text-xs py-1 px-2">{busy===l.id?"":""}</button></>}{l.status==="APPROVED"&&<button onClick={()=>action(l.id,"DISBURSED")} disabled={busy===l.id} className="btn-primary text-xs py-1 px-2">{busy===l.id?"":"Disburse"}</button>}</div></td>
+        <td className="py-3 px-3"><div className="flex gap-1"><button onClick={()=>handlePrint(l)} className="btn-secondary text-xs py-1 px-2">Print</button>{l.status==="PENDING"&&<><button onClick={()=>action(l.id,"APPROVED")} disabled={busy===l.id} className="btn-success text-xs py-1 px-2">{busy===l.id?"":""}</button><button onClick={()=>action(l.id,"REJECTED")} disabled={busy===l.id} className="btn-danger text-xs py-1 px-2">{busy===l.id?"":""}</button></>}{l.status==="APPROVED"&&<button onClick={()=>action(l.id,"DISBURSED")} disabled={busy===l.id} className="btn-primary text-xs py-1 px-2">{busy===l.id?"":"Disburse"}</button>}</div></td>
       </tr>)}</tbody>
     </table></div>}
   </Layout>);
