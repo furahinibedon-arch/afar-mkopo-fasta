@@ -10,7 +10,11 @@ module.exports=async(req,res)=>{
     if(u.role==='BORROWER')return res.status(403).json({error:'Forbidden'});
     const loans=await prisma.loan.findMany({
       orderBy:{createdAt:'desc'},
-      include:{borrower:{select:{firstName:true,lastName:true,email:true,phone:true}},repayments:true}
+      include:{
+        borrower:{select:{firstName:true,lastName:true,email:true,phone:true}},
+        borrowerProfile:true,
+        repayments:true
+      }
     });
     const parsed=loans.map(l=>{
       let purposeText=l.purpose||'';

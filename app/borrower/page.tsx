@@ -7,6 +7,7 @@ import{useRouter}from"next/navigation";
 import Layout from"@/components/Layout";
 import{useLanguage}from"@/context/LanguageContext";
 import{submitLoan,getMe,getMyLoans}from"@/lib/api";
+import { TANZANIA_REGIONS } from "@/lib/tanzaniaLocations";
 
 const STEPS=["Borrower Info","Business & Collateral","Loan Details","Guarantors"];
 
@@ -16,7 +17,12 @@ const RATES:Record<string,number>={DAILY:3.5,WEEKLY:10,MONTHLY:20};
 const S=z.object({
   firstName:z.string().min(2,"Required"),lastName:z.string().min(2,"Required"),
   dateOfBirth:z.string().min(1,"Required"),gender:z.string().min(1,"Required"),
-  maritalStatus:z.string().min(1,"Required"),address:z.string().min(2,"Required"),
+  maritalStatus:z.string().min(1,"Required"),
+  nin: z.string().min(3, "NIN is required"), // NIDA Number
+  country: z.string().default("Tanzania"),
+  region: z.string().min(1, "Region is required"),
+  district: z.string().min(1, "District is required"),
+  address:z.string().min(2,"Required"),
   houseNumber:z.string().min(1,"Required"),spouseName:z.string().optional(),
   phone:z.string().min(10,"Min 10 digits"),
   businessName:z.string().min(2,"Required"),businessLocation:z.string().min(2,"Required"),
@@ -43,12 +49,62 @@ export default function BorrowerPortal(){
   const[done,setDone]=useState(false);
   const[busy,setBusy]=useState(false);
   const[err,setErr]=useState<string|null>(null);
-  useEffect(()=>{const u=localStorage.getItem("user");if(!u){router.push("/");return;}setUser(JSON.parse(u));getMe().then(setUser).catch(()=>router.push("/"));},[router]);
-
-  const{register,handleSubmit,watch,trigger,control,formState:{errors}}=useForm<FD>({
+  const[selectedRegion, setSelectedRegion] = useState<string>("");
+  const[districts, setDistricts] = useState<string[]>([]);
+  
+  const{register,handleSubmit,watch,trigger,control,formState:{errors},setValue,reset}=useForm<FD>({
     resolver:zodResolver(S),
-    defaultValues:{loanAmountWords:"",repaymentType:"MONTHLY"}
+    defaultValues:{loanAmountWords:"",repaymentType:"MONTHLY", country: "Tanzania"}
   });
+  
+  // Watch region to update district dropdown
+  const watchedRegion = watch("region");
+  useEffect(() => {
+    if (watchedRegion) {
+      const region = TANZANIA_REGIONS.find(r => r.name === watchedRegion);
+      if (region) {
+        setDistricts(region.districts.map(d => d.name));
+      }
+    }
+  }, [watchedRegion]);
+
+  useEffect(()=>{
+    const u=localStorage.getItem("user");
+    if(!u){router.push("/");return;}
+    setUser(JSON.parse(u));
+    getMe().then((userData) => {
+      setUser(userData);
+      if (userData.borrowerProfile) {
+        // Pre-fill the form with saved profile data!
+        reset({
+          firstName: userData.firstName,
+          lastName: userData.lastName,
+          dateOfBirth: userData.borrowerProfile.dateOfBirth.split('T')[0], // format YYYY-MM-DD
+          gender: userData.borrowerProfile.gender,
+          maritalStatus: userData.borrowerProfile.maritalStatus,
+          nin: userData.borrowerProfile.nin,
+          country: userData.borrowerProfile.country,
+          region: userData.borrowerProfile.region,
+          district: userData.borrowerProfile.district,
+          address: userData.borrowerProfile.address,
+          houseNumber: userData.borrowerProfile.houseNumber,
+          spouseName: userData.borrowerProfile.spouseName,
+          phone: userData.phone,
+          businessName: userData.borrowerProfile.businessName,
+          businessLocation: userData.borrowerProfile.businessLocation,
+          businessSince: userData.borrowerProfile.businessSince,
+          loanAmountWords: "",
+          repaymentType: "MONTHLY",
+          country: "Tanzania"
+        });
+        setSelectedRegion(userData.borrowerProfile.region);
+        const region = TANZANIA_REGIONS.find(r => r.name === userData.borrowerProfile.region);
+        if (region) {
+          setDistricts(region.districts.map(d => d.name));
+        }
+      }
+    }).catch(()=>router.push("/"));
+  },[router, reset]);
 
   const amt=watch("loanAmount")||0;
   const repaymentType=watch("repaymentType")||"MONTHLY";
@@ -60,7 +116,7 @@ export default function BorrowerPortal(){
   const paymentLabel={DAILY:"Daily Payment",WEEKLY:"Weekly Payment",MONTHLY:"Monthly Payment"};
 
   const sf:string[][]=[
-    ["firstName","lastName","dateOfBirth","gender","maritalStatus","address","houseNumber","phone"],
+    ["firstName","lastName","dateOfBirth","gender","maritalStatus","nin","country","region","district","address","houseNumber","phone"],
     ["businessName","businessLocation","businessSince","loanPurpose","collateral"],
     ["repaymentType","loanAmount","loanAmountWords"],
     [],
@@ -131,9 +187,13 @@ export default function BorrowerPortal(){
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Fi l="Jina (First)" r={register("firstName")} e={errors.firstName?.message}/>
               <Fi l="Jina (Last)" r={register("lastName")} e={errors.lastName?.message}/>
+              <Fi l="NIDA Number (NIN)" r={register("nin")} e={errors.nin?.message} p="Enter NIN"/>
               <Fi l="Tarehe ya kuzaliwa" t="date" r={register("dateOfBirth")} e={errors.dateOfBirth?.message}/>
               <Sel l="Jinsia" r={register("gender")} e={errors.gender?.message} opts={[["male","Mwanaume"],["female","Mwanamke"]]}/>
               <div className="sm:col-span-2"><Sel l="Hali ya ndoa" r={register("maritalStatus")} e={errors.maritalStatus?.message} opts={[["married","Ameoa/Ameolewa"],["single","Hajaoa/Hajaolewa"],["divorced","Talaka/Mjane"]]}/></div>
+              <Sel l="Nchi" r={register("country")} e={errors.country?.message} opts={[["Tanzania","Tanzania"]]}/>
+              <Sel l="Mkoa" r={register("region")} e={errors.region?.message} opts={TANZANIA_REGIONS.map(r => [r.name, r.name])}/>
+              <Sel l="Wilaya" r={register("district")} e={errors.district?.message} opts={districts.map(d => [d, d])}/>
               <Fi l="Makazi/Mtaa" r={register("address")} e={errors.address?.message}/>
               <Fi l="Nyumba No." r={register("houseNumber")} e={errors.houseNumber?.message}/>
               <Fi l="Jina la mwenzi (optional)" r={register("spouseName")}/>

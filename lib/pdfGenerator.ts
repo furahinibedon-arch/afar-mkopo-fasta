@@ -11,6 +11,10 @@ export interface LoanApplicationData {
   houseNumber?: string;
   spouseName?: string;
   phone?: string;
+  nin?: string; // NIDA Number
+  country?: string;
+  region?: string;
+  district?: string;
   businessName?: string;
   businessLocation?: string;
   businessSince?: string;
@@ -63,9 +67,13 @@ export function generateLoanApplicationPDF(data: LoanApplicationData) {
   doc.setFont('helvetica', 'normal');
   const tableData1 = [
     ['Majina kamili:', `${data.firstName || ''} ${data.lastName || ''}`],
+    ['NIDA Number (NIN):', data.nin || ''],
     ['Tarehe ya kuzaliwa:', data.dateOfBirth || ''],
     ['Jinsia:', data.gender || ''],
     ['Halya ndoa:', data.maritalStatus || ''],
+    ['Nchi:', data.country || ''],
+    ['Mkoa:', data.region || ''],
+    ['Wilaya:', data.district || ''],
     ['Sehemu ya makazi/mtaa:', data.address || ''],
     ['Nyumba no:', data.houseNumber || ''],
     ['Jina kamili la mwenzi:', data.spouseName || ''],

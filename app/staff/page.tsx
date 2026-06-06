@@ -30,18 +30,37 @@ export default function StaffPortal(){
     setBusy(id);
     try{await updateLoanStatus(id,status,notes[id]);setViewing(null);load();}
     catch(e:any){setErr(e.message);}
-    finally{setBusy(null);}
+    finally{setBusy(null);};
+  const handlePrint=(loan:any)=>{
+    // Build the print data from profile or applicationData!
+    const appData = loan.applicationData || {};
+    const profile = loan.borrowerProfile || {};
+    const borrower = loan.borrower || {};
+    generateLoanApplicationPDF({
+      firstName: borrower.firstName,
+      lastName: borrower.lastName,
+      phone: borrower.phone,
+      nin: profile.nin,
+      country: profile.country || "Tanzania",
+      region: profile.region,
+      district: profile.district,
+      dateOfBirth: profile.dateOfBirth?.split('T')[0],
+      gender: profile.gender || appData.gender,
+      maritalStatus: profile.maritalStatus || appData.maritalStatus,
+      address: profile.address || appData.address,
+      houseNumber: profile.houseNumber || appData.houseNumber,
+      spouseName: profile.spouseName || appData.spouseName,
+      businessName: profile.businessName || appData.businessName,
+      businessLocation: profile.businessLocation || appData.businessLocation,
+      businessSince: profile.businessSince || appData.businessSince,
+      loanAmount: Number(loan.amount),
+      loanAmountWords: appData.loanAmountWords,
+      dailyPayment: Number(loan.monthlyPayment),
+      interestRate: Number(loan.interestRate),
+      loanPurpose: loan.purpose,
+      ...appData
+    });
   };
-  const handlePrint=(loan:any)=>{generateLoanApplicationPDF({
-    firstName:loan.borrower?.firstName,
-    lastName:loan.borrower?.lastName,
-    phone:loan.borrower?.phone,
-    loanAmount:Number(loan.amount),
-    interestRate:Number(loan.interestRate),
-    dailyPayment:Number(loan.monthlyPayment),
-    loanPurpose:loan.purpose,
-    ...loan.applicationData
-  });};
 
   const pending=loans.filter(l=>l.status==="PENDING");
   const reviewed=loans.filter(l=>l.status!=="PENDING");
@@ -93,12 +112,8 @@ export default function StaffPortal(){
                     {loan.purpose&&<p className="text-xs text-slate-400 mt-1 italic">"{loan.purpose}"</p>}
                   </div>
                   <div className="flex gap-2">
-                    <button onClick={()=>handlePrint(loan)} className="btn-secondary text-sm py-2 px-4">
-                       Print
-                    </button>
-                    <button onClick={()=>setViewing(loan)} className="btn-primary text-sm py-2 px-4">
-                       View & Decide
-                    </button>
+                    <button onClick={()=>handlePrint(loan)} className="btn-secondary text-sm py-2 px-4"> Print</button>
+                    <button onClick={()=>setViewing(loan)} className="btn-primary text-sm py-2 px-4"> View & Decide</button>
                   </div>
                 </div>
               </div>
@@ -160,22 +175,26 @@ export default function StaffPortal(){
 
               {Object.keys(viewing.applicationData||{}).length===0&&(
                 <div className="bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded-xl text-sm">
-                   This loan was submitted before the full form system was enabled. Only basic info is available below.
+                  This loan was submitted before the full form system was enabled. Only basic info is available below.
                 </div>
               )}
               {/* Borrower details */}
               <div>
                 <h3 className="text-sm font-black text-slate-500 uppercase tracking-wide mb-3">01. Borrower Information</h3>
                 <div className="bg-slate-50 rounded-xl p-4">
-                  <Row label="Full Name" value={`${viewing.borrower?.firstName} ${viewing.borrower?.lastName}`}/>
-                  <Row label="Email" value={viewing.borrower?.email}/>
-                  <Row label="Phone" value={viewing.borrower?.phone}/>
-                  <Row label="Date of Birth" value={viewing.applicationData?.dateOfBirth}/>
-                  <Row label="Gender" value={viewing.applicationData?.gender}/>
-                  <Row label="Marital Status" value={viewing.applicationData?.maritalStatus}/>
-                  <Row label="Address / Mtaa" value={viewing.applicationData?.address}/>
-                  <Row label="House No." value={viewing.applicationData?.houseNumber}/>
-                  <Row label="Spouse Name" value={viewing.applicationData?.spouseName}/>
+                  <Row label="Full Name" value={`${viewing.borrower?.firstName} ${viewing.borrower?.lastName}`} />
+                  <Row label="Email" value={viewing.borrower?.email} />
+                  <Row label="Phone" value={viewing.borrower?.phone} />
+                  <Row label="NIDA Number (NIN)" value={viewing.borrowerProfile?.nin} />
+                  <Row label="Date of Birth" value={viewing.borrowerProfile?.dateOfBirth?.split('T')[0] || viewing.applicationData?.dateOfBirth} />
+                  <Row label="Gender" value={viewing.borrowerProfile?.gender || viewing.applicationData?.gender} />
+                  <Row label="Marital Status" value={viewing.borrowerProfile?.maritalStatus || viewing.applicationData?.maritalStatus} />
+                  <Row label="Country" value={viewing.borrowerProfile?.country || "Tanzania"} />
+                  <Row label="Region" value={viewing.borrowerProfile?.region} />
+                  <Row label="District" value={viewing.borrowerProfile?.district} />
+                  <Row label="Address" value={viewing.borrowerProfile?.address || viewing.applicationData?.address} />
+                  <Row label="House No." value={viewing.borrowerProfile?.houseNumber || viewing.applicationData?.houseNumber} />
+                  <Row label="Spouse Name" value={viewing.borrowerProfile?.spouseName || viewing.applicationData?.spouseName} />
                 </div>
               </div>
 
@@ -183,10 +202,10 @@ export default function StaffPortal(){
               {(viewing.applicationData?.businessName||viewing.purpose)&&<div>
                 <h3 className="text-sm font-black text-slate-500 uppercase tracking-wide mb-3">02. Business Information</h3>
                 <div className="bg-slate-50 rounded-xl p-4">
-                  <Row label="Business Name" value={viewing.applicationData?.businessName}/>
-                  <Row label="Location" value={viewing.applicationData?.businessLocation}/>
-                  <Row label="Since" value={viewing.applicationData?.businessSince}/>
-                  <Row label="Loan Purpose" value={viewing.purpose||viewing.applicationData?.loanPurpose}/>
+                  <Row label="Business Name" value={viewing.borrowerProfile?.businessName || viewing.applicationData?.businessName} />
+                  <Row label="Location" value={viewing.borrowerProfile?.businessLocation || viewing.applicationData?.businessLocation} />
+                  <Row label="Since" value={viewing.borrowerProfile?.businessSince || viewing.applicationData?.businessSince} />
+                  <Row label="Loan Purpose" value={viewing.purpose||viewing.applicationData?.loanPurpose} />
                 </div>
               </div>}
 
@@ -194,12 +213,12 @@ export default function StaffPortal(){
               {viewing.applicationData?.guarantor1Name&&<div>
                 <h3 className="text-sm font-black text-slate-500 uppercase tracking-wide mb-3">06. First Guarantor</h3>
                 <div className="bg-slate-50 rounded-xl p-4">
-                  <Row label="Name" value={viewing.applicationData?.guarantor1Name}/>
-                  <Row label="Address" value={viewing.applicationData?.guarantor1Address}/>
-                  <Row label="Phone" value={viewing.applicationData?.guarantor1Phone}/>
-                  <Row label="Business" value={viewing.applicationData?.guarantor1Business}/>
-                  <Row label="Relationship" value={viewing.applicationData?.guarantor1Relationship}/>
-                  <Row label="Collateral" value={viewing.applicationData?.guarantor1Collateral}/>
+                  <Row label="Name" value={viewing.applicationData?.guarantor1Name} />
+                  <Row label="Address" value={viewing.applicationData?.guarantor1Address} />
+                  <Row label="Phone" value={viewing.applicationData?.guarantor1Phone} />
+                  <Row label="Business" value={viewing.applicationData?.guarantor1Business} />
+                  <Row label="Relationship" value={viewing.applicationData?.guarantor1Relationship} />
+                  <Row label="Collateral" value={viewing.applicationData?.guarantor1Collateral} />
                 </div>
               </div>}
 
@@ -207,12 +226,12 @@ export default function StaffPortal(){
               {viewing.applicationData?.guarantor2Name&&<div>
                 <h3 className="text-sm font-black text-slate-500 uppercase tracking-wide mb-3">08. Second Guarantor</h3>
                 <div className="bg-slate-50 rounded-xl p-4">
-                  <Row label="Name" value={viewing.applicationData?.guarantor2Name}/>
-                  <Row label="Address" value={viewing.applicationData?.guarantor2Address}/>
-                  <Row label="Phone" value={viewing.applicationData?.guarantor2Phone}/>
-                  <Row label="Business" value={viewing.applicationData?.guarantor2Business}/>
-                  <Row label="Relationship" value={viewing.applicationData?.guarantor2Relationship}/>
-                  <Row label="Collateral" value={viewing.applicationData?.guarantor2Collateral}/>
+                  <Row label="Name" value={viewing.applicationData?.guarantor2Name} />
+                  <Row label="Address" value={viewing.applicationData?.guarantor2Address} />
+                  <Row label="Phone" value={viewing.applicationData?.guarantor2Phone} />
+                  <Row label="Business" value={viewing.applicationData?.guarantor2Business} />
+                  <Row label="Relationship" value={viewing.applicationData?.guarantor2Relationship} />
+                  <Row label="Collateral" value={viewing.applicationData?.guarantor2Collateral} />
                 </div>
               </div>}
 

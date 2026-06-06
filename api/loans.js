@@ -14,7 +14,7 @@ module.exports=async(req,res)=>{
       return res.json(parsed);
     }
     if(req.method==='POST'){
-      const{loanAmount,amount,interestRate=20,repaymentPeriod=30,loanPurpose,purpose,...rest}=req.body;
+      const{loanAmount,amount,interestRate=20,repaymentPeriod=30,loanPurpose,purpose,firstName,lastName,phone,nin,dateOfBirth,gender,maritalStatus,address,country,region,district,houseNumber,spouseName,businessName,businessLocation,businessSince,...rest}=req.body;
       const amt=parseFloat(loanAmount||amount||0);
       const rate=parseFloat(interestRate);
       const period=parseInt(repaymentPeriod);
@@ -22,6 +22,32 @@ module.exports=async(req,res)=>{
       const monthly=total/period;
       const purposeText=loanPurpose||purpose||'';
       const purposeField=JSON.stringify({purpose:purposeText,__appData:rest});
+      
+      // Save or update the borrower profile
+      if(nin && dateOfBirth && address && region && district) {
+        const profileData = {
+          userId: user.userId,
+          nin,
+          dateOfBirth: new Date(dateOfBirth),
+          address,
+          country: country || "Tanzania",
+          region,
+          district,
+          gender,
+          maritalStatus,
+          houseNumber,
+          spouseName,
+          businessName,
+          businessLocation,
+          businessSince,
+        };
+        await prisma.borrowerProfile.upsert({
+          where: { userId: user.userId },
+          update: profileData,
+          create: profileData,
+        });
+      }
+      
       const loan=await prisma.loan.create({data:{borrowerId:user.userId,amount:amt,interestRate:rate,repaymentPeriod:period,totalAmount:total,monthlyPayment:monthly,purpose:purposeField}});
       return res.status(201).json(loan);
     }
