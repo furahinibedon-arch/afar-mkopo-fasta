@@ -48,7 +48,7 @@ export default function BorrowerPortal(){
 
   const{register,handleSubmit,watch,trigger,control,formState:{errors}}=useForm<FD>({
     resolver:zodResolver(S),
-    defaultValues:{loanAmount:0,loanAmountWords:"",repaymentType:"MONTHLY"}
+    defaultValues:{loanAmountWords:"",repaymentType:"MONTHLY"}
   });
 
   const amt=watch("loanAmount")||0;
@@ -69,7 +69,7 @@ export default function BorrowerPortal(){
 
   const next=async()=>{
     const ok=await trigger(sf[step] as any);
-    if(ok)setStep(s=>Math.min(s+1,STEPS.length-1));
+    if(ok)setStep(s=>s+1);
   };
   const prev=()=>setStep(s=>Math.max(s-1,0));
 
@@ -238,7 +238,7 @@ export default function BorrowerPortal(){
         <div className="flex items-center justify-between mt-6">
           <button type="button" onClick={prev} disabled={step===0} className="btn-secondary disabled:opacity-30"> Back</button>
           <span className="text-xs text-slate-400 font-medium">Step {step+1} of {STEPS.length}</span>
-          {step<STEPS.length-1
+          {step<3
             ?<button type="button" onClick={next} className="btn-primary">Next </button>
             :<button type="submit" disabled={busy} className="btn-primary">{busy?"Saving":"Submit & Print PDF"}</button>
           }
