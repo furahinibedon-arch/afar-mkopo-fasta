@@ -30,7 +30,7 @@ export default function StaffPortal(){
     setBusy(id);
     try{await updateLoanStatus(id,status,notes[id]);setViewing(null);load();}
     catch(e:any){setErr(e.message);}
-    finally{setBusy(null);};
+    finally{setBusy(null);}};
   const handlePrint=(loan:any)=>{
     // Build the print data from profile or applicationData!
     const appData = loan.applicationData || {};

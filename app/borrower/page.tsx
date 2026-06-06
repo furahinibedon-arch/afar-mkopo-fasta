@@ -31,14 +31,14 @@ const S=z.object({
   repaymentType:z.enum(["DAILY","WEEKLY","MONTHLY"],{required_error:"Select repayment type"}),
   loanAmount:z.coerce.number().min(1000,"Min Tsh 1,000"),
   loanAmountWords:z.string().min(1,"Required"),
-  guarantor1Name:z.string().optional(),guarantor1Address:z.string().optional(),
-  guarantor1HouseNumber:z.string().optional(),guarantor1Business:z.string().optional(),
-  guarantor1Relationship:z.string().optional(),guarantor1Phone:z.string().optional(),
-  guarantor1Collateral:z.string().optional(),
-  guarantor2Name:z.string().optional(),guarantor2Address:z.string().optional(),
-  guarantor2HouseNumber:z.string().optional(),guarantor2Business:z.string().optional(),
-  guarantor2Relationship:z.string().optional(),guarantor2Phone:z.string().optional(),
-  guarantor2Collateral:z.string().optional(),
+  guarantor1Name:z.string().min(2,"Required"),guarantor1Address:z.string().min(2,"Required"),
+  guarantor1HouseNumber:z.string().min(1,"Required"),guarantor1Business:z.string().min(2,"Required"),
+  guarantor1Relationship:z.string().min(2,"Required"),guarantor1Phone:z.string().min(10,"Min 10 digits"),
+  guarantor1Collateral:z.string().min(3,"Required"),
+  guarantor2Name:z.string().min(2,"Required"),guarantor2Address:z.string().min(2,"Required"),
+  guarantor2HouseNumber:z.string().min(1,"Required"),guarantor2Business:z.string().min(2,"Required"),
+  guarantor2Relationship:z.string().min(2,"Required"),guarantor2Phone:z.string().min(10,"Min 10 digits"),
+  guarantor2Collateral:z.string().min(3,"Required"),
 });
 type FD=z.infer<typeof S>;
 
@@ -119,7 +119,7 @@ export default function BorrowerPortal(){
     ["firstName","lastName","dateOfBirth","gender","maritalStatus","nin","country","region","district","address","houseNumber","phone"],
     ["businessName","businessLocation","businessSince","loanPurpose","collateral"],
     ["repaymentType","loanAmount","loanAmountWords"],
-    [],
+    ["guarantor1Name","guarantor1Address","guarantor1HouseNumber","guarantor1Business","guarantor1Relationship","guarantor1Phone","guarantor1Collateral","guarantor2Name","guarantor2Address","guarantor2HouseNumber","guarantor2Business","guarantor2Relationship","guarantor2Phone","guarantor2Collateral"],
   ];
 
   const next=async()=>{
@@ -275,19 +275,33 @@ export default function BorrowerPortal(){
             <div>
               <h2 className="text-lg font-black text-navy-800 mb-4 pb-2 border-b border-slate-100">06. Mdhamini wa Kwanza</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Fi l="Majina" r={register("guarantor1Name")}/><Fi l="Makazi" r={register("guarantor1Address")}/>
-                <Fi l="Nyumba No." r={register("guarantor1HouseNumber")}/><Fi l="Biashara" r={register("guarantor1Business")}/>
-                <Fi l="Uhusiano" r={register("guarantor1Relationship")}/><Fi l="Simu" r={register("guarantor1Phone")}/>
-                <div className="sm:col-span-2"><label className="label">Dhamana anazoandikisha</label><textarea {...register("guarantor1Collateral")} rows={2} className="input-field"/></div>
+                <Fi l="Majina" r={register("guarantor1Name")} e={errors.guarantor1Name?.message}/>
+                <Fi l="Makazi" r={register("guarantor1Address")} e={errors.guarantor1Address?.message}/>
+                <Fi l="Nyumba No." r={register("guarantor1HouseNumber")} e={errors.guarantor1HouseNumber?.message}/>
+                <Fi l="Biashara" r={register("guarantor1Business")} e={errors.guarantor1Business?.message}/>
+                <Fi l="Uhusiano" r={register("guarantor1Relationship")} e={errors.guarantor1Relationship?.message}/>
+                <Fi l="Simu" r={register("guarantor1Phone")} e={errors.guarantor1Phone?.message}/>
+                <div className="sm:col-span-2">
+                  <label className="label">Dhamana anazoandikisha</label>
+                  <textarea {...register("guarantor1Collateral")} rows={2} className="input-field"/>
+                  {errors.guarantor1Collateral && <p className="text-red-500 text-xs mt-1">{errors.guarantor1Collateral.message}</p>}
+                </div>
               </div>
             </div>
             <div>
               <h2 className="text-lg font-black text-navy-800 mb-4 pb-2 border-b border-slate-100">08. Mdhamini wa Pili</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Fi l="Majina" r={register("guarantor2Name")}/><Fi l="Makazi" r={register("guarantor2Address")}/>
-                <Fi l="Nyumba No." r={register("guarantor2HouseNumber")}/><Fi l="Biashara" r={register("guarantor2Business")}/>
-                <Fi l="Uhusiano" r={register("guarantor2Relationship")}/><Fi l="Simu" r={register("guarantor2Phone")}/>
-                <div className="sm:col-span-2"><label className="label">Dhamana anazoandikisha</label><textarea {...register("guarantor2Collateral")} rows={2} className="input-field"/></div>
+                <Fi l="Majina" r={register("guarantor2Name")} e={errors.guarantor2Name?.message}/>
+                <Fi l="Makazi" r={register("guarantor2Address")} e={errors.guarantor2Address?.message}/>
+                <Fi l="Nyumba No." r={register("guarantor2HouseNumber")} e={errors.guarantor2HouseNumber?.message}/>
+                <Fi l="Biashara" r={register("guarantor2Business")} e={errors.guarantor2Business?.message}/>
+                <Fi l="Uhusiano" r={register("guarantor2Relationship")} e={errors.guarantor2Relationship?.message}/>
+                <Fi l="Simu" r={register("guarantor2Phone")} e={errors.guarantor2Phone?.message}/>
+                <div className="sm:col-span-2">
+                  <label className="label">Dhamana anazoandikisha</label>
+                  <textarea {...register("guarantor2Collateral")} rows={2} className="input-field"/>
+                  {errors.guarantor2Collateral && <p className="text-red-500 text-xs mt-1">{errors.guarantor2Collateral.message}</p>}
+                </div>
               </div>
             </div>
           </div>}

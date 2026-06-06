@@ -20,7 +20,7 @@ export default function AdminLoans(){
 
   useEffect(()=>{const u=localStorage.getItem("user");if(!u){router.push("/");return;}const role=JSON.parse(u).role;if(role!=="ADMIN"){router.push(role==="LOAN_OFFICER"?"/staff":"/borrower");return;}load();},[router]);
   const load=()=>{getAllLoans().then(setLoans).catch(console.error).finally(()=>setLoading(false));};
-  const action=async(id:string,status:string)=>{setBusy(id);try{await updateLoanStatus(id,status,notes[id]);setViewing(null);load();}finally{setBusy(null);};
+  const action=async(id:string,status:string)=>{setBusy(id);try{await updateLoanStatus(id,status,notes[id]);setViewing(null);load();}finally{setBusy(null);}};
   const handlePrint=(loan:any)=>{
     // Build the print data from profile or applicationData!
     const appData = loan.applicationData || {};
