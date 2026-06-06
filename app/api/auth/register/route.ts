@@ -3,6 +3,7 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/server-auth';
+import { logError, logInfo } from '@/lib/logger';
 
 export async function OPTIONS() {
   return new NextResponse(null, {
@@ -17,6 +18,7 @@ export async function OPTIONS() {
 export async function POST(request: Request) {
   try {
     const { email, password, firstName, lastName, phone } = await request.json();
+    logInfo('Registration attempt', { email, firstName, lastName, phone });
     const hashedPassword = await bcrypt.hash(password, 10);
     const adminCount = await prisma.user.count({ where: { role: UserRole.ADMIN } });
     const role = adminCount === 0 ? UserRole.ADMIN : UserRole.BORROWER;
@@ -31,9 +33,10 @@ export async function POST(request: Request) {
       { expiresIn: '24h' }
     );
 
+    logInfo('Registration successful', { userId: user.id, email, role });
     return NextResponse.json({ token, user: { ...user, password: undefined } });
   } catch (error) {
-    console.error(error);
-    return NextResponse.json({ error: 'Registration failed' }, { status: 500 });
+    logError(error, { endpoint: '/api/auth/register', method: 'POST' });
+    return NextResponse.json({ error: 'Registration failed', details: (error as Error).message }, { status: 500 });
   }
 }

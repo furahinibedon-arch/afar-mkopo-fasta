@@ -2,6 +2,7 @@
 import jwt from 'jsonwebtoken';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/server-auth';
+import { logError, logInfo } from '@/lib/logger';
 
 export async function OPTIONS() {
   return new NextResponse(null, {
@@ -22,11 +23,13 @@ export async function GET(request: NextRequest) {
     }
     const secret = process.env.JWT_SECRET || 'afar-mkopo-fasta-secret';
     const { userId } = jwt.verify(token, secret) as { userId: string };
+    logInfo('Fetching user data', { userId });
     const user = await prisma.user.findUnique({ where: { id: userId }, include: { borrowerProfile: true } });
     if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
     const { password, ...safe } = user;
     return NextResponse.json(safe);
   } catch (e) {
+    logError(e, { endpoint: '/api/me', method: 'GET' });
     return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
   }
 }

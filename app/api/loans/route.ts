@@ -2,6 +2,7 @@
 import jwt from 'jsonwebtoken';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/server-auth';
+import { logError, logInfo } from '@/lib/logger';
 
 export async function OPTIONS() {
   return new NextResponse(null, {
@@ -18,12 +19,13 @@ async function auth(request: NextRequest) {
   const token = authHeader?.replace('Bearer ', '').trim() || '';
   if (!token) throw Object.assign(new Error('No token'), { status: 401 });
   const secret = process.env.JWT_SECRET || 'afar-mkopo-fasta-secret';
-  return jwt.verify(token, secret) as { userId: string };
+  return jwt.verify(token, secret) as { userId: string; role: string };
 }
 
 export async function GET(request: NextRequest) {
   try {
     const { userId } = await auth(request);
+    logInfo('Fetching loans for user', { userId });
     const loans = await prisma.loan.findMany({ where: { borrowerId: userId }, orderBy: { createdAt: 'desc' }, include: { repayments: true } });
     const parsedLoans = loans.map(l => {
       let appData = {};
@@ -37,12 +39,16 @@ export async function GET(request: NextRequest) {
       return l;
     });
     return NextResponse.json(parsedLoans);
-  } catch (e: any) { return NextResponse.json({ error: e.message }, { status: e.status || 500 }); }
+  } catch (e: any) {
+    logError(e, { endpoint: '/api/loans', method: 'GET' });
+    return NextResponse.json({ error: e.message }, { status: e.status || 500 });
+  }
 }
 
 export async function POST(request: NextRequest) {
   try {
     const { userId } = await auth(request);
+    logInfo('Creating loan for user', { userId });
     const {
       loanAmount, amount, interestRate = 20, repaymentPeriod = 30, loanPurpose, purpose,
       firstName, lastName, phone, nin, dateOfBirth, gender, maritalStatus,
@@ -81,9 +87,10 @@ export async function POST(request: NextRequest) {
           update: profileData,
           create: profileData
         });
+        logInfo('Updated borrower profile', { userId });
       }
     } catch (profileError) {
-      console.error("Failed to update borrower profile, but continuing with loan creation:", profileError);
+      logError(profileError, { userId, context: 'borrower profile update' });
       // Don't fail the loan submission because of profile error
     }
 
@@ -98,6 +105,10 @@ export async function POST(request: NextRequest) {
         purpose: purposeField
       }
     });
+    logInfo('Loan created successfully', { loanId: loan.id, userId });
     return NextResponse.json(loan, { status: 201 });
-  } catch (e: any) { return NextResponse.json({ error: e.message }, { status: e.status || 500 }); }
+  } catch (e: any) {
+    logError(e, { endpoint: '/api/loans', method: 'POST' });
+    return NextResponse.json({ error: e.message }, { status: e.status || 500 });
+  }
 }
