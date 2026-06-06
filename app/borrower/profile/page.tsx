@@ -8,7 +8,13 @@ export default function Profile(){
   const router=useRouter(),{t}=useLanguage();
   const[user,setUser]=useState<any>(null);
   const[loading,setLoading]=useState(true);
-  useEffect(()=>{if(!localStorage.getItem("token")){router.push("/");return;}getMe().then(setUser).catch(()=>router.push("/")).finally(()=>setLoading(false));},[router]);
+  useEffect(()=>{
+    const token = localStorage.getItem("token");
+    const storedUser = localStorage.getItem("user");
+    if(!token){router.push("/");return;}
+    if(storedUser) setUser(JSON.parse(storedUser));
+    getMe().then(setUser).catch((e:any)=>console.error("getMe failed in profile:", e)).finally(()=>setLoading(false));
+  },[router]);
   if(loading)return<Layout portal="borrower"><div className="flex items-center justify-center py-20"><div className="w-8 h-8 rounded-full border-4 border-brand-500 border-t-transparent animate-spin"/></div></Layout>;
   return(<Layout portal="borrower"><div className="mb-8"><h1 className="text-3xl font-black text-navy-800">{t.myProfile}</h1></div>
     <div className="card max-w-2xl">

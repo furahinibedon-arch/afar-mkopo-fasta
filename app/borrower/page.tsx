@@ -73,6 +73,7 @@ export default function BorrowerPortal(){
     if(!u){router.push("/");return;}
     setUser(JSON.parse(u));
     getMe().then((userData) => {
+      console.log("Got user data:", userData);
       setUser(userData);
       if (userData.borrowerProfile) {
         // Pre-fill the form with saved profile data!
@@ -102,7 +103,10 @@ export default function BorrowerPortal(){
           setDistricts(region.districts.map(d => d.name));
         }
       }
-    }).catch(()=>router.push("/"));
+    }).catch((e:any)=>{
+      console.error("getMe failed:", e);
+      // Don't push back to / immediately, just log error
+    });
   },[router, reset]);
 
   const amt=watch("loanAmount")||0;
