@@ -58,28 +58,33 @@ export async function POST(request: NextRequest) {
     const purposeText = loanPurpose || purpose || '';
     const purposeField = JSON.stringify({ purpose: purposeText, __appData: rest });
 
-    if (nin && dateOfBirth && address && region && district) {
-      const profileData = {
-        userId,
-        nin,
-        dateOfBirth: new Date(dateOfBirth),
-        address,
-        country: country || 'Tanzania',
-        region,
-        district,
-        gender,
-        maritalStatus,
-        houseNumber,
-        spouseName,
-        businessName,
-        businessLocation,
-        businessSince
-      };
-      await prisma.borrowerProfile.upsert({
-        where: { userId },
-        update: profileData,
-        create: profileData
-      });
+    try {
+      if (nin && dateOfBirth && address && region && district) {
+        const profileData = {
+          userId,
+          nin,
+          dateOfBirth: new Date(dateOfBirth),
+          address,
+          country: country || 'Tanzania',
+          region,
+          district,
+          gender,
+          maritalStatus,
+          houseNumber,
+          spouseName,
+          businessName,
+          businessLocation,
+          businessSince
+        };
+        await prisma.borrowerProfile.upsert({
+          where: { userId },
+          update: profileData,
+          create: profileData
+        });
+      }
+    } catch (profileError) {
+      console.error("Failed to update borrower profile, but continuing with loan creation:", profileError);
+      // Don't fail the loan submission because of profile error
     }
 
     const loan = await prisma.loan.create({
