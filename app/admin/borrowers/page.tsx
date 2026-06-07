@@ -5,7 +5,7 @@ import Layout from "@/components/Layout";
 import { useLanguage } from "@/context/LanguageContext";
 import { getUsers, getBorrowerDocuments, uploadBorrowerDocument, AppUser, BorrowerDocument } from "@/lib/api";
 
-const ROLES = ["BORROWER", "LOAN_OFFICER", "ADMIN"];
+const ROLES = ["BORROWER", "LOAN_OFFICER", "ADMIN", "DIRECTOR"];
 const EMPTY = { id: "", email: "", firstName: "", lastName: "", phone: "", role: "BORROWER", password: "", isActive: true };
 
 export default function AdminUsers() {
@@ -123,7 +123,7 @@ export default function AdminUsers() {
                   <td className="py-3 px-3 font-semibold text-navy-800">{u.firstName} {u.lastName}</td>
                   <td className="py-3 px-3 text-slate-500 text-xs">{u.email}</td>
                   <td className="py-3 px-3 text-slate-500">{u.phone}</td>
-                  <td className="py-3 px-3"><span className={`badge-${u.role === "ADMIN" ? "disbursed" : u.role === "LOAN_OFFICER" ? "approved" : "pending"}`}>{u.role}</span></td>
+                  <td className="py-3 px-3"><span className={`badge-${u.role === "ADMIN" ? "disbursed" : u.role === "LOAN_OFFICER" ? "approved" : u.role === "DIRECTOR" ? "pending" : "pending"}`}>{u.role}</span></td>
                   <td className="py-3 px-3"><span className={u.isActive ? "badge-approved" : "badge-rejected"}>{u.isActive ? t.active_ : t.restricted}</span></td>
                   <td className="py-3 px-3"><div className="flex gap-1 flex-wrap">
                     <button onClick={() => openEdit(u)} className="btn-secondary text-xs py-1 px-2"> Edit</button>

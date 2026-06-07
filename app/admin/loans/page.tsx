@@ -2,7 +2,7 @@
 import{useEffect,useState}from"react";
 import{useRouter}from"next/navigation";
 import Layout from"@/components/Layout";
-import{getAllLoans,updateLoanStatus,updateLoan}from"@/lib/api";
+import{getAllLoans,updateLoanStatus,updateLoan,deleteLoan}from"@/lib/api";
 import{useLanguage}from"@/context/LanguageContext";
 import{generateLoanApplicationPDF}from"@/lib/pdfGenerator";
 
@@ -24,7 +24,7 @@ export default function AdminLoans(){
   const[adjustmentDirection,setAdjustmentDirection]=useState<"increase"|"decrease">("increase");
   const[adjustedAmount,setAdjustedAmount]=useState<number>(0);
 
-  useEffect(()=>{const u=localStorage.getItem("user");if(!u){router.push("/");return;}const role=JSON.parse(u).role;if(role!=="ADMIN"){router.push(role==="LOAN_OFFICER"?"/staff":"/borrower");return;}load();},[router, refreshKey]);
+  useEffect(()=>{const u=localStorage.getItem("user");if(!u){router.push("/");return;}const role=JSON.parse(u).role;if(!["ADMIN", "DIRECTOR"].includes(role)){router.push(role==="LOAN_OFFICER"?"/staff":"/borrower");return;}load();},[router, refreshKey]);
 
   useEffect(() => {
     const handleFocus = () => setRefreshKey(k => k + 1);
