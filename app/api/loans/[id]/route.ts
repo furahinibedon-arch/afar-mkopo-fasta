@@ -13,6 +13,38 @@ export async function OPTIONS() {
   });
 }
 
+export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+  try {
+    const auth = request.headers.get('authorization');
+    const token = auth?.split(' ')[1];
+    if (!token) return NextResponse.json({ error: 'No token' }, { status: 401 });
+    const secret = process.env.JWT_SECRET || 'afar-mkopo-fasta-secret';
+    const decoded = jwt.verify(token, secret) as { role: string; userId: string };
+    if (!['ADMIN', 'DIRECTOR'].includes(decoded.role)) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    const { id } = params;
+    
+    const loan = await prisma.loan.findUnique({ where: { id } });
+    if (!loan) return NextResponse.json({ error: 'Loan not found' }, { status: 404 });
+    
+    await prisma.auditLog.create({
+      data: {
+        action: 'LOAN_DELETED',
+        userId: decoded.userId,
+        loanId: id,
+        details: `Loan deleted by ${decoded.role}`,
+      }
+    });
+    
+    await prisma.loan.delete({ where: { id } });
+    
+    logInfo('Loan deleted', { loanId: id, userId: decoded.userId });
+    return NextResponse.json({ success: true });
+  } catch (e) {
+    logError(e, { endpoint: '/api/loans/[id]', loanId: params.id, method: 'DELETE' });
+    return NextResponse.json({ error: 'Failed to delete loan', details: (e as Error).message }, { status: 500 });
+  }
+}
+
 export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const auth = request.headers.get('authorization');

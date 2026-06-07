@@ -21,7 +21,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     if (!token) return NextResponse.json({ error: 'No token' }, { status: 401 });
     const secret = process.env.JWT_SECRET || 'afar-mkopo-fasta-secret';
     const decoded = jwt.verify(token, secret) as { role: string; userId: string };
-    if (!['ADMIN', 'LOAN_OFFICER'].includes(decoded.role)) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    if (!['ADMIN', 'LOAN_OFFICER', 'DIRECTOR'].includes(decoded.role)) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     const { id } = params;
     const { status, notes } = await request.json();
     logInfo('Updating loan status', { loanId: id, newStatus: status, userId: decoded.userId });
@@ -63,6 +63,17 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
         createdAt: true,
         updatedAt: true,
         borrowerId: true
+      }
+    });
+
+    await prisma.auditLog.create({
+      data: {
+        action: 'LOAN_STATUS_CHANGED',
+        userId: decoded.userId,
+        loanId: id,
+        oldStatus: loan.status,
+        newStatus: status,
+        details: notes || null,
       }
     });
 
