@@ -26,6 +26,7 @@ export async function GET(request: NextRequest) {
     logInfo('Fetching user data', { userId });
     const user = await prisma.user.findUnique({ where: { id: userId }, include: { borrowerProfile: true } });
     if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    if (!user.isActive) return NextResponse.json({ error: 'Account deactivated' }, { status: 403 });
     const { password, ...safe } = user;
     return NextResponse.json(safe);
   } catch (e) {
