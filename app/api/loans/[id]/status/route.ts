@@ -33,7 +33,17 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     // Update loan status
     const updated = await prisma.loan.update({
       where: { id },
-      data: { status, notes: notes || null, disbursedAt: status === 'DISBURSED' ? new Date() : null }
+      data: { status, disbursedAt: status === 'DISBURSED' ? new Date() : null }
+    });
+
+    // Create staff action record
+    await prisma.staffAction.create({
+      data: {
+        loanId: id,
+        staffId: decoded.userId,
+        action: `STATUS_CHANGE:${status}`,
+        notes: notes || null
+      }
     });
 
     // Check if we need to create a transaction
