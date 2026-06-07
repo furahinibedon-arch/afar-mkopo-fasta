@@ -75,7 +75,7 @@ model BorrowerDocument {
 model BorrowerProfile {
   id               String   @id @default(cuid())
   userId           String   @unique
-  nin              String?  @unique // NIDA Number (NIN) - Made optional temporarily
+  nin              String?  // NIDA Number (NIN) - Made optional temporarily
   address          String?
   country          String   @default("Tanzania")
   region           String?

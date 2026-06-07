@@ -3,6 +3,7 @@
 ALTER TABLE "users" ADD COLUMN "profilePictureUrl" TEXT;
 
 -- AlterTable for BorrowerProfile
+ALTER TABLE "borrower_profiles" DROP CONSTRAINT "borrower_profiles_idNumber_key";
 ALTER TABLE "borrower_profiles" RENAME COLUMN "idNumber" TO "nin";
 ALTER TABLE "borrower_profiles" ALTER COLUMN "nin" DROP NOT NULL;
 
