@@ -11,11 +11,29 @@ export default function AdminDashboard(){
   const[data,setData]=useState<any>(null);
   const[loading,setLoading]=useState(true);
   const[err,setErr]=useState<string|null>(null);
-  useEffect(()=>{const u=localStorage.getItem("user");if(!u){router.push("/");return;}const role=JSON.parse(u).role;if(role!=="ADMIN"){router.push(role==="LOAN_OFFICER"?"/staff":"/borrower");return;}getAnalytics().then(setData).catch((e:any)=>setErr(e.message)).finally(()=>setLoading(false));},[router]);
+  // Use a key to force re-render and re-fetch when navigating back
+  const[refreshKey,setRefreshKey]=useState(0);
+
+  useEffect(()=>{
+    const u=localStorage.getItem("user");
+    if(!u){router.push("/");return;}
+    const role=JSON.parse(u).role;
+    if(role!=="ADMIN"){router.push(role==="LOAN_OFFICER"?"/staff":"/borrower");return;}
+    getAnalytics().then(setData).catch((e:any)=>setErr(e.message)).finally(()=>setLoading(false));
+  },[router, refreshKey]);
+
+  // Also refresh when the window gains focus (in case user came from other tabs)
+  useEffect(() => {
+    const handleFocus = () => setRefreshKey(k => k + 1);
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, []);
+
   const badge=(s:string)=><span className={`badge-${s.toLowerCase()}`}>{s}</span>;
   if(loading)return<Layout portal="admin"><div className="flex items-center justify-center py-32"><div className="w-10 h-10 rounded-full border-4 border-brand-500 border-t-transparent animate-spin"/></div></Layout>;
   if(err)return<Layout portal="admin"><div className="bg-red-50 border border-red-200 text-red-700 p-6 rounded-2xl"> {err}</div></Layout>;
   const disbursed=Number(data?.totalDisbursed||0),repaid=Number(data?.totalRepaid||0),balance=disbursed-repaid;
+  const companyBalance=Number(data?.companyBalance||0);
   const interest=disbursed*0.2,loans:any[]=data?.loans||[];
   const pending=loans.filter((l:any)=>l.status==="PENDING").length;
   const active=loans.filter((l:any)=>["DISBURSED","APPROVED"].includes(l.status)).length;
@@ -25,10 +43,10 @@ export default function AdminDashboard(){
     {/* KPI Cards */}
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
       {[
-        {l:t.totalDisbursed,v:fmt(disbursed),c:"text-blue-600",bg:"bg-blue-50",icon:""},
+        {l:"Company Balance",v:fmt(companyBalance),c:"text-blue-600",bg:"bg-blue-50",icon:""},
+        {l:t.totalDisbursed,v:fmt(disbursed),c:"text-navy-800",bg:"bg-navy-50",icon:""},
         {l:t.totalRepaid,v:fmt(repaid),c:"text-emerald-600",bg:"bg-emerald-50",icon:""},
         {l:t.outstandingBalance,v:fmt(balance),c:"text-brand-600",bg:"bg-orange-50",icon:""},
-        {l:t.expectedInterest,v:fmt(interest),c:"text-purple-600",bg:"bg-purple-50",icon:""},
       ].map(({l,v,c,bg,icon})=>(
         <div key={l} className="metric-card group">
           <div className={`w-10 h-10 rounded-xl ${bg} flex items-center justify-center text-xl mb-2 group-hover:scale-110 transition-transform`}>{icon}</div>

@@ -2,6 +2,7 @@
 import jwt from 'jsonwebtoken';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/server-auth';
+import { logError } from '@/lib/logger';
 
 export async function OPTIONS() {
   return new NextResponse(null, {
@@ -36,17 +37,26 @@ export async function GET(request: NextRequest) {
       _sum: { amount: true }
     });
 
+    const financialLogs = await prisma.financialLog.findMany({ orderBy: { createdAt: 'asc' } });
+    const totalCredits = financialLogs.filter(l => l.type === 'CREDIT').reduce((sum, l) => sum + Number(l.amount), 0);
+    const totalDebits = financialLogs.filter(l => l.type === 'DEBIT').reduce((sum, l) => sum + Number(l.amount), 0);
+    const companyBalance = totalCredits - totalDebits;
+
     const loans = await prisma.loan.findMany({
       orderBy: { createdAt: 'desc' },
       include: {
         borrower: {
           select: {
+            id: true,
             firstName: true,
             lastName: true,
             email: true,
-            phone: true
+            phone: true,
+            profilePictureUrl: true
           }
         },
+        borrowerProfile: true,
+        transactions: true,
         repayments: true
       }
     });
@@ -67,10 +77,14 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       totalDisbursed: disbAgg._sum?.amount || 0,
       totalRepaid: repaidAgg._sum?.amount || 0,
+      companyBalance,
+      totalCredits,
+      totalDebits,
       loans,
       overdueRepayments
     });
   } catch (e: any) {
+    logError(e, { endpoint: '/api/dashboard/analytics' });
     return NextResponse.json({ error: e.message }, { status: 500 });
   }
 }

@@ -43,6 +43,7 @@ model User {
   firstName        String
   lastName         String
   phone            String            @unique
+  profilePictureUrl String?
   role             UserRole          @default(BORROWER)
   isActive         Boolean           @default(true)
   createdAt        DateTime          @default(now())
@@ -50,8 +51,25 @@ model User {
   borrowerProfile  BorrowerProfile?
   loans            Loan[]            @relation("BorrowerLoans")
   staffActions     StaffAction[]     @relation("StaffActions")
+  uploadedDocuments BorrowerDocument[] @relation("UploadedBy")
+  receivedDocuments BorrowerDocument[] @relation("BorrowerDocuments")
 
   @@map("users")
+}
+
+model BorrowerDocument {
+  id               String   @id @default(cuid())
+  borrowerId       String
+  uploadedById     String
+  fileName         String
+  fileUrl          String
+  fileType         String
+  fileSize         Int      // in bytes
+  uploadedBy       User     @relation("UploadedBy", fields: [uploadedById], references: [id], onDelete: Cascade)
+  borrower         User     @relation("BorrowerDocuments", fields: [borrowerId], references: [id], onDelete: Cascade)
+  createdAt        DateTime @default(now())
+
+  @@map("borrower_documents")
 }
 
 model BorrowerProfile {

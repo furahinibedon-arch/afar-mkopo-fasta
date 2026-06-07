@@ -20,15 +20,42 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     const token = auth?.split(' ')[1];
     if (!token) return NextResponse.json({ error: 'No token' }, { status: 401 });
     const secret = process.env.JWT_SECRET || 'afar-mkopo-fasta-secret';
-    const { role } = jwt.verify(token, secret) as { role: string; userId: string };
-    if (!['ADMIN', 'LOAN_OFFICER'].includes(role)) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    const decoded = jwt.verify(token, secret) as { role: string; userId: string };
+    if (!['ADMIN', 'LOAN_OFFICER'].includes(decoded.role)) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     const { id } = params;
     const { status, notes } = await request.json();
-    logInfo('Updating loan status', { loanId: id, newStatus: status, userId: jwt.decode(token)?.userId });
+    logInfo('Updating loan status', { loanId: id, newStatus: status, userId: decoded.userId });
+
+    // Fetch the loan first to get amount and check current status
+    const loan = await prisma.loan.findUnique({ where: { id } });
+    if (!loan) return NextResponse.json({ error: 'Loan not found' }, { status: 404 });
+
+    // Update loan status
     const updated = await prisma.loan.update({
       where: { id },
       data: { status, notes: notes || null, disbursedAt: status === 'DISBURSED' ? new Date() : null }
     });
+
+    // Check if we need to create a transaction
+    const existingTransaction = await prisma.transaction.findFirst({
+      where: {
+        loanId: id,
+        type: status === 'DISBURSED' ? 'DISBURSEMENT' : status === 'REPAID' ? 'REPAYMENT' : undefined,
+      }
+    });
+
+    if ((status === 'DISBURSED' || status === 'REPAID') && !existingTransaction) {
+      await prisma.transaction.create({
+        data: {
+          loanId: id,
+          type: status === 'DISBURSED' ? 'DISBURSEMENT' : 'REPAYMENT',
+          amount: status === 'DISBURSED' ? loan.amount : loan.totalAmount,
+          description: status === 'DISBURSED' ? 'Loan disbursed' : 'Loan repaid',
+        }
+      });
+      logInfo('Transaction created for status update', { loanId: id, type: status === 'DISBURSED' ? 'DISBURSEMENT' : 'REPAYMENT' });
+    }
+
     logInfo('Loan status updated successfully', { loanId: id });
     return NextResponse.json(updated);
   } catch (e) {

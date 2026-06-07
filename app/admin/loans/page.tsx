@@ -17,8 +17,16 @@ export default function AdminLoans(){
   const[viewing,setViewing]=useState<any|null>(null);
   const[filter,setFilter]=useState("ALL");
   const[notes,setNotes]=useState<Record<string,string>>({});
+  const[refreshKey,setRefreshKey]=useState(0);
 
-  useEffect(()=>{const u=localStorage.getItem("user");if(!u){router.push("/");return;}const role=JSON.parse(u).role;if(role!=="ADMIN"){router.push(role==="LOAN_OFFICER"?"/staff":"/borrower");return;}load();},[router]);
+  useEffect(()=>{const u=localStorage.getItem("user");if(!u){router.push("/");return;}const role=JSON.parse(u).role;if(role!=="ADMIN"){router.push(role==="LOAN_OFFICER"?"/staff":"/borrower");return;}load();},[router, refreshKey]);
+
+  useEffect(() => {
+    const handleFocus = () => setRefreshKey(k => k + 1);
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, []);
+
   const load=()=>{getAllLoans().then(setLoans).catch(console.error).finally(()=>setLoading(false));};
   const action=async(id:string,status:string)=>{setBusy(id);try{await updateLoanStatus(id,status,notes[id]);setViewing(null);load();}finally{setBusy(null);}};
   const handlePrint=(loan:any)=>{

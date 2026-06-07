@@ -14,7 +14,15 @@ export default function CompanyBalance(){
   const[busy,setBusy]=useState(false);
   const[form,setForm]=useState({type:"CREDIT",amount:"",description:""});
   const[msg,setMsg]=useState("");
-  useEffect(()=>{const u=localStorage.getItem("user");if(!u){router.push("/");return;}if(JSON.parse(u).role==="BORROWER"){router.push("/borrower");return;}load();},[router]);
+  const[refreshKey,setRefreshKey]=useState(0);
+  useEffect(()=>{const u=localStorage.getItem("user");if(!u){router.push("/");return;}if(JSON.parse(u).role==="BORROWER"){router.push("/borrower");return;}load();},[router, refreshKey]);
+
+  useEffect(() => {
+    const handleFocus = () => setRefreshKey(k => k + 1);
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, []);
+
   const load=()=>{setLoading(true);fetch(`${BASE}/api/admin/balance`,{headers:ah()}).then(r=>r.json()).then(d=>{if(Array.isArray(d))setEntries(d);}).catch(console.error).finally(()=>setLoading(false));};
   const submit=async(e:React.FormEvent)=>{e.preventDefault();if(!form.amount)return;setBusy(true);setMsg("");try{const r=await fetch(`${BASE}/api/admin/balance`,{method:"POST",headers:ah(),body:JSON.stringify({type:form.type,amount:parseFloat(form.amount),description:form.description})});const d=await r.json();if(!r.ok)throw new Error(d.error);setMsg("Saved!");setForm({type:"CREDIT",amount:"",description:""});load();}catch(ex:any){setMsg(ex.message);}finally{setBusy(false);}};
   const credits=entries.filter(e=>e.type==="CREDIT").reduce((s,e)=>s+Number(e.amount),0);
