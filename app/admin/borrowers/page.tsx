@@ -24,13 +24,20 @@ export default function AdminUsers(){
   const [selectedBorrower, setSelectedBorrower] = useState<AppUser | null>(null);
   const [documents, setDocuments] = useState<BorrowerDocument[]>([]);
   const [uploadingDoc, setUploadingDoc] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(()=>{
     const u=localStorage.getItem("user");
     if(!u){router.push("/");return;}
     if(JSON.parse(u).role!=="ADMIN"){router.push("/admin");return;}
     load();
-  },[router]);
+  },[router, refreshKey]);
+
+  useEffect(() => {
+    const handleFocus = () => setRefreshKey(k => k + 1);
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, []);
 
   const load=async()=>{
     setLoading(true);
@@ -41,6 +48,7 @@ export default function AdminUsers(){
       console.error(e);
     } finally {
       setLoading(false);
+    }
   };
 
   const loadDocuments = async (borrower: AppUser) => {
