@@ -6,10 +6,11 @@ export type AppUser = {
   firstName: string;
   lastName: string;
   phone: string;
-  profilePictureUrl?: string;
+  profilePictureUrl?: string | null;
   role: "ADMIN" | "LOAN_OFFICER" | "BORROWER";
   isActive: boolean;
   createdAt: string;
+  updatedAt: string;
 };
 
 export type BorrowerDocument = {

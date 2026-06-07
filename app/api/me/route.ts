@@ -24,10 +24,23 @@ export async function GET(request: NextRequest) {
     const secret = process.env.JWT_SECRET || 'afar-mkopo-fasta-secret';
     const { userId } = jwt.verify(token, secret) as { userId: string };
     logInfo('Fetching user data', { userId });
-    const user = await prisma.user.findUnique({ where: { id: userId }, include: { borrowerProfile: true } });
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        phone: true,
+        role: true,
+        isActive: true,
+        createdAt: true,
+        updatedAt: true
+      }
+    });
     if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
     if (!user.isActive) return NextResponse.json({ error: 'Account deactivated' }, { status: 403 });
-    const { password, ...safe } = user;
+    const safe = user;
     return NextResponse.json(safe);
   } catch (e) {
     logError(e, { endpoint: '/api/me', method: 'GET' });

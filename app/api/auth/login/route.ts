@@ -19,7 +19,21 @@ export async function POST(request: Request) {
   try {
     const { email, password } = await request.json();
     logInfo('Login attempt', { email });
-    const user = await prisma.user.findUnique({ where: { email } });
+    const user = await prisma.user.findUnique({
+      where: { email },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        phone: true,
+        role: true,
+        isActive: true,
+        createdAt: true,
+        updatedAt: true,
+        password: true
+      }
+    });
 
     if (!user) {
       logInfo('Login failed: User not found', { email });
@@ -44,7 +58,8 @@ export async function POST(request: Request) {
     );
 
     logInfo('Login successful', { userId: user.id, email });
-    return NextResponse.json({ token, user: { ...user, password: undefined } });
+    const { password: _, ...safeUser } = user;
+    return NextResponse.json({ token, user: safeUser });
   } catch (error) {
     logError(error, { endpoint: '/api/auth/login', method: 'POST' });
     return NextResponse.json({ error: 'Login failed', details: (error as Error).message }, { status: 500 });

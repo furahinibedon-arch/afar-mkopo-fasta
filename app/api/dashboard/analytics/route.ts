@@ -46,17 +46,12 @@ export async function GET(request: NextRequest) {
       orderBy: { createdAt: 'desc' },
       include: {
         borrower: {
-          include: {
-            borrowerProfile: true
-          },
           select: {
             id: true,
             firstName: true,
             lastName: true,
             email: true,
-            phone: true,
-            profilePictureUrl: true,
-            borrowerProfile: true
+            phone: true
           }
         },
         transactions: true,

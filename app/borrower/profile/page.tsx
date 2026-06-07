@@ -41,11 +41,11 @@ export default function Profile(){
     <div className="card max-w-2xl">
       <div className="flex items-center gap-4 mb-8 pb-6 border-b border-slate-100">
         <div className="relative">
-          {user?.profilePictureUrl ? (
-            <img src={user.profilePictureUrl} alt="Profile" className="w-16 h-16 rounded-2xl object-cover" />
-          ) : (
-            <div className="w-16 h-16 rounded-2xl bg-navy-800 flex items-center justify-center shadow-glow-navy"><span className="text-white font-black text-xl">{user?.firstName?.[0]}{user?.lastName?.[0]}</span></div>
-          )}
+          <div className="w-16 h-16 rounded-2xl bg-navy-800 flex items-center justify-center shadow-glow-navy">
+            <span className="text-white font-black text-xl">
+              {user?.firstName?.[0]}{user?.lastName?.[0]}
+            </span>
+          </div>
           <label className="absolute -bottom-1 -right-1 w-7 h-7 bg-brand-500 rounded-full flex items-center justify-center cursor-pointer text-white text-xs hover:bg-brand-600 transition-colors">
             {uploading ? "..." : "📷"}
             <input type="file" accept="image/*" onChange={handleProfilePictureUpload} className="hidden" disabled={uploading} />

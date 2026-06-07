@@ -25,6 +25,17 @@ export async function POST(request: Request) {
 
     const user = await prisma.user.create({
       data: { email, password: hashedPassword, firstName, lastName, phone, role },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        phone: true,
+        role: true,
+        isActive: true,
+        createdAt: true,
+        updatedAt: true
+      }
     });
 
     const token = jwt.sign(
@@ -34,7 +45,7 @@ export async function POST(request: Request) {
     );
 
     logInfo('Registration successful', { userId: user.id, email, role });
-    return NextResponse.json({ token, user: { ...user, password: undefined } });
+    return NextResponse.json({ token, user });
   } catch (error) {
     logError(error, { endpoint: '/api/auth/register', method: 'POST' });
     return NextResponse.json({ error: 'Registration failed', details: (error as Error).message }, { status: 500 });
