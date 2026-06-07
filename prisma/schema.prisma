@@ -75,6 +75,7 @@ model User {
 model BorrowerDocument {
   id               String   @id @default(cuid())
   borrowerId       String
+  loanId           String?
   uploadedById     String
   fileName         String
   fileUrl          String
@@ -82,6 +83,7 @@ model BorrowerDocument {
   fileSize         Int      // in bytes
   uploadedBy       User     @relation("UploadedBy", fields: [uploadedById], references: [id], onDelete: Cascade)
   borrower         User     @relation("BorrowerDocuments", fields: [borrowerId], references: [id], onDelete: Cascade)
+  loan             Loan?    @relation(fields: [loanId], references: [id], onDelete: Cascade)
   createdAt        DateTime @default(now())
 
   @@map("borrower_documents")
@@ -113,24 +115,25 @@ model BorrowerProfile {
 }
 
 model Loan {
-  id               String          @id @default(cuid())
+  id               String              @id @default(cuid())
   borrowerId       String
-  requestedAmount  Decimal         @db.Decimal(15,2)
-  amount           Decimal         @db.Decimal(15,2)
-  interestRate     Decimal         @db.Decimal(5,2)
+  requestedAmount  Decimal             @db.Decimal(15,2)
+  amount           Decimal             @db.Decimal(15,2)
+  interestRate     Decimal             @db.Decimal(5,2)
   repaymentPeriod  Int
-  totalAmount      Decimal         @db.Decimal(15,2)
-  monthlyPayment   Decimal         @db.Decimal(15,2)
-  status           LoanStatus      @default(PENDING)
+  totalAmount      Decimal             @db.Decimal(15,2)
+  monthlyPayment   Decimal             @db.Decimal(15,2)
+  status           LoanStatus          @default(PENDING)
   purpose          String?
   disbursedAt      DateTime?
-  createdAt        DateTime        @default(now())
-  updatedAt        DateTime        @updatedAt
-  borrower         User            @relation("BorrowerLoans", fields: [borrowerId], references: [id], onDelete: Cascade)
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+  borrower         User                @relation("BorrowerLoans", fields: [borrowerId], references: [id], onDelete: Cascade)
   transactions     Transaction[]
   repayments       Repayment[]
   staffActions     StaffAction[]
   auditLogs        AuditLog[]
+  borrowerDocuments BorrowerDocument[]
 
   @@map("loans")
 }

@@ -58,6 +58,7 @@ export default function StaffPortal(){
       dailyPayment: Number(loan.monthlyPayment),
       interestRate: Number(loan.interestRate),
       loanPurpose: loan.purpose,
+      profilePictureUrl: profile.profilePictureUrl,
       ...appData
     });
   };

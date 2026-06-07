@@ -51,6 +51,7 @@ export default function BorrowerPortal(){
   const[err,setErr]=useState<string|null>(null);
   const[selectedRegion, setSelectedRegion] = useState<string>("");
   const[districts, setDistricts] = useState<string[]>([]);
+  const[hasProfilePicture, setHasProfilePicture] = useState(false);
   
   const{register,handleSubmit,watch,trigger,control,formState:{errors},setValue,reset}=useForm<FD>({
     resolver:zodResolver(S),
@@ -133,6 +134,13 @@ export default function BorrowerPortal(){
 
   const sub=async(data:FD)=>{
     console.log("Submitting loan application:", data);
+    
+    // Check if user has a profile picture
+    if (!user?.borrowerProfile?.profilePictureUrl) {
+      setErr("Please upload a profile picture before submitting your loan application.");
+      return;
+    }
+    
     setBusy(true);
     setErr(null);
     try{
@@ -194,6 +202,17 @@ export default function BorrowerPortal(){
       </div>
 
       {err&&<div className="mb-4 flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-xl"> {err}</div>}
+      
+      {/* Profile Picture Reminder */}
+      {!user?.borrowerProfile?.profilePictureUrl && (
+        <div className="mb-4 flex items-center gap-3 bg-amber-50 border border-amber-200 text-amber-800 text-sm px-4 py-4 rounded-xl">
+          <span className="text-2xl">📷</span>
+          <div className="flex-1">
+            <p className="font-semibold mb-1">Profile Picture Required</p>
+            <p className="text-xs">Please upload a profile picture before submitting your loan application. You can do this <a href="/borrower/profile" className="text-amber-700 underline font-semibold hover:text-amber-900">on your profile page</a>.</p>
+          </div>
+        </div>
+      )}
 
       <form onSubmit={handleSubmit(sub)}>
         <div className="card">

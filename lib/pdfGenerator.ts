@@ -37,87 +37,96 @@ export interface LoanApplicationData {
   guarantor2Relationship?: string;
   guarantor2Phone?: string;
   guarantor2Collateral?: string;
+  profilePictureUrl?: string;
 }
 
 const COMPANY_DETAILS = {
   parentCompany: 'Helder Company',
   tradingName: 'Afar Mkopo Fasta',
   address: 'Mbeya, Tanzania',
-  phone: '0741525547'
+  phone: '0741525547',
+  motto: 'PATA MKOPO WAKO FASTA'
 };
-
-function addHeader(doc: jsPDF, pageNumber: number, totalPages: number) {
-  const pageWidth = doc.internal.pageSize.width;
-  const pageHeight = doc.internal.pageSize.height;
-  const marginLeft = 14;
-  const marginRight = pageWidth - 14;
-  
-  // Header background
-  doc.setFillColor(30, 58, 95);
-  doc.rect(0, 0, pageWidth, 60, 'F');
-  
-  // Company Logo/Branding
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(22);
-  doc.setFont('helvetica', 'bold');
-  doc.text(COMPANY_DETAILS.tradingName.toUpperCase(), pageWidth / 2, 20, { align: 'center' });
-  
-  doc.setFontSize(11);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(200, 200, 200);
-  doc.text(`A division of ${COMPANY_DETAILS.parentCompany}`, pageWidth / 2, 30, { align: 'center' });
-  
-  // Contact info in header
-  doc.setFontSize(10);
-  doc.setTextColor(255, 255, 255);
-  doc.text(`📍 ${COMPANY_DETAILS.address}`, marginLeft, 45);
-  doc.text(`📞 ${COMPANY_DETAILS.phone}`, marginRight, 45, { align: 'right' });
-  
-  // Reset text color
-  doc.setTextColor(0, 0, 0);
-}
-
-function addFooter(doc: jsPDF, pageNumber: number, totalPages: number) {
-  const pageWidth = doc.internal.pageSize.width;
-  const pageHeight = doc.internal.pageSize.height;
-  const marginLeft = 14;
-  const marginRight = pageWidth - 14;
-  
-  // Footer background
-  doc.setFillColor(245, 245, 245);
-  doc.rect(0, pageHeight - 30, pageWidth, 30, 'F');
-  
-  // Footer content
-  doc.setTextColor(80, 80, 80);
-  doc.setFontSize(9);
-  
-  doc.text(COMPANY_DETAILS.parentCompany, marginLeft, pageHeight - 15);
-  doc.text(`Trading as: ${COMPANY_DETAILS.tradingName}`, marginLeft, pageHeight - 8);
-  
-  doc.text(`Tel: ${COMPANY_DETAILS.phone}`, marginRight, pageHeight - 15, { align: 'right' });
-  doc.text(`Address: ${COMPANY_DETAILS.address}`, marginRight, pageHeight - 8, { align: 'right' });
-  
-  doc.text(`Page ${pageNumber} of ${totalPages}`, pageWidth / 2, pageHeight - 15, { align: 'center' });
-  
-  // Reset text color
-  doc.setTextColor(0, 0, 0);
-}
 
 export function generateLoanApplicationPDF(data: LoanApplicationData) {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.width;
-  let yPosition = 70;
+  const pageHeight = doc.internal.pageSize.height;
+  let yPosition = 20;
 
-  // Header
-  addHeader(doc, 1, 1);
+  // ===========================================
+  // REVISED HEADER SECTION (CORRECTED ORDER)
+  // ===========================================
   
+  // Header background
+  doc.setFillColor(245, 247, 250);
+  doc.rect(0, 0, pageWidth, 95, 'F');
+  
+  // 1. Company Name (First)
+  doc.setFontSize(22);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(30, 58, 95);
+  doc.text(COMPANY_DETAILS.tradingName.toUpperCase(), pageWidth / 2, yPosition, { align: 'center' });
+  
+  yPosition += 8;
+  
+  // Parent company
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(100, 100, 100);
+  doc.text(`A division of ${COMPANY_DETAILS.parentCompany}`, pageWidth / 2, yPosition, { align: 'center' });
+  
+  yPosition += 12;
+  
+  // 2. Physical Address (Second)
+  doc.setFontSize(12);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(50, 50, 50);
+  doc.text('📍 Location:', pageWidth / 2, yPosition, { align: 'center' });
+  
+  yPosition += 7;
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(70, 70, 70);
+  doc.text(COMPANY_DETAILS.address, pageWidth / 2, yPosition, { align: 'center' });
+  
+  yPosition += 12;
+  
+  // 3. Contact Phone Number (Third)
+  doc.setFontSize(12);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(50, 50, 50);
+  doc.text('📞 Contact:', pageWidth / 2, yPosition, { align: 'center' });
+  
+  yPosition += 7;
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(70, 70, 70);
+  doc.text(COMPANY_DETAILS.phone, pageWidth / 2, yPosition, { align: 'center' });
+  
+  yPosition += 12;
+  
+  // 4. Company Motto (Last)
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(30, 58, 95);
+  doc.text(COMPANY_DETAILS.motto, pageWidth / 2, yPosition, { align: 'center' });
+  
+  // Add a decorative line
+  yPosition += 5;
+  doc.setDrawColor(200, 200, 200);
+  doc.line(20, yPosition, pageWidth - 20, yPosition);
+  
+  yPosition += 15;
+  doc.setTextColor(0, 0, 0);
+
   // Document Title
   doc.setFontSize(16);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(30, 58, 95);
   doc.text('LOAN APPLICATION FORM', pageWidth / 2, yPosition, { align: 'center' });
   
-  yPosition += 8;
+  yPosition += 6;
   doc.setFontSize(13);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(80, 80, 80);
@@ -125,6 +134,24 @@ export function generateLoanApplicationPDF(data: LoanApplicationData) {
   
   yPosition += 15;
   doc.setTextColor(0, 0, 0);
+
+  // Borrower Photo Section
+  if (data.profilePictureUrl) {
+    try {
+      // Render profile picture placeholder - in a real app, you'd load the actual image
+      doc.setFillColor(240, 240, 240);
+      doc.roundedRect(20, yPosition, 40, 40, 3, 3, 'F');
+      doc.setTextColor(100, 100, 100);
+      doc.setFontSize(9);
+      doc.text('PHOTO', 40, yPosition + 22, { align: 'center' });
+      
+      // Move yPosition
+      yPosition += 50;
+    } catch (e) {
+      // Fallback if image fails to load
+      yPosition += 10;
+    }
+  }
 
   // Section 1: Borrower Information
   doc.setFillColor(30, 58, 95);
@@ -345,12 +372,9 @@ export function generateLoanApplicationPDF(data: LoanApplicationData) {
   }
 
   // Add new page for payment schedule if needed
-  const pageHeight = doc.internal.pageSize.height;
-  if (yPosition > pageHeight - 100) {
-    addFooter(doc, 1, 2);
+  if (yPosition > pageHeight - 80) {
     doc.addPage();
-    yPosition = 70;
-    addHeader(doc, 2, 2);
+    yPosition = 30;
   }
   
   // Payment Schedule
@@ -377,13 +401,6 @@ export function generateLoanApplicationPDF(data: LoanApplicationData) {
     headStyles: { fillColor: [30, 58, 95], textColor: 255, fontStyle: 'bold' },
     alternateRowStyles: { fillColor: [245, 245, 245] },
   });
-
-  // Add final footer
-  const totalPages = doc.getNumberOfPages();
-  for (let i = 1; i <= totalPages; i++) {
-    doc.setPage(i);
-    addFooter(doc, i, totalPages);
-  }
 
   doc.save(`Loan_Application_${data.firstName || 'Unknown'}_${data.lastName || 'Unknown'}.pdf`);
 }
