@@ -22,11 +22,18 @@ export async function POST(request: Request) {
     const user = await prisma.user.findUnique({ where: { email } });
 
     if (!user) {
+      logInfo('Login failed: User not found', { email });
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
+    }
+
+    if (!user.isActive) {
+      logInfo('Login failed: User account inactive', { userId: user.id, email });
+      return NextResponse.json({ error: 'Account is deactivated' }, { status: 403 });
     }
 
     const match = await bcrypt.compare(password, user.password);
     if (!match) {
+      logInfo('Login failed: Incorrect password', { userId: user.id, email });
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
     }
 
