@@ -13,6 +13,20 @@ enum UserRole {
   BORROWER
   LOAN_OFFICER
   ADMIN
+  DIRECTOR
+}
+
+enum AuditLogAction {
+  LOAN_DELETED
+  LOAN_STATUS_CHANGED
+  USER_CREATED
+  USER_DELETED
+  USER_ROLE_CHANGED
+  USER_PERMISSION_CHANGED
+  SYSTEM_CONFIG_CHANGED
+  DATA_EXPORT
+  BACKUP_INITIATED
+  RESTORE_INITIATED
 }
 
 enum LoanStatus {
@@ -53,6 +67,7 @@ model User {
   staffActions     StaffAction[]     @relation("StaffActions")
   uploadedDocuments BorrowerDocument[] @relation("UploadedBy")
   receivedDocuments BorrowerDocument[] @relation("BorrowerDocuments")
+  auditLogs        AuditLog[]
 
   @@map("users")
 }
@@ -75,7 +90,7 @@ model BorrowerDocument {
 model BorrowerProfile {
   id               String   @id @default(cuid())
   userId           String   @unique
-  nin              String?  @unique // NIDA Number (NIN) - Made optional temporarily
+  nin              String?  // NIDA Number (NIN) - Made optional temporarily
   address          String?
   country          String   @default("Tanzania")
   region           String?
@@ -100,11 +115,12 @@ model BorrowerProfile {
 model Loan {
   id               String          @id @default(cuid())
   borrowerId       String
-  amount           Decimal         @db.Decimal(15, 2)
-  interestRate     Decimal         @db.Decimal(5, 2)
+  requestedAmount  Decimal         @db.Decimal(15,2)
+  amount           Decimal         @db.Decimal(15,2)
+  interestRate     Decimal         @db.Decimal(5,2)
   repaymentPeriod  Int
-  totalAmount      Decimal         @db.Decimal(15, 2)
-  monthlyPayment   Decimal         @db.Decimal(15, 2)
+  totalAmount      Decimal         @db.Decimal(15,2)
+  monthlyPayment   Decimal         @db.Decimal(15,2)
   status           LoanStatus      @default(PENDING)
   purpose          String?
   disbursedAt      DateTime?
@@ -114,8 +130,24 @@ model Loan {
   transactions     Transaction[]
   repayments       Repayment[]
   staffActions     StaffAction[]
+  auditLogs        AuditLog[]
 
   @@map("loans")
+}
+
+model AuditLog {
+  id               String          @id @default(cuid())
+  action           AuditLogAction
+  userId           String?
+  user             User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
+  loanId           String?
+  loan             Loan?           @relation(fields: [loanId], references: [id], onDelete: SetNull)
+  oldStatus        LoanStatus?
+  newStatus        LoanStatus?
+  details          String?
+  createdAt        DateTime        @default(now())
+
+  @@map("audit_logs")
 }
 
 model Repayment {

@@ -108,13 +108,15 @@ app.post('/api/borrower/profile', authenticateToken, authorizeRole('BORROWER'), 
 
 app.post('/api/loans', authenticateToken, authorizeRole('BORROWER'), async (req, res) => {
   try {
-    const { amount, interestRate, repaymentPeriod, purpose } = req.body;
-    const totalAmount = Number(amount) * (1 + Number(interestRate) / 100);
+    const { amount, requestedAmount, interestRate, repaymentPeriod, purpose } = req.body;
+    const finalRequestedAmount = requestedAmount || amount;
+    const totalAmount = Number(finalRequestedAmount) * (1 + Number(interestRate) / 100);
     const monthlyPayment = totalAmount / Number(repaymentPeriod);
     const loan = await prisma.loan.create({
       data: {
         borrowerId: req.user.userId,
-        amount,
+        requestedAmount: finalRequestedAmount,
+        amount: finalRequestedAmount,
         interestRate,
         repaymentPeriod,
         totalAmount,
