@@ -24,8 +24,10 @@ export async function GET(request: NextRequest) {
     const loans = await prisma.loan.findMany({
       orderBy: { createdAt: 'desc' },
       include: {
-        borrower: { select: { firstName: true, lastName: true, email: true, phone: true } },
-        borrowerProfile: true,
+        borrower: { 
+          include: { borrowerProfile: true },
+          select: { firstName: true, lastName: true, email: true, phone: true, borrowerProfile: true } 
+        },
         repayments: true
       }
     });
