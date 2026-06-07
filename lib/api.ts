@@ -34,13 +34,22 @@ function ah():Record<string,string>{
 }
 
 async function ok(r:Response){
-  const d=await r.json().catch(()=>({}));
+  console.log("Response status:", r.status, r.statusText);
+  const d=await r.json().catch((e)=>{
+    console.error("Error parsing response:", e);
+    return {};
+  });
+  console.log("Response data:", d);
   if(!r.ok)throw new Error(d.error||d.message||`Error ${r.status}`);
   return d;
 }
 
 export async function loginUser(d:{email:string;password:string}){
-  return fetch(`${BASE}/api/auth/login`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(d)}).then(ok);
+  console.log("Calling loginUser with:", { email: d.email, password: "[REDACTED]" });
+  console.log("BASE URL:", BASE);
+  const url = `${BASE}/api/auth/login`;
+  console.log("Request URL:", url);
+  return fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(d)}).then(ok);
 }
 
 export async function registerUser(d:{email:string;password:string;firstName:string;lastName:string;phone:string}){

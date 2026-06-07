@@ -74,15 +74,29 @@ function LF(){
   const sub=async(data:LD)=>{
     const email=data.email as string;
     const password=data.password as string;
+    console.log("Login attempt with:", { email, password: "[REDACTED]" });
     setBusy(true);setErr(null);
     try{
       const r=await loginUser({email,password});
+      console.log("Login response:", r);
       localStorage.setItem("token",r.token);
       localStorage.setItem("user",JSON.stringify(r.user));
-      if(r.user?.role==="ADMIN")router.push("/admin");
-      else if(r.user?.role==="LOAN_OFFICER")router.push("/staff");
-      else router.push("/borrower");
-    }catch(e:any){setErr(e.message);}
+      if(r.user?.role==="ADMIN"){
+        console.log("Redirecting to admin");
+        router.push("/admin");
+      }
+      else if(r.user?.role==="LOAN_OFFICER"){
+        console.log("Redirecting to staff");
+        router.push("/staff");
+      }
+      else{
+        console.log("Redirecting to borrower");
+        router.push("/borrower");
+      }
+    }catch(e:any){
+      console.error("Login error:", e);
+      setErr(e.message);
+    }
     finally{setBusy(false);}
   };
   return(
