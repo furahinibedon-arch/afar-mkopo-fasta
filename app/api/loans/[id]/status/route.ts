@@ -27,7 +27,15 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     logInfo('Updating loan status', { loanId: id, newStatus: status, userId: decoded.userId });
 
     // Fetch the loan first to get amount and check current status
-    const loan = await prisma.loan.findUnique({ where: { id } });
+    const loan = await prisma.loan.findUnique({ 
+      where: { id },
+      select: {
+        id: true,
+        amount: true,
+        status: true,
+        totalAmount: true
+      }
+    });
     if (!loan) return NextResponse.json({ error: 'Loan not found' }, { status: 404 });
 
     // Check balance before approving or disbursing
@@ -46,7 +54,16 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     // Update loan status
     const updated = await prisma.loan.update({
       where: { id },
-      data: { status, disbursedAt: status === 'DISBURSED' ? new Date() : null }
+      data: { status, disbursedAt: status === "DISBURSED" ? new Date() : null },
+      select: {
+        id: true,
+        amount: true,
+        status: true,
+        totalAmount: true,
+        createdAt: true,
+        updatedAt: true,
+        borrowerId: true
+      }
     });
 
     // Create staff action record

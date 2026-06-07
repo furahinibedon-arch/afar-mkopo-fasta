@@ -2,6 +2,7 @@
 import jwt from 'jsonwebtoken';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/server-auth';
+import { logError } from '@/lib/logger';
 
 export async function OPTIONS() {
   return new NextResponse(null, {
@@ -23,7 +24,19 @@ export async function GET(request: NextRequest) {
     if (!['ADMIN', 'LOAN_OFFICER'].includes(role)) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     const loans = await prisma.loan.findMany({
       orderBy: { createdAt: 'desc' },
-      include: {
+      select: {
+        id: true,
+        amount: true,
+        interestRate: true,
+        repaymentPeriod: true,
+        totalAmount: true,
+        monthlyPayment: true,
+        status: true,
+        purpose: true,
+        disbursedAt: true,
+        createdAt: true,
+        updatedAt: true,
+        borrowerId: true,
         borrower: { 
           select: { id: true, firstName: true, lastName: true, email: true, phone: true } 
         },
@@ -43,6 +56,7 @@ export async function GET(request: NextRequest) {
     });
     return NextResponse.json(parsedLoans);
   } catch (e) {
-    return NextResponse.json({ error: 'Failed to get loans' }, { status: 500 });
+    logError(e, { endpoint: '/api/loans/all', method: 'GET' });
+    return NextResponse.json({ error: 'Failed to get loans', details: (e as Error).message }, { status: 500 });
   }
 }

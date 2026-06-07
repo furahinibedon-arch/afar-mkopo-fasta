@@ -24,7 +24,20 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     const { id } = params;
     const { amount, interestRate, repaymentPeriod } = await request.json();
     
-    const loan = await prisma.loan.findUnique({ where: { id } });
+    const loan = await prisma.loan.findUnique({ 
+      where: { id },
+      select: {
+        id: true,
+        amount: true,
+        interestRate: true,
+        repaymentPeriod: true,
+        status: true,
+        totalAmount: true,
+        monthlyPayment: true,
+        createdAt: true,
+        updatedAt: true
+      }
+    });
     if (!loan) return NextResponse.json({ error: 'Loan not found' }, { status: 404 });
     
     // Only allow updating pending loans
@@ -47,6 +60,18 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
         repaymentPeriod: newRepaymentPeriod,
         totalAmount: totalAmount,
         monthlyPayment: monthlyPayment
+      },
+      select: {
+        id: true,
+        amount: true,
+        interestRate: true,
+        repaymentPeriod: true,
+        status: true,
+        totalAmount: true,
+        monthlyPayment: true,
+        createdAt: true,
+        updatedAt: true,
+        borrowerId: true
       }
     });
 
