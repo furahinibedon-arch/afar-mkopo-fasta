@@ -62,6 +62,7 @@ export const submitLoan=(d:Record<string,unknown>)=>fetch(`${BASE}/api/loans`,{m
 export const getMyLoans=()=>fetch(`${BASE}/api/loans`,{headers:ah()}).then(ok);
 export const getAllLoans=()=>fetch(`${BASE}/api/loans/all`,{headers:ah()}).then(ok);
 export const updateLoanStatus=(id:string,status:string,notes?:string)=>fetch(`${BASE}/api/loans/${id}/status`,{method:"PATCH",headers:{...ah(),"Content-Type":"application/json"},body:JSON.stringify({status,notes})}).then(ok);
+export const updateLoan=(id:string, data: { amount?: number; interestRate?: number; repaymentPeriod?: number })=>fetch(`${BASE}/api/loans/${id}`,{method:"PATCH",headers:{...ah(),"Content-Type":"application/json"},body:JSON.stringify(data)}).then(ok);
 export const getAnalytics=()=>fetch(`${BASE}/api/dashboard/analytics`,{headers:ah()}).then(ok);
 export const getUsers=():Promise<AppUser[]>=>fetch(`${BASE}/api/users`,{headers:ah()}).then(ok);
 export const updateUserRole=(id:string,role:AppUser["role"]):Promise<AppUser>=>fetch(`${BASE}/api/users/${id}/role`,{method:"PATCH",headers:{...ah(),"Content-Type":"application/json"},body:JSON.stringify({role})}).then(ok);

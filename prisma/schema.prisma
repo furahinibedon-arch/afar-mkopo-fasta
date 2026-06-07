@@ -100,6 +100,7 @@ model BorrowerProfile {
 model Loan {
   id               String          @id @default(cuid())
   borrowerId       String
+  requestedAmount  Decimal         @db.Decimal(15, 2)
   amount           Decimal         @db.Decimal(15, 2)
   interestRate     Decimal         @db.Decimal(5, 2)
   repaymentPeriod  Int

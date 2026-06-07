@@ -2,7 +2,7 @@
 import{useEffect,useState}from"react";
 import{useRouter}from"next/navigation";
 import Layout from"@/components/Layout";
-import{getAllLoans,updateLoanStatus}from"@/lib/api";
+import{getAllLoans,updateLoanStatus,updateLoan}from"@/lib/api";
 import{useLanguage}from"@/context/LanguageContext";
 import{generateLoanApplicationPDF}from"@/lib/pdfGenerator";
 
@@ -18,6 +18,11 @@ export default function AdminLoans(){
   const[filter,setFilter]=useState("ALL");
   const[notes,setNotes]=useState<Record<string,string>>({});
   const[refreshKey,setRefreshKey]=useState(0);
+  // State for adjustments
+  const[adjustmentType,setAdjustmentType]=useState<"fixed"|"percentage">("fixed");
+  const[adjustmentValue,setAdjustmentValue]=useState<string>("");
+  const[adjustmentDirection,setAdjustmentDirection]=useState<"increase"|"decrease">("increase");
+  const[adjustedAmount,setAdjustedAmount]=useState<number>(0);
 
   useEffect(()=>{const u=localStorage.getItem("user");if(!u){router.push("/");return;}const role=JSON.parse(u).role;if(role!=="ADMIN"){router.push(role==="LOAN_OFFICER"?"/staff":"/borrower");return;}load();},[router, refreshKey]);
 
@@ -28,7 +33,50 @@ export default function AdminLoans(){
   }, []);
 
   const load=()=>{getAllLoans().then(setLoans).catch(console.error).finally(()=>setLoading(false));};
-  const action=async(id:string,status:string)=>{setBusy(id);try{await updateLoanStatus(id,status,notes[id]);setViewing(null);load();}finally{setBusy(null);}};
+  const action=async(id:string,status:string)=>{setBusy(id);try{await updateLoanStatus(id,status,notes[id]);setViewing(null);load();}catch(e:any){alert(e.message||"Failed to update loan status");}finally{setBusy(null);}};
+  // Effect to calculate adjusted amount in real-time
+  useEffect(()=>{
+    if(viewing){
+      const baseAmount = Number(viewing.requestedAmount || viewing.amount);
+      const value = Number(adjustmentValue) || 0;
+      let newAmount = baseAmount;
+      if(adjustmentType === "fixed"){
+        newAmount = adjustmentDirection === "increase" ? baseAmount + value : baseAmount - value;
+      } else {
+        const factor = adjustmentDirection === "increase" ? 1 + (value/100) : 1 - (value/100);
+        newAmount = baseAmount * factor;
+      }
+      setAdjustedAmount(Math.max(0, Math.round(newAmount)));
+    }
+  }, [viewing, adjustmentType, adjustmentValue, adjustmentDirection]);
+  // Reset adjustment state when viewing a new loan
+  useEffect(()=>{
+    if(viewing){
+      setAdjustmentType("fixed");
+      setAdjustmentValue("");
+      setAdjustmentDirection("increase");
+      setAdjustedAmount(Number(viewing.amount));
+    }
+  }, [viewing?.id]);
+  // Apply the adjustment
+  const applyAdjustment=async()=>{
+    if(!viewing) return;
+    setBusy(viewing.id);
+    try{
+      const interestRate = Number(viewing.interestRate);
+      const repaymentPeriod = Number(viewing.repaymentPeriod);
+      const totalAmount = adjustedAmount * (1 + interestRate / 100);
+      const monthlyPayment = totalAmount / repaymentPeriod;
+      const updatedLoan=await updateLoan(viewing.id,{amount:adjustedAmount});
+      setLoans(loans.map(l=>l.id===updatedLoan.id?updatedLoan:l));
+      setViewing(updatedLoan);
+      setAdjustmentValue("");
+    }catch(e:any){
+      alert(e.message||"Failed to apply adjustment");
+    }finally{
+      setBusy(null);
+    }
+  };
   const handlePrint=(loan:any)=>{
     // Build the print data from profile or applicationData!
     const appData = loan.applicationData || {};
@@ -137,9 +185,49 @@ export default function AdminLoans(){
             <div className="bg-navy-800 rounded-2xl p-5 text-white">
               <p className="text-xs font-semibold text-slate-400 mb-3 uppercase tracking-wide">Loan Summary</p>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
-                {[{l:"Amount",v:`Tsh ${Number(viewing.amount).toLocaleString()}`},{l:"Interest",v:`${Number(viewing.interestRate)}%`},{l:"Period",v:`${viewing.repaymentPeriod} days`},{l:"Total",v:`Tsh ${Number(viewing.totalAmount).toLocaleString()}`}].map(({l,v})=><div key={l}><p className="text-brand-400 font-black text-lg">{v}</p><p className="text-slate-400 text-xs mt-0.5">{l}</p></div>)}
+                {[
+                  {l:"Requested",v:`Tsh ${Number(viewing.requestedAmount||viewing.amount).toLocaleString()}`},
+                  {l:"Adjusted",v:`Tsh ${adjustedAmount.toLocaleString()}`},
+                  {l:"Interest",v:`${Number(viewing.interestRate)}%`},
+                  {l:"Total",v:`Tsh ${(adjustedAmount * (1 + Number(viewing.interestRate)/100)).toLocaleString()}`}
+                ].map(({l,v})=><div key={l}><p className="text-brand-400 font-black text-lg">{v}</p><p className="text-slate-400 text-xs mt-0.5">{l}</p></div>)}
               </div>
             </div>
+            {/* Adjustment controls (only for pending loans) */}
+            {viewing.status==="PENDING"&&(
+              <div className="bg-slate-50 rounded-2xl p-5">
+                <p className="text-xs font-black text-slate-500 uppercase tracking-wide mb-4">Adjust Loan Amount</p>
+                {/* Adjustment type toggle */}
+                <div className="flex gap-2 mb-4">
+                  <button onClick={()=>setAdjustmentType("fixed")} className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${adjustmentType==="fixed"?"bg-navy-800 text-white":"bg-white text-slate-600 border border-slate-200"}`}>Fixed Amount</button>
+                  <button onClick={()=>setAdjustmentType("percentage")} className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${adjustmentType==="percentage"?"bg-navy-800 text-white":"bg-white text-slate-600 border border-slate-200"}`}>Percentage</button>
+                </div>
+                {/* Adjustment direction toggle */}
+                <div className="flex gap-2 mb-4">
+                  <button onClick={()=>setAdjustmentDirection("increase")} className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${adjustmentDirection==="increase"?"bg-green-500 text-white":"bg-white text-slate-600 border border-slate-200"}`}>Increase</button>
+                  <button onClick={()=>setAdjustmentDirection("decrease")} className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${adjustmentDirection==="decrease"?"bg-red-500 text-white":"bg-white text-slate-600 border border-slate-200"}`}>Decrease</button>
+                </div>
+                {/* Adjustment value input */}
+                <div className="flex gap-3 mb-4">
+                  <input
+                    type="number"
+                    value={adjustmentValue}
+                    onChange={(e)=>setAdjustmentValue(e.target.value)}
+                    placeholder={adjustmentType==="percentage"?"Percentage (e.g., 10)":"Amount (e.g., 50000)"}
+                    className="input-field flex-1"
+                  />
+                  <button
+                    onClick={applyAdjustment}
+                    disabled={busy===viewing.id || !adjustmentValue}
+                    className="btn-primary px-6"
+                  >Apply Adjustment</button>
+                </div>
+                {/* Show adjusted amount */}
+                <p className="text-sm text-slate-500">
+                  New Amount: <span className="font-black text-navy-800">Tsh {adjustedAmount.toLocaleString()}</span>
+                </p>
+              </div>
+            )}
             {/* Old loan warning */}
             {Object.keys(viewing.applicationData||{}).length===0&&(
               <div className="bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded-xl text-sm"> This loan was submitted before the full form system. Only basic info available.</div>

@@ -30,6 +30,19 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     const loan = await prisma.loan.findUnique({ where: { id } });
     if (!loan) return NextResponse.json({ error: 'Loan not found' }, { status: 404 });
 
+    // Check balance before approving or disbursing
+    if (status === 'APPROVED' || status === 'DISBURSED') {
+      // Calculate current company balance from financial logs
+      const financialLogs = await prisma.financialLog.findMany({ orderBy: { createdAt: 'asc' } });
+      const totalCredits = financialLogs.filter(l => l.type === 'CREDIT').reduce((sum, l) => sum + Number(l.amount), 0);
+      const totalDebits = financialLogs.filter(l => l.type === 'DEBIT').reduce((sum, l) => sum + Number(l.amount), 0);
+      const companyBalance = totalCredits - totalDebits;
+
+      if (Number(loan.amount) > companyBalance) {
+        return NextResponse.json({ error: 'Insufficient balance' }, { status: 400 });
+      }
+    }
+
     // Update loan status
     const updated = await prisma.loan.update({
       where: { id },
