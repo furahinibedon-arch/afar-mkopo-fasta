@@ -2,7 +2,19 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-@layer base{*{box-sizing:border-box}html{font-family:'Inter',system-ui,sans-serif}body{background:#f8fafc;color:#0f172a}}
+@layer base{
+  *{box-sizing:border-box}
+  html{font-family:'Inter',system-ui,sans-serif}
+  body{background:#f8fafc;color:#0f172a;cursor:default}
+  /* Fix cursor for interactive elements */
+  a, button, label[for], select, [role="button"] {
+    cursor: pointer;
+  }
+  /* Only show text cursor for actual inputs */
+  input[type="text"], input[type="email"], input[type="password"], input[type="number"], input[type="tel"], input[type="date"], textarea {
+    cursor: text;
+  }
+}
 @layer components{
 .btn-primary{@apply inline-flex items-center justify-center gap-2 px-6 py-3 bg-brand-500 hover:bg-brand-600 text-white font-semibold rounded-xl transition-all duration-200 shadow-md hover:shadow-glow-orange focus:outline-none focus:ring-2 focus:ring-brand-400 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed}
 .btn-secondary{@apply inline-flex items-center justify-center gap-2 px-6 py-3 border-2 border-navy-800 text-navy-800 hover:bg-navy-800 hover:text-white font-semibold rounded-xl transition-all duration-200 disabled:opacity-50}

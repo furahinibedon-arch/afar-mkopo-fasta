@@ -5,6 +5,7 @@ import Layout from"@/components/Layout";
 import{getAllLoans,updateLoanStatus}from"@/lib/api";
 import{useLanguage}from"@/context/LanguageContext";
 import{generateLoanApplicationPDF}from"@/lib/pdfGenerator";
+import DocumentManagement from '@/components/DocumentManagement';
 
 export default function StaffPortal(){
   const router=useRouter();
@@ -15,6 +16,7 @@ export default function StaffPortal(){
   const[notes,setNotes]=useState<Record<string,string>>({});
   const[busy,setBusy]=useState<string|null>(null);
   const[viewing,setViewing]=useState<any|null>(null);
+  const[showDocuments,setShowDocuments]=useState(false);
 
   useEffect(()=>{
     const u=localStorage.getItem("user");
@@ -155,6 +157,7 @@ export default function StaffPortal(){
                 <p className="text-slate-500 text-sm mt-0.5">{viewing.borrower?.firstName} {viewing.borrower?.lastName}</p>
               </div>
               <div className="flex items-center gap-2">
+                <button onClick={()=>setShowDocuments(true)} className="btn-secondary text-xs px-3 py-1.5"> 📄 Documents</button>
                 <button onClick={()=>handlePrint(viewing)} className="btn-secondary text-xs px-3 py-1.5"> Print</button>
                 <button onClick={()=>setViewing(null)} className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 transition-colors"></button>
               </div>
@@ -264,6 +267,14 @@ export default function StaffPortal(){
             </div>
           </div>
         </div>
+      )}
+
+      {/* Documents Modal */}
+      {(showDocuments && viewing) && (
+        <DocumentManagement
+          loanId={viewing.id}
+          onClose={()=>setShowDocuments(false)}
+        />
       )}
     </Layout>
   );
