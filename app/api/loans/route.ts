@@ -29,12 +29,7 @@ export async function GET(request: NextRequest) {
     const loans = await prisma.loan.findMany({ 
       where: { borrowerId: userId }, 
       orderBy: { createdAt: 'desc' }, 
-      include: { 
-        repayments: true,
-        borrower: {
-          select: { borrowerProfile: true }
-        }
-      } 
+      include: { repayments: true }
     });
     const parsedLoans = loans.map(l => {
       let appData = {};
@@ -42,20 +37,10 @@ export async function GET(request: NextRequest) {
         const parsed = JSON.parse(l.purpose || '{}');
         if (parsed.__appData) {
           appData = parsed.__appData;
-          return { 
-            ...l, 
-            purpose: parsed.purpose || '', 
-            applicationData: appData,
-            borrowerProfile: l.borrower?.borrowerProfile,
-            borrower: l.borrower ? { ...l.borrower, borrowerProfile: undefined } : undefined
-          };
+          return { ...l, purpose: parsed.purpose || '', applicationData: appData };
         }
       } catch (e) { }
-      return {
-        ...l,
-        borrowerProfile: l.borrower?.borrowerProfile,
-        borrower: l.borrower ? { ...l.borrower, borrowerProfile: undefined } : undefined
-      };
+      return l;
     });
     return NextResponse.json(parsedLoans);
   } catch (e: any) {
