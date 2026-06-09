@@ -138,18 +138,26 @@ export function generateLoanApplicationPDF(data: LoanApplicationData) {
   // Borrower Photo Section
   if (data.profilePictureUrl) {
     try {
-      // Render profile picture placeholder - in a real app, you'd load the actual image
-      doc.setFillColor(240, 240, 240);
-      doc.roundedRect(20, yPosition, 40, 40, 3, 3, 'F');
-      doc.setTextColor(100, 100, 100);
-      doc.setFontSize(9);
-      doc.text('PHOTO', 40, yPosition + 22, { align: 'center' });
+      // Render actual profile picture (supports base64)
+      const imgWidth = 40;
+      const imgHeight = 40;
+      doc.addImage(data.profilePictureUrl, 'JPEG' || 'PNG', 20, yPosition, imgWidth, imgHeight);
+      
+      // Add border
+      doc.setDrawColor(30, 58, 95);
+      doc.setLineWidth(1);
+      doc.roundedRect(20, yPosition, imgWidth, imgHeight, 3, 3, 'S');
       
       // Move yPosition
       yPosition += 50;
     } catch (e) {
       // Fallback if image fails to load
-      yPosition += 10;
+      doc.setFillColor(240, 240, 240);
+      doc.roundedRect(20, yPosition, 40, 40, 3, 3, 'F');
+      doc.setTextColor(100, 100, 100);
+      doc.setFontSize(9);
+      doc.text('PHOTO', 40, yPosition + 22, { align: 'center' });
+      yPosition += 50;
     }
   }
 

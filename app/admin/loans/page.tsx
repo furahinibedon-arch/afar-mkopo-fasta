@@ -106,7 +106,7 @@ export default function AdminLoans(){
       dailyPayment: Number(loan.monthlyPayment),
       interestRate: Number(loan.interestRate),
       loanPurpose: loan.purpose,
-      profilePictureUrl: profile.profilePictureUrl,
+      profilePictureUrl: borrower.profilePictureUrl,
       ...appData
     });
   };
