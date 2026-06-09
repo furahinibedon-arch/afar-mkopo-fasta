@@ -32,7 +32,7 @@ export default function MyLoans(){
                 <p className="text-2xl font-black text-dark-800">Tsh {Number(loan.amount).toLocaleString()}</p>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-3 text-sm text-dark-500">
                   <div><p className="label text-xs">Interest</p><p className="font-bold text-dark-800">{Number(loan.interestRate)}%</p></div>
-                  <div><p className="label text-xs">Period</p><p className="font-bold text-dark-800">{loan.repaymentPeriod} {loan.repaymentPeriod===30?"days":loan.repaymentPeriod===4?"weeks":"month"}</p></div>
+                  <div><p className="label text-xs">Period</p><p className="font-bold text-dark-800">{loan.repaymentPeriod} {appData.repaymentType === "DAILY" ? "days" : appData.repaymentType === "WEEKLY" ? "weeks" : "month"}</p></div>
                   <div><p className="label text-xs">Total</p><p className="font-bold text-brand-600">Tsh {Number(loan.totalAmount).toLocaleString()}</p></div>
                   {appData.repaymentType&&<div><p className="label text-xs">Repayment</p><p className="font-bold text-dark-800">{appData.repaymentType}</p></div>}
                   {appData.collateral&&<div className="col-span-2"><p className="label text-xs">Collateral</p><p className="font-medium text-dark-800 text-xs">{appData.collateral}</p></div>}

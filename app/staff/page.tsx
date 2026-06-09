@@ -175,7 +175,7 @@ export default function StaffPortal(){
                   {[
                     {l:"Amount",v:`Tsh ${Number(viewing.amount).toLocaleString()}`},
                     {l:"Interest",v:`${Number(viewing.interestRate)}%`},
-                    {l:"Period",v:`${viewing.repaymentPeriod} days`},
+                    {l:"Period",v:`${viewing.repaymentPeriod} ${viewing.applicationData?.repaymentType === "DAILY" ? "days" : viewing.applicationData?.repaymentType === "WEEKLY" ? "weeks" : "month"}`},
                     {l:"Total",v:`Tsh ${Number(viewing.totalAmount).toLocaleString()}`},
                   ].map(({l,v})=><div key={l}><p className="text-brand-400 font-black text-lg">{v}</p><p className="text-dark-300 text-xs mt-0.5">{l}</p></div>)}
                 </div>
