@@ -17,11 +17,28 @@ export async function OPTIONS() {
 
 export async function POST(request: Request) {
   try {
-    const { email, password, firstName, lastName, phone } = await request.json();
+    const body = await request.json();
+    console.log('Register request body:', body);
+    const { email, password, firstName, lastName, phone } = body;
+    
+    if (!email || !password || !firstName || !lastName || !phone) {
+      return NextResponse.json({ error: 'All fields are required' }, { status: 400 });
+    }
+
     logInfo('Registration attempt', { email, firstName, lastName, phone });
     const hashedPassword = await bcrypt.hash(password, 10);
     const adminCount = await prisma.user.count({ where: { role: UserRole.ADMIN } });
     const role = adminCount === 0 ? UserRole.ADMIN : UserRole.BORROWER;
+
+    // Check if email or phone already exists
+    const existingUser = await prisma.user.findFirst({
+      where: { OR: [{ email }, { phone }] }
+    });
+
+    if (existingUser) {
+      const conflictField = existingUser.email === email ? 'Email' : 'Phone number';
+      return NextResponse.json({ error: `${conflictField} already registered` }, { status: 409 });
+    }
 
     const user = await prisma.user.create({
       data: { email, password: hashedPassword, firstName, lastName, phone, role },
@@ -47,7 +64,12 @@ export async function POST(request: Request) {
     logInfo('Registration successful', { userId: user.id, email, role });
     return NextResponse.json({ token, user });
   } catch (error) {
+    console.error('Registration error:', error);
     logError(error, { endpoint: '/api/auth/register', method: 'POST' });
-    return NextResponse.json({ error: 'Registration failed', details: (error as Error).message }, { status: 500 });
+    return NextResponse.json({ 
+      error: 'Registration failed', 
+      details: (error as Error).message,
+      stack: (error as Error).stack 
+    }, { status: 500 });
   }
 }
