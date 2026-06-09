@@ -29,12 +29,28 @@ export default function HomePage(){
     <div className="min-h-screen bg-navy-800 flex flex-col">
       <div className="flex items-center justify-between px-6 py-4">
         <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-xl bg-brand-500 flex items-center justify-center shadow-glow-orange">
-            <span className="text-white font-black text-sm">AF</span>
-          </div>
-          <div>
-            <p className="text-white font-black text-base">AFAR Mkopo</p>
-            <p className="text-brand-400 font-black text-xs tracking-widest">FASTA</p>
+          <div className="h-10 flex items-center">
+            <img 
+              src="/logo.png" 
+              alt="AFAR MKOPO FASTA Logo" 
+              className="h-full w-auto object-contain"
+              onError={(e) => {
+                // Fallback to text if logo.png doesn't exist
+                e.currentTarget.style.display = 'none';
+                const fallback = document.createElement('div');
+                fallback.className = 'flex items-center gap-2.5';
+                fallback.innerHTML = `
+                  <div class="w-9 h-9 rounded-xl bg-brand-500 flex items-center justify-center shadow-glow-orange">
+                    <span class="text-white font-black text-sm">AF</span>
+                  </div>
+                  <div>
+                    <p class="text-white font-black text-base">AFAR Mkopo</p>
+                    <p class="text-brand-400 font-black text-xs tracking-widest">FASTA</p>
+                  </div>
+                `;
+                e.currentTarget.parentElement?.appendChild(fallback);
+              }}
+            />
           </div>
         </div>
         <button onClick={()=>setLanguage(language==="en"?"sw":"en")} className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white text-xs font-semibold rounded-xl">
