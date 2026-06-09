@@ -14,23 +14,25 @@ export default function Layout({children,portal="public"}:{children:React.ReactN
       <header className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ${scrolled?"bg-white/95 backdrop-blur shadow-md":"bg-white border-b border-slate-100"}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <Link href={isPublic?"/":`/${portal==="public"?"":portal}`} className="flex items-center gap-2.5">
-            {/* Company Logo */}
-            <div className="w-8 h-8 rounded-xl overflow-hidden bg-navy-800 flex items-center justify-center">
+            {/* Single Company Logo */}
+            <div className="h-10 flex items-center">
               <img 
                 src="/logo.png" 
                 alt="AFAR MKOPO FASTA Logo" 
-                className="w-full h-full object-contain"
+                className="h-full w-auto object-contain"
                 onError={(e) => {
                   // Fallback to text if logo.png doesn't exist
                   e.currentTarget.style.display = 'none';
-                  const fallback = document.createElement('span');
-                  fallback.className = 'text-brand-400 font-black text-xs';
-                  fallback.textContent = 'AF';
+                  const fallback = document.createElement('div');
+                  fallback.className = 'h-full flex items-center';
+                  fallback.innerHTML = `
+                    <p className="text-navy-800 font-black text-sm">AFAR MKOPO</p>
+                    <p className="text-brand-500 font-black text-xs tracking-widest ml-1">FASTA</p>
+                  `;
                   e.currentTarget.parentElement?.appendChild(fallback);
                 }}
               />
             </div>
-            <div><p className="text-navy-800 font-black text-sm">AFAR MKOPO</p><p className="text-brand-500 font-black text-xs tracking-widest">FASTA</p></div>
             {!isPublic&&portal!=="public"&&<span className="hidden sm:block ml-2 px-2 py-0.5 bg-slate-100 text-slate-500 text-xs font-semibold rounded-md capitalize">{portal}</span>}
           </Link>
           <div className="flex items-center gap-2">
