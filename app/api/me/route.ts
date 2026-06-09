@@ -37,10 +37,9 @@ export async function GET(request: NextRequest) {
         createdAt: true,
         updatedAt: true,
         profilePictureUrl: true,
-        borrowerProfile: {
-          include: {
-            borrowerDocuments: { where: { isActive: true } }
-          }
+        borrowerProfile: true,
+        receivedDocuments: {
+          where: { isActive: true }
         }
       }
     });

@@ -136,7 +136,7 @@ export default function BorrowerPortal(){
     console.log("Submitting loan application:", data);
     
     // Check if user has a profile picture
-    if (!user?.borrowerProfile?.profilePictureUrl) {
+    if (!user?.profilePictureUrl) {
       setErr("Please upload a profile picture before submitting your loan application.");
       return;
     }
@@ -204,7 +204,7 @@ export default function BorrowerPortal(){
       {err&&<div className="mb-4 flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-xl"> {err}</div>}
       
       {/* Profile Picture Reminder */}
-      {!user?.borrowerProfile?.profilePictureUrl && (
+      {!user?.profilePictureUrl && (
         <div className="mb-4 flex items-center gap-3 bg-amber-50 border border-amber-200 text-amber-800 text-sm px-4 py-4 rounded-xl">
           <span className="text-2xl">📷</span>
           <div className="flex-1">
