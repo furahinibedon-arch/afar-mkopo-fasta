@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import{usePathname,useRouter}from"next/navigation";
 import{useLanguage}from"@/context/LanguageContext";
 import{useEffect,useState}from"react";
@@ -12,11 +13,11 @@ export default function Layout({children,portal="public"}:{children:React.ReactN
     <div className="min-h-screen bg-slate-50">
       <header className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ${scrolled?"bg-white/95 backdrop-blur shadow-md":"bg-white border-b border-slate-100"}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <a href={isPublic?"/":`/${portal==="public"?"":portal}`} className="flex items-center gap-2.5">
+          <Link href={isPublic?"/":`/${portal==="public"?"":portal}`} className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl bg-navy-800 flex items-center justify-center shadow-glow-navy"><span className="text-brand-400 font-black text-xs">AF</span></div>
             <div><p className="text-navy-800 font-black text-sm">AFAR MKOPO</p><p className="text-brand-500 font-black text-xs tracking-widest">FASTA</p></div>
             {!isPublic&&portal!=="public"&&<span className="hidden sm:block ml-2 px-2 py-0.5 bg-slate-100 text-slate-500 text-xs font-semibold rounded-md capitalize">{portal}</span>}
-          </a>
+          </Link>
           <div className="flex items-center gap-2">
             {!isPublic&&portal==="borrower"&&<nav className="hidden md:flex gap-1 mr-2"><NL href="/borrower" label={t.applyForLoan} p={pathname} exact/><NL href="/borrower/loans" label={t.myLoans} p={pathname}/><NL href="/borrower/profile" label={t.myProfile} p={pathname}/></nav>}
             {!isPublic&&portal==="staff"&&<nav className="hidden md:flex gap-1 mr-2"><NL href="/staff" label="Queue" p={pathname} exact/></nav>}
@@ -33,5 +34,5 @@ export default function Layout({children,portal="public"}:{children:React.ReactN
 }
 function NL({href,label,p,exact=false}:{href:string;label:string;p:string;exact?:boolean}){
   const active=exact?p===href:p.startsWith(href);
-  return<a href={href} className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${active?"bg-navy-800 text-white":"text-slate-600 hover:bg-slate-100"}`}>{label}</a>;
+  return<Link href={href} className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${active?"bg-navy-800 text-white":"text-slate-600 hover:bg-slate-100"}`}>{label}</Link>;
 }
