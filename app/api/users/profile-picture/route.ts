@@ -2,7 +2,6 @@
 import jwt from 'jsonwebtoken';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/server-auth';
-import cloudinary from '@/lib/cloudinary';
 import { logError, logInfo } from '@/lib/logger';
 
 export async function OPTIONS() {
@@ -34,25 +33,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'File must be an image' }, { status: 400 });
     }
 
-    // Convert file to buffer
+    // Convert file to base64 for simple storage (no Cloudinary needed)
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
+    const base64Image = `data:${file.type};base64,${buffer.toString('base64')}`;
 
-    // Upload to Cloudinary with optimization
-    const result = await new Promise((resolve, reject) => {
-      cloudinary.uploader.upload_stream({
-        folder: 'profile-pictures',
-        transformation: [{ width: 400, height: 400, crop: 'fill' }],
-      }, (error, uploadResult) => {
-        if (error) reject(error);
-        else resolve(uploadResult);
-      }).end(buffer);
-    }) as { secure_url: string };
-
-    // Update user profile
+    // Update user profile with base64 image
     const updatedUser = await prisma.user.update({
       where: { id: userId },
-      data: { profilePictureUrl: result.secure_url }
+      data: { profilePictureUrl: base64Image }
     });
 
     logInfo('Profile picture uploaded successfully', { userId });
