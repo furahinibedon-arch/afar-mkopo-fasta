@@ -44,7 +44,6 @@ export async function GET(request: NextRequest) {
     });
     return NextResponse.json(parsedLoans);
   } catch (e: any) {
-    console.error('ERROR IN /api/loans GET:', JSON.stringify(e, null, 2));
     logError(e, { endpoint: '/api/loans', method: 'GET' });
     return NextResponse.json({ error: e.message || 'Failed to get loans' }, { status: e.status || 500 });
   }
