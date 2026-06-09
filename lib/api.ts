@@ -5,6 +5,7 @@ export type AppUser = {
   email: string;
   firstName: string;
   lastName: string;
+  phone: string;
   profilePictureUrl?: string | null;
   role: "ADMIN" | "LOAN_OFFICER" | "BORROWER" | "DIRECTOR";
   isActive: boolean;
