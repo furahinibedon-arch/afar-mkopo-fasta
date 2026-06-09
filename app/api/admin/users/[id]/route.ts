@@ -31,10 +31,11 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     const { password: _, ...safe } = user;
     return NextResponse.json(safe);
   } catch (e: any) {
+    console.error("PATCH /api/admin/users/[id] error:", e);
     if (e.code === 'P2002') {
       return NextResponse.json({ error: 'Email or phone already exists' }, { status: 400 });
     }
-    return NextResponse.json({ error: e.error || 'Invalid token' }, { status: e.status || 401 });
+    return NextResponse.json({ error: e.error || e.message || 'Invalid token' }, { status: e.status || 401 });
   }
 }
 
@@ -45,6 +46,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     await prisma.user.delete({ where: { id } });
     return NextResponse.json({ message: 'User deleted' });
   } catch (e: any) {
+    console.error("DELETE /api/admin/users/[id] error:", e);
     return NextResponse.json({ error: e.error || e.message || 'Invalid token' }, { status: e.status || 401 });
   }
 }

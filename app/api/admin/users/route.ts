@@ -42,6 +42,7 @@ export async function GET(request: NextRequest) {
     });
     return NextResponse.json(users);
   } catch (e: any) {
+    console.error("GET /api/admin/users error:", e);
     return NextResponse.json({ error: e.error || 'Invalid token' }, { status: e.status || 401 });
   }
 }
@@ -60,6 +61,7 @@ export async function POST(request: NextRequest) {
     const { password: _, ...safe } = user;
     return NextResponse.json(safe, { status: 201 });
   } catch (e: any) {
+    console.error("POST /api/admin/users error:", e);
     if (e.code === 'P2002') {
       return NextResponse.json({ error: 'Email or phone already exists' }, { status: 400 });
     }
