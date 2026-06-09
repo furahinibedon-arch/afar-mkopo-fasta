@@ -12,6 +12,12 @@ node_modules/
 # Admin creation script
 create-admin.js
 
+# Logo generation script
+generate-logo.js
+
+# Placeholder note files
+public/*.txt
+
 # Database files
 *.db
 *.sqlite
