@@ -2,7 +2,6 @@
 import jwt from 'jsonwebtoken';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/server-auth';
-import cloudinary from '@/lib/cloudinary';
 import { logError, logInfo } from '@/lib/logger';
 
 export async function OPTIONS() {
@@ -83,20 +82,10 @@ export async function POST(
       return NextResponse.json({ error: 'Invalid file type' }, { status: 400 });
     }
 
-    // Convert file to buffer
+    // Convert file to base64
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
-
-    // Upload to Cloudinary
-    const result = await new Promise((resolve, reject) => {
-      cloudinary.uploader.upload_stream({
-        folder: 'borrower-documents',
-        resource_type: 'auto',
-      }, (error, uploadResult) => {
-        if (error) reject(error);
-        else resolve(uploadResult);
-      }).end(buffer);
-    }) as { secure_url: string };
+    const base64File = `data:${file.type};base64,${buffer.toString('base64')}`;
 
     // Create document in DB
     const document = await prisma.borrowerDocument.create({
@@ -104,7 +93,7 @@ export async function POST(
         borrowerId: params.borrowerId,
         uploadedById: userId,
         fileName: file.name,
-        fileUrl: result.secure_url,
+        fileUrl: base64File,
         fileType: file.type,
         fileSize: file.size,
       },
