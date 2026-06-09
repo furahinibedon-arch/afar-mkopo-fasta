@@ -31,7 +31,12 @@ export async function POST(request: Request) {
         isActive: true,
         createdAt: true,
         updatedAt: true,
-        password: true
+        password: true,
+        profilePictureUrl: true,
+        borrowerProfile: true,
+        receivedDocuments: {
+          where: { isActive: true }
+        }
       }
     });
 

@@ -75,6 +75,7 @@ export default function BorrowerPortal(){
     getMe().then((userData) => {
       console.log("Got user data:", userData);
       setUser(userData);
+      localStorage.setItem("user", JSON.stringify(userData));
       if (userData.borrowerProfile) {
         reset({
           firstName: userData.firstName,
