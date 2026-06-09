@@ -70,24 +70,15 @@ export function generateLoanApplicationPDF(data: LoanApplicationData) {
 
   // Try to add logo (will fail gracefully if /logo.png doesn't exist)
   try {
-    // Note: In browser, this would work with base64 or public URL. For now, we'll add a placeholder.
-    // When you add your actual logo.png to public/, uncomment this line:
-    // doc.addImage('/logo.png', 'PNG', logoX, logoY, logoWidth, logoHeight);
-    
-    // Placeholder: Draw a circle for logo
+    // Try to add your custom logo first
+    doc.addImage('/logo.png', 'PNG', logoX, logoY, logoWidth, logoHeight);
+  } catch (e) {
+    // Fallback if logo file not found
     doc.setFillColor(30, 58, 95);
     doc.circle(logoX + logoWidth/2, logoY + logoHeight/2, logoWidth/2, 'F');
     doc.setFontSize(24);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(245, 158, 11); // Brand color
-    doc.text('AF', logoX + logoWidth/2, logoY + logoHeight/2 + 8, { align: 'center' });
-  } catch (e) {
-    // Fallback if logo fails
-    doc.setFillColor(30, 58, 95);
-    doc.circle(logoX + logoWidth/2, logoY + logoHeight/2, logoWidth/2, 'F');
-    doc.setFontSize(24);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(245, 158, 11);
     doc.text('AF', logoX + logoWidth/2, logoY + logoHeight/2 + 8, { align: 'center' });
   }
 
