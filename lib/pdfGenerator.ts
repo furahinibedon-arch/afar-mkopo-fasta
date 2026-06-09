@@ -60,80 +60,80 @@ export function generateLoanApplicationPDF(data: LoanApplicationData) {
   
   // Header background
   doc.setFillColor(245, 247, 250);
-  doc.rect(0, 0, pageWidth, 120, 'F');
+  doc.rect(0, 0, pageWidth, 95, 'F');
 
   // Company Logo (try to load /logo.png)
-  const logoX = 20;
-  const logoY = 25;
-  const logoSize = 70;
-  let yPos = logoY;
+  const logoX = 18;
+  const logoY = 18;
+  const logoSize = 58;
 
   // Try to add logo with proper aspect ratio handling
   try {
-    // Add logo at a bigger size, aspect ratio will be preserved if we use the same width/height ratio
+    // Add logo with proper aspect ratio, using square size to maintain proportions
     doc.addImage('/logo.png', 'PNG', logoX, logoY, logoSize, logoSize);
   } catch (e) {
     // Fallback if logo file not found - create a nice branded circle
     doc.setFillColor(30, 58, 95);
     doc.circle(logoX + logoSize/2, logoY + logoSize/2, logoSize/2, 'F');
-    doc.setFontSize(36);
+    doc.setFontSize(28);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(245, 158, 11); // Brand color
-    doc.text('AF', logoX + logoSize/2, logoY + logoSize/2 + 12, { align: 'center' });
+    doc.text('AF', logoX + logoSize/2, logoY + logoSize/2 + 10, { align: 'center' });
   }
 
-  // Company Name (Centered, with better spacing)
-  yPos = 35;
-  doc.setFontSize(24);
+  // Content starts to the right of the logo
+  const contentStartX = logoX + logoSize + 15;
+  let yPos = 28;
+
+  // Company Name
+  doc.setFontSize(20);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(30, 58, 95);
-  doc.text(COMPANY_DETAILS.tradingName.toUpperCase(), pageWidth / 2, yPos, { align: 'center' });
-  
-  yPos += 20;
-  
-  // Parent company
-  doc.setFontSize(12);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(100, 100, 100);
-  doc.text(`A division of ${COMPANY_DETAILS.parentCompany}`, pageWidth / 2, yPos, { align: 'center' });
-  
-  yPos += 18;
-  
-  // 2. Physical Address
-  doc.setFontSize(13);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(50, 50, 50);
-  doc.text('📍 Location:', pageWidth / 2, yPos, { align: 'center' });
-  
-  yPos += 10;
-  doc.setFontSize(12);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(70, 70, 70);
-  doc.text(COMPANY_DETAILS.address, pageWidth / 2, yPos, { align: 'center' });
-  
-  yPos += 16;
-  
-  // 3. Contact Phone Number
-  doc.setFontSize(13);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(50, 50, 50);
-  doc.text('📞 Contact:', pageWidth / 2, yPos, { align: 'center' });
-  
-  yPos += 10;
-  doc.setFontSize(12);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(70, 70, 70);
-  doc.text(COMPANY_DETAILS.phone, pageWidth / 2, yPos, { align: 'center' });
+  doc.text(COMPANY_DETAILS.tradingName.toUpperCase(), contentStartX, yPos);
   
   yPos += 14;
   
+  // Parent company
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(100, 100, 100);
+  doc.text(`A division of ${COMPANY_DETAILS.parentCompany}`, contentStartX, yPos);
+  
+  yPos += 12;
+  
+  // 2. Physical Address
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(50, 50, 50);
+  doc.text('📍 Location:', contentStartX, yPos);
+  
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(70, 70, 70);
+  doc.text(COMPANY_DETAILS.address, contentStartX + 20, yPos);
+  
+  yPos += 12;
+  
+  // 3. Contact Phone Number
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(50, 50, 50);
+  doc.text('📞 Contact:', contentStartX, yPos);
+  
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(70, 70, 70);
+  doc.text(COMPANY_DETAILS.phone, contentStartX + 20, yPos);
+  
+  yPos += 12;
+  
   // 4. Company Motto
-  doc.setFontSize(16);
+  doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(30, 58, 95);
-  doc.text(COMPANY_DETAILS.motto, pageWidth / 2, yPos, { align: 'center' });
+  doc.text(COMPANY_DETAILS.motto, contentStartX, yPos);
   
-  yPosition = yPos + 10;
+  yPosition = 100;
   
   // Add a decorative line
   yPosition += 15;
