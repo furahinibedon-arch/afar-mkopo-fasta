@@ -81,10 +81,14 @@ model BorrowerDocument {
   fileUrl          String
   fileType         String
   fileSize         Int      // in bytes
+  version          Int      @default(1)
+  description      String?
+  isActive         Boolean  @default(true)
   uploadedBy       User     @relation("UploadedBy", fields: [uploadedById], references: [id], onDelete: Cascade)
   borrower         User     @relation("BorrowerDocuments", fields: [borrowerId], references: [id], onDelete: Cascade)
   loan             Loan?    @relation(fields: [loanId], references: [id], onDelete: Cascade)
   createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
   @@map("borrower_documents")
 }

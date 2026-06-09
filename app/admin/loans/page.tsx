@@ -5,6 +5,7 @@ import Layout from"@/components/Layout";
 import{getAllLoans,updateLoanStatus,updateLoan,deleteLoan}from"@/lib/api";
 import{useLanguage}from"@/context/LanguageContext";
 import{generateLoanApplicationPDF}from"@/lib/pdfGenerator";
+import DocumentManagement from '@/components/DocumentManagement';
 
 const STATUSES=["ALL","PENDING","APPROVED","REJECTED","DISBURSED","REPAID","DEFAULTED"];
 
@@ -15,6 +16,7 @@ export default function AdminLoans(){
   const[loading,setLoading]=useState(true);
   const[busy,setBusy]=useState<string|null>(null);
   const[viewing,setViewing]=useState<any|null>(null);
+  const[showDocuments,setShowDocuments]=useState(false);
   const[filter,setFilter]=useState("ALL");
   const[notes,setNotes]=useState<Record<string,string>>({});
   const[refreshKey,setRefreshKey]=useState(0);
@@ -155,6 +157,7 @@ export default function AdminLoans(){
               <td className="py-3 px-3">
                 <div className="flex gap-1">
                   <button onClick={()=>setViewing(l)} className="btn-secondary text-xs py-1 px-2"> View</button>
+                  <button onClick={()=>setShowDocuments(true)} className="btn-secondary text-xs py-1 px-2"> Docs</button>
                   <button onClick={()=>handlePrint(l)} className="btn-secondary text-xs py-1 px-2"> Print</button>
                   {l.status==="PENDING"&&<><button onClick={()=>action(l.id,"APPROVED")} disabled={busy===l.id} className="btn-success text-xs py-1 px-2">{busy===l.id?"":""}</button><button onClick={()=>action(l.id,"REJECTED")} disabled={busy===l.id} className="btn-danger text-xs py-1 px-2">{busy===l.id?"":""}</button></>}
                   {l.status==="APPROVED"&&<button onClick={()=>action(l.id,"DISBURSED")} disabled={busy===l.id} className="btn-primary text-xs py-1 px-2">{busy===l.id?"":" Disburse"}</button>}
@@ -177,6 +180,7 @@ export default function AdminLoans(){
               <p className="text-slate-500 text-sm mt-0.5">{viewing.borrower?.firstName} {viewing.borrower?.lastName}</p>
             </div>
             <div className="flex items-center gap-2">
+              <button onClick={()=>setShowDocuments(true)} className="btn-secondary text-xs px-3 py-1.5"> 📄 Documents</button>
               <button onClick={()=>handlePrint(viewing)} className="btn-secondary text-xs px-3 py-1.5"> Print</button>
               <button onClick={()=>setViewing(null)} className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500"></button>
             </div>
@@ -320,6 +324,14 @@ export default function AdminLoans(){
           </div>
         </div>
       </div>
+    )}
+
+    {/* Documents Modal */}
+    {(showDocuments && viewing) && (
+      <DocumentManagement
+        loanId={viewing.id}
+        onClose={()=>setShowDocuments(false)}
+      />
     )}
   </Layout>
   );

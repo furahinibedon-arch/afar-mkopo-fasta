@@ -5,9 +5,8 @@ export type AppUser = {
   email: string;
   firstName: string;
   lastName: string;
-  phone: string;
   profilePictureUrl?: string | null;
-  role: "ADMIN" | "LOAN_OFFICER" | "BORROWER";
+  role: "ADMIN" | "LOAN_OFFICER" | "BORROWER" | "DIRECTOR";
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -16,17 +15,22 @@ export type AppUser = {
 export type BorrowerDocument = {
   id: string;
   borrowerId: string;
+  loanId?: string;
   uploadedById: string;
   fileName: string;
   fileUrl: string;
   fileType: string;
   fileSize: number;
+  version: number;
+  description?: string;
+  isActive: boolean;
   uploadedBy: {
     id: string;
     firstName: string;
     lastName: string;
   };
   createdAt: string;
+  updatedAt: string;
 };
 
 function ah():Record<string,string>{
@@ -77,4 +81,29 @@ export const uploadBorrowerDocument=async(borrowerId:string, file:File):Promise<
   const formData = new FormData();
   formData.append('file', file);
   return fetch(`${BASE}/api/borrowers/${borrowerId}/documents`,{method:"POST",headers:ah(),body:formData}).then(ok);
+};
+
+// Loan Document Management
+export const getLoanDocuments=(loanId:string, search?: string, fileType?: string):Promise<BorrowerDocument[]>=>{
+  let url = `${BASE}/api/loans/${loanId}/documents`;
+  const params = new URLSearchParams();
+  if (search) params.append('search', search);
+  if (fileType) params.append('type', fileType);
+  if (params.toString()) url += `?${params.toString()}`;
+  return fetch(url,{headers:ah()}).then(ok);
+};
+
+export const uploadLoanDocument=async(loanId:string, file:File, description?: string):Promise<BorrowerDocument>=>{
+  const formData = new FormData();
+  formData.append('file', file);
+  if (description) formData.append('description', description);
+  return fetch(`${BASE}/api/loans/${loanId}/documents`,{method:"POST",headers:ah(),body:formData}).then(ok);
+};
+
+export const updateLoanDocument=async(loanId:string, documentId:string, description:string):Promise<BorrowerDocument>=>{
+  return fetch(`${BASE}/api/loans/${loanId}/documents/${documentId}`,{method:"PATCH",headers:{...ah(),"Content-Type":"application/json"},body:JSON.stringify({description})}).then(ok);
+};
+
+export const deleteLoanDocument=async(loanId:string, documentId:string):Promise<{success: boolean}>=>{
+  return fetch(`${BASE}/api/loans/${loanId}/documents/${documentId}`,{method:"DELETE",headers:ah()}).then(ok);
 };
