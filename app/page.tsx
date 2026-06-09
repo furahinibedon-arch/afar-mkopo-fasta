@@ -27,7 +27,7 @@ export default function HomePage() {
   const [tab, setTab] = useState<"login" | "register">("login");
   const { language, setLanguage } = useLanguage();
   return (
-    <div className="min-h-screen bg-gradient-to-br from-dark-900 via-dark-800 to-primary-900 flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-dark-900 via-primary-900 to-brand-800 flex flex-col">
       <div className="flex items-center justify-between px-6 py-4">
         <div className="flex items-center gap-2.5">
           <div className="h-10 flex items-center">
@@ -40,12 +40,12 @@ export default function HomePage() {
                 const fallback = document.createElement('div');
                 fallback.className = 'flex items-center gap-2.5';
                 fallback.innerHTML = `
-                  <div class="w-9 h-9 rounded-xl bg-brand-500 flex items-center justify-center shadow-glow-brand">
+                  <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-500 to-brand-600 flex items-center justify-center shadow-glow-brand">
                     <span class="text-white font-black text-sm">AF</span>
                   </div>
                   <div>
                     <p class="text-white font-black text-base">AFAR Mkopo</p>
-                    <p class="text-brand-400 font-black text-xs tracking-widest">FASTA</p>
+                    <p class="text-brand-300 font-black text-xs tracking-widest">FASTA</p>
                   </div>
                 `;
                 e.currentTarget.parentElement?.appendChild(fallback);
@@ -63,24 +63,24 @@ export default function HomePage() {
             <h1 className="text-4xl sm:text-5xl font-black text-white mb-3">
               Karibu!
             </h1>
-            <p className="text-xl text-brand-400 font-semibold mb-2">
+            <p className="text-xl text-brand-300 font-semibold mb-2">
               Mfalme Omba mkopo wako kwa urahisi na haraka mtandaoni.
             </p>
-            <p className="text-dark-300">
+            <p className="text-dark-200">
               Welcome! King Apply for your loan easily and quickly online.
             </p>
           </div>
           
-          <div className="bg-white rounded-3xl shadow-2xl overflow-hidden">
-            <div className="flex bg-dark-100 m-4 rounded-xl p-1 gap-1">
+          <div className="bg-gradient-to-br from-white to-primary-50 rounded-3xl shadow-2xl overflow-hidden border border-white/20">
+            <div className="flex bg-gradient-to-r from-dark-100 to-primary-100 m-4 rounded-xl p-1 gap-1">
               {(["login", "register"] as const).map((t) => (
                 <button 
                   key={t} 
                   onClick={() => setTab(t)} 
                   className={`flex-1 py-3 rounded-lg text-sm font-semibold transition-all flex items-center justify-center gap-2 ${
                     tab === t 
-                      ? "bg-primary-600 text-white shadow-lg" 
-                      : "text-dark-500 hover:text-dark-800 hover:bg-white/50"
+                      ? "bg-gradient-to-r from-primary-600 to-primary-500 text-white shadow-lg" 
+                      : "text-dark-600 hover:text-dark-800 hover:bg-white/50"
                   }`}
                 >
                   {t === "login" ? <LogIn className="w-4 h-4" /> : <UserPlus className="w-4 h-4" />}
@@ -92,16 +92,16 @@ export default function HomePage() {
           </div>
           
           <div className="flex justify-center gap-8 mt-6">
-            <div className="flex flex-col items-center text-dark-300">
-              <ShieldCheck className="w-6 h-6 mb-1 text-brand-400" />
+            <div className="flex flex-col items-center text-dark-200">
+              <ShieldCheck className="w-6 h-6 mb-1 text-brand-300" />
               <span className="text-xs font-semibold">Encrypted</span>
             </div>
-            <div className="flex flex-col items-center text-dark-300">
-              <Zap className="w-6 h-6 mb-1 text-brand-400" />
+            <div className="flex flex-col items-center text-dark-200">
+              <Zap className="w-6 h-6 mb-1 text-brand-300" />
               <span className="text-xs font-semibold">Instant</span>
             </div>
-            <div className="flex flex-col items-center text-dark-300">
-              <CheckCircle2 className="w-6 h-6 mb-1 text-brand-400" />
+            <div className="flex flex-col items-center text-dark-200">
+              <CheckCircle2 className="w-6 h-6 mb-1 text-brand-300" />
               <span className="text-xs font-semibold">Licensed</span>
             </div>
           </div>
