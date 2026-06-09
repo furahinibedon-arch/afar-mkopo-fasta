@@ -75,7 +75,20 @@ async function ok(r:Response){
   return d;
 }
 
-export async function loginUser(d:{email:string;password:string}){
+export type LoginInput = {
+  email: string;
+  password: string;
+};
+
+export type RegisterInput = {
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
+};
+
+export async function loginUser(d: LoginInput) {
   console.log("Calling loginUser with:", { email: d.email, password: "[REDACTED]" });
   console.log("BASE URL:", BASE);
   const url = `${BASE}/api/auth/login`;
@@ -83,7 +96,7 @@ export async function loginUser(d:{email:string;password:string}){
   return fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(d)}).then(ok);
 }
 
-export async function registerUser(d:{email:string;password:string;firstName:string;lastName:string;phone:string}){
+export async function registerUser(d: RegisterInput) {
   return fetch(`${BASE}/api/auth/register`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(d)}).then(ok);
 }
 

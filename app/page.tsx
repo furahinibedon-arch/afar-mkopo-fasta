@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
-import { loginUser, registerUser, uploadProfilePicture } from "@/lib/api";
+import { loginUser, registerUser, uploadProfilePicture, LoginInput, RegisterInput } from "@/lib/api";
 import { useLanguage } from "@/context/LanguageContext";
 import { Mail, Lock, User, Phone, LogIn, UserPlus, ShieldCheck, Zap, CheckCircle2, Upload } from "lucide-react";
 
@@ -187,13 +187,7 @@ function RF() {
     setBusy(true);
     setErr(null);
     try {
-      const r = await registerUser(data as {
-        email: string;
-        password: string;
-        firstName: string;
-        lastName: string;
-        phone: string;
-      });
+      const r = await registerUser(data as RegisterInput);
       localStorage.setItem("token", r.token);
       localStorage.setItem("user", JSON.stringify(r.user));
       const uploadResult = await uploadProfilePicture(profilePicture);
