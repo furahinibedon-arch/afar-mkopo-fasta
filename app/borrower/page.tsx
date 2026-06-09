@@ -12,6 +12,55 @@ import { Check, Camera, User } from "lucide-react";
 
 const STEPS=["Borrower Info","Business & Collateral","Loan Details","Guarantors"];
 
+// Convert number to Swahili words
+function numberToSwahili(num: number): string {
+  if (num === 0) return "sifuri";
+  
+  const ones = ["", "moja", "mbili", "tatu", "nne", "tano", "sita", "saba", "nane", "tisa"];
+  const teens = ["kumi", "kumi na moja", "kumi na mbili", "kumi na tatu", "kumi na nne", "kumi na tano", "kumi na sita", "kumi na saba", "kumi na nane", "kumi na tisa"];
+  const tens = ["", "", "ishirini", "thelathini", "arubaini", "hamsini", "sitini", "sabini", "themanini", "tisini"];
+  
+  function convert(n: number): string {
+    if (n < 10) return ones[n];
+    if (n < 20) return teens[n - 10];
+    if (n < 100) {
+      const ten = Math.floor(n / 10);
+      const one = n % 10;
+      return tens[ten] + (one > 0 ? " na " + ones[one] : "");
+    }
+    if (n < 1000) {
+      const hundred = Math.floor(n / 100);
+      const rest = n % 100;
+      let res = "mia " + ones[hundred];
+      if (rest > 0) {
+        res += rest < 10 ? " na " + convert(rest) : " na " + convert(rest);
+      }
+      return res;
+    }
+    if (n < 1000000) {
+      const thousand = Math.floor(n / 1000);
+      const rest = n % 1000;
+      let res = "elfu " + convert(thousand);
+      if (rest > 0) {
+        res += rest < 100 ? " na " + convert(rest) : " " + convert(rest);
+      }
+      return res;
+    }
+    if (n < 1000000000) {
+      const million = Math.floor(n / 1000000);
+      const rest = n % 1000000;
+      let res = "milioni " + convert(million);
+      if (rest > 0) {
+        res += rest < 100000 ? " na " + convert(rest) : " " + convert(rest);
+      }
+      return res;
+    }
+    return num.toString();
+  }
+  
+  return convert(Math.floor(num));
+}
+
 const RATES:Record<string,number>={DAILY:20,WEEKLY:47,MONTHLY:28};
 
 const S=z.object({
@@ -116,6 +165,16 @@ export default function BorrowerPortal(){
   const period=periods[repaymentType as keyof typeof periods]||1;
   const payment=amt>0?Math.ceil(total/period):0;
   const paymentLabel={DAILY:"Daily Payment",WEEKLY:"Weekly Payment",MONTHLY:"Monthly Payment"};
+  
+  // Auto-update loanAmountWords when loanAmount changes
+  useEffect(() => {
+    if (amt > 0) {
+      const words = numberToSwahili(amt);
+      setValue("loanAmountWords", words);
+    } else {
+      setValue("loanAmountWords", "");
+    }
+  }, [amt, setValue]);
 
   const sf:string[][]=[
     ["firstName","lastName","dateOfBirth","gender","maritalStatus","nin","country","region","district","address","houseNumber","phone"],
