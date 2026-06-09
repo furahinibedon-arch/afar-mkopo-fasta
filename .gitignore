@@ -9,6 +9,9 @@ node_modules/
 .env.test.local
 .env.production.local
 
+# Admin creation script
+create-admin.js
+
 # Database files
 *.db
 *.sqlite
