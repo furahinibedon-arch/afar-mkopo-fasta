@@ -55,65 +55,94 @@ export function generateLoanApplicationPDF(data: LoanApplicationData) {
   let yPosition = 20;
 
   // ===========================================
-  // REVISED HEADER SECTION (CORRECTED ORDER)
+  // HEADER WITH COMPANY LOGO
   // ===========================================
   
   // Header background
   doc.setFillColor(245, 247, 250);
-  doc.rect(0, 0, pageWidth, 95, 'F');
-  
-  // 1. Company Name (First)
+  doc.rect(0, 0, pageWidth, 105, 'F');
+
+  // Company Logo (try to load /logo.png)
+  const logoX = 20;
+  const logoY = 20;
+  const logoWidth = 45;
+  const logoHeight = 45;
+
+  // Try to add logo (will fail gracefully if /logo.png doesn't exist)
+  try {
+    // Note: In browser, this would work with base64 or public URL. For now, we'll add a placeholder.
+    // When you add your actual logo.png to public/, uncomment this line:
+    // doc.addImage('/logo.png', 'PNG', logoX, logoY, logoWidth, logoHeight);
+    
+    // Placeholder: Draw a circle for logo
+    doc.setFillColor(30, 58, 95);
+    doc.circle(logoX + logoWidth/2, logoY + logoHeight/2, logoWidth/2, 'F');
+    doc.setFontSize(24);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(245, 158, 11); // Brand color
+    doc.text('AF', logoX + logoWidth/2, logoY + logoHeight/2 + 8, { align: 'center' });
+  } catch (e) {
+    // Fallback if logo fails
+    doc.setFillColor(30, 58, 95);
+    doc.circle(logoX + logoWidth/2, logoY + logoHeight/2, logoWidth/2, 'F');
+    doc.setFontSize(24);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(245, 158, 11);
+    doc.text('AF', logoX + logoWidth/2, logoY + logoHeight/2 + 8, { align: 'center' });
+  }
+
+  // Company Name (Centered, next to logo)
   doc.setFontSize(22);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(30, 58, 95);
-  doc.text(COMPANY_DETAILS.tradingName.toUpperCase(), pageWidth / 2, yPosition, { align: 'center' });
+  doc.text(COMPANY_DETAILS.tradingName.toUpperCase(), pageWidth / 2, yPosition + 10, { align: 'center' });
   
-  yPosition += 8;
+  yPosition += 18;
   
   // Parent company
   doc.setFontSize(11);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(100, 100, 100);
-  doc.text(`A division of ${COMPANY_DETAILS.parentCompany}`, pageWidth / 2, yPosition, { align: 'center' });
+  doc.text(`A division of ${COMPANY_DETAILS.parentCompany}`, pageWidth / 2, yPosition + 10, { align: 'center' });
   
   yPosition += 12;
   
-  // 2. Physical Address (Second)
+  // 2. Physical Address
   doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(50, 50, 50);
-  doc.text('📍 Location:', pageWidth / 2, yPosition, { align: 'center' });
+  doc.text('📍 Location:', pageWidth / 2, yPosition + 10, { align: 'center' });
   
   yPosition += 7;
   doc.setFontSize(11);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(70, 70, 70);
-  doc.text(COMPANY_DETAILS.address, pageWidth / 2, yPosition, { align: 'center' });
+  doc.text(COMPANY_DETAILS.address, pageWidth / 2, yPosition + 10, { align: 'center' });
   
   yPosition += 12;
   
-  // 3. Contact Phone Number (Third)
+  // 3. Contact Phone Number
   doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(50, 50, 50);
-  doc.text('📞 Contact:', pageWidth / 2, yPosition, { align: 'center' });
+  doc.text('📞 Contact:', pageWidth / 2, yPosition + 10, { align: 'center' });
   
   yPosition += 7;
   doc.setFontSize(11);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(70, 70, 70);
-  doc.text(COMPANY_DETAILS.phone, pageWidth / 2, yPosition, { align: 'center' });
+  doc.text(COMPANY_DETAILS.phone, pageWidth / 2, yPosition + 10, { align: 'center' });
   
   yPosition += 12;
   
-  // 4. Company Motto (Last)
+  // 4. Company Motto
   doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(30, 58, 95);
-  doc.text(COMPANY_DETAILS.motto, pageWidth / 2, yPosition, { align: 'center' });
+  doc.text(COMPANY_DETAILS.motto, pageWidth / 2, yPosition + 10, { align: 'center' });
   
   // Add a decorative line
-  yPosition += 5;
+  yPosition += 15;
   doc.setDrawColor(200, 200, 200);
   doc.line(20, yPosition, pageWidth - 20, yPosition);
   
