@@ -9,6 +9,7 @@ import {
   BorrowerDocument,
 } from '@/lib/api';
 import { useLanguage } from '@/context/LanguageContext';
+import { Upload, Search, FileText, Image, Edit, Trash2, Eye, X } from 'lucide-react';
 
 const formatFileSize = (bytes: number): string => {
   if (bytes === 0) return '0 Bytes';
@@ -18,13 +19,10 @@ const formatFileSize = (bytes: number): string => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 };
 
-const getFileIcon = (type: string): string => {
-  if (type.includes('pdf')) return '📄';
-  if (type.includes('image')) return '🖼️';
-  if (type.includes('word')) return '📝';
-  if (type.includes('excel') || type.includes('sheet')) return '📊';
-  if (type.includes('text')) return '📃';
-  return '📁';
+const getFileIcon = (type: string) => {
+  if (type.includes('pdf')) return <FileText className="w-12 h-12 text-red-500" />;
+  if (type.includes('image')) return <Image className="w-12 h-12 text-blue-500" />;
+  return <FileText className="w-12 h-12 text-gray-500" />;
 };
 
 interface DocumentManagementProps {
@@ -102,16 +100,16 @@ export default function DocumentManagement({ loanId, onClose }: DocumentManageme
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 overflow-y-auto">
+    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 overflow-y-auto">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl my-8 animate-slide-up">
-        <div className="flex items-center justify-between p-6 border-b border-slate-100">
+        <div className="flex items-center justify-between p-6 border-b border-dark-200">
           <div>
-            <h2 className="text-xl font-black text-navy-800">Loan Documents</h2>
-            <p className="text-slate-500 text-sm">Manage documents for this loan application</p>
+            <h2 className="text-xl font-black text-dark-800">Loan Documents</h2>
+            <p className="text-dark-500 text-sm">Manage documents for this loan application</p>
           </div>
           {onClose && (
-            <button onClick={onClose} className="w-10 h-10 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 transition-colors">
-              ✕
+            <button onClick={onClose} className="w-10 h-10 rounded-full bg-dark-100 hover:bg-dark-200 flex items-center justify-center text-dark-600 transition-colors">
+              <X className="w-5 h-5" />
             </button>
           )}
         </div>
@@ -120,19 +118,22 @@ export default function DocumentManagement({ loanId, onClose }: DocumentManageme
           {/* Search and Filter */}
           <div className="flex flex-wrap gap-4">
             <div className="flex-1 min-w-[200px]">
-              <input
-                type="text"
-                placeholder="Search documents..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500"
-              />
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-dark-400" />
+                <input
+                  type="text"
+                  placeholder="Search documents..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-dark-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
+              </div>
             </div>
             <div className="w-48">
               <select
                 value={filterType}
                 onChange={(e) => setFilterType(e.target.value)}
-                className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500"
+                className="w-full px-4 py-2 border border-dark-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500"
               >
                 <option value="">All Types</option>
                 <option value="pdf">PDF</option>
@@ -142,7 +143,8 @@ export default function DocumentManagement({ loanId, onClose }: DocumentManageme
               </select>
             </div>
             <label className="btn-primary px-4 py-2 cursor-pointer flex items-center gap-2">
-              {uploading ? 'Uploading...' : '+ Upload Document'}
+              {uploading ? 'Uploading...' : 'Upload Document'}
+              <Upload className="w-5 h-5" />
               <input
                 type="file"
                 accept="application/pdf,image/*,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/plain"
@@ -156,24 +158,24 @@ export default function DocumentManagement({ loanId, onClose }: DocumentManageme
           {/* Document List */}
           {loading ? (
             <div className="flex justify-center py-12">
-              <div className="w-8 h-8 rounded-full border-4 border-brand-500 border-t-transparent animate-spin" />
+              <div className="w-8 h-8 rounded-full border-4 border-primary-500 border-t-transparent animate-spin" />
             </div>
           ) : documents.length === 0 ? (
-            <div className="text-center py-12 text-slate-500">
+            <div className="text-center py-12 text-dark-500">
               <div className="text-6xl mb-4">📂</div>
-              <p className="text-lg font-semibold text-slate-700">No Documents</p>
+              <p className="text-lg font-semibold text-dark-700">No Documents</p>
               <p className="text-sm">Upload your first document to get started</p>
             </div>
           ) : (
             <div className="space-y-3">
               {documents.map(doc => (
-                <div key={doc.id} className="border border-slate-200 rounded-xl p-4 bg-slate-50 hover:bg-slate-100 transition-colors">
+                <div key={doc.id} className="border border-dark-200 rounded-xl p-4 bg-dark-50 hover:bg-dark-100 transition-colors">
                   {editingDocument?.id === doc.id ? (
                     <div className="space-y-3">
                       <textarea
                         value={editDescription}
                         onChange={(e) => setEditDescription(e.target.value)}
-                        className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500"
+                        className="w-full px-3 py-2 border border-dark-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                         placeholder="Document description..."
                         rows={2}
                       />
@@ -194,16 +196,16 @@ export default function DocumentManagement({ loanId, onClose }: DocumentManageme
                     </div>
                   ) : (
                     <div className="flex items-start gap-4">
-                      <div className="text-4xl">{getFileIcon(doc.fileType)}</div>
+                      {getFileIcon(doc.fileType)}
                       <div className="flex-1">
                         <div className="flex items-center justify-between">
                           <div>
-                            <h4 className="font-semibold text-navy-800">{doc.fileName}</h4>
-                            <p className="text-sm text-slate-500">
+                            <h4 className="font-semibold text-dark-800">{doc.fileName}</h4>
+                            <p className="text-sm text-dark-500">
                               {formatFileSize(doc.fileSize)} • Uploaded {new Date(doc.createdAt).toLocaleDateString()} by {doc.uploadedBy.firstName} {doc.uploadedBy.lastName}
                             </p>
                             {doc.description && (
-                              <p className="text-sm text-slate-600 mt-1">{doc.description}</p>
+                              <p className="text-sm text-dark-600 mt-1">{doc.description}</p>
                             )}
                           </div>
                           <div className="flex gap-2">
@@ -213,7 +215,7 @@ export default function DocumentManagement({ loanId, onClose }: DocumentManageme
                               rel="noopener noreferrer"
                               className="px-3 py-1.5 text-sm btn-secondary flex items-center gap-1"
                             >
-                              👁️ View
+                              <Eye className="w-4 h-4" /> View
                             </a>
                             <button
                               onClick={() => {
@@ -222,13 +224,13 @@ export default function DocumentManagement({ loanId, onClose }: DocumentManageme
                               }}
                               className="px-3 py-1.5 text-sm btn-secondary flex items-center gap-1"
                             >
-                              ✏️ Edit
+                              <Edit className="w-4 h-4" /> Edit
                             </button>
                             <button
                               onClick={() => handleDelete(doc.id)}
                               className="px-3 py-1.5 text-sm text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors"
                             >
-                              🗑️ Delete
+                              <Trash2 className="w-4 h-4" />
                             </button>
                           </div>
                         </div>

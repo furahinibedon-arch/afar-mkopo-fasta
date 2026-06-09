@@ -8,17 +8,17 @@ import Layout from"@/components/Layout";
 import{useLanguage}from"@/context/LanguageContext";
 import{submitLoan,getMe,getMyLoans}from"@/lib/api";
 import { TANZANIA_REGIONS } from "@/lib/tanzaniaLocations";
+import { Check, Camera, User } from "lucide-react";
 
 const STEPS=["Borrower Info","Business & Collateral","Loan Details","Guarantors"];
 
-// Interest rates per repayment type
 const RATES:Record<string,number>={DAILY:3.5,WEEKLY:10,MONTHLY:20};
 
 const S=z.object({
   firstName:z.string().min(2,"Required"),lastName:z.string().min(2,"Required"),
   dateOfBirth:z.string().min(1,"Required"),gender:z.string().min(1,"Required"),
   maritalStatus:z.string().min(1,"Required"),
-  nin: z.string().min(3, "NIN is required"), // NIDA Number
+  nin: z.string().min(3, "NIN is required"),
   country: z.string().default("Tanzania"),
   region: z.string().min(1, "Region is required"),
   district: z.string().min(1, "District is required"),
@@ -58,7 +58,6 @@ export default function BorrowerPortal(){
     defaultValues:{loanAmountWords:"",repaymentType:"MONTHLY", country: "Tanzania"}
   });
   
-  // Watch region to update district dropdown
   const watchedRegion = watch("region");
   useEffect(() => {
     if (watchedRegion) {
@@ -77,11 +76,10 @@ export default function BorrowerPortal(){
       console.log("Got user data:", userData);
       setUser(userData);
       if (userData.borrowerProfile) {
-        // Pre-fill the form with saved profile data!
         reset({
           firstName: userData.firstName,
           lastName: userData.lastName,
-          dateOfBirth: userData.borrowerProfile.dateOfBirth.split('T')[0], // format YYYY-MM-DD
+          dateOfBirth: userData.borrowerProfile.dateOfBirth.split('T')[0],
           gender: userData.borrowerProfile.gender,
           maritalStatus: userData.borrowerProfile.maritalStatus,
           nin: userData.borrowerProfile.nin,
@@ -106,7 +104,6 @@ export default function BorrowerPortal(){
       }
     }).catch((e:any)=>{
       console.error("getMe failed:", e);
-      // Don't push back to / immediately, just log error
     });
   },[router, reset]);
 
@@ -135,7 +132,6 @@ export default function BorrowerPortal(){
   const sub=async(data:FD)=>{
     console.log("Submitting loan application:", data);
     
-    // Check if user has a profile picture
     if (!user?.profilePictureUrl) {
       setErr("Please upload a profile picture before submitting your loan application.");
       return;
@@ -162,10 +158,10 @@ export default function BorrowerPortal(){
     <Layout portal="borrower">
       <div className="max-w-lg mx-auto text-center py-16 animate-fade-in">
         <div className="w-20 h-20 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-6">
-          <svg className="w-10 h-10 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>
+          <Check className="w-10 h-10 text-emerald-600" />
         </div>
-        <h2 className="text-3xl font-black text-navy-800 mb-3">{t.applicationSubmitted}</h2>
-        <p className="text-slate-500 mb-8">{t.applicationSuccessMsg}</p>
+        <h2 className="text-3xl font-black text-dark-800 mb-3">{t.applicationSubmitted}</h2>
+        <p className="text-dark-500 mb-8">{t.applicationSuccessMsg}</p>
         <div className="flex gap-3 justify-center">
           <button onClick={()=>{
             setDone(false);
@@ -182,20 +178,19 @@ export default function BorrowerPortal(){
   return(
     <Layout portal="borrower">
       <div className="mb-8">
-        <p className="text-slate-500 text-sm mb-1">Welcome back, <span className="font-semibold text-navy-800">{user?.firstName}</span></p>
-        <h1 className="text-3xl font-black text-navy-800">{t.applyForLoan}</h1>
+        <p className="text-dark-500 text-sm mb-1">Welcome back, <span className="font-semibold text-dark-800">{user?.firstName}</span></p>
+        <h1 className="text-3xl font-black text-dark-800">{t.applyForLoan}</h1>
       </div>
 
-      {/* Wizard steps */}
       <div className="card mb-6 p-4">
         <div className="flex items-center">
           {STEPS.map((label,i)=>(
             <div key={i} className="flex items-center flex-1 last:flex-none">
               <div className="flex flex-col items-center gap-1">
                 <div className={i<step?"wizard-step-done":i===step?"wizard-step-active":"wizard-step-inactive"}>{i<step?"":i+1}</div>
-                <span className={`text-xs font-semibold hidden sm:block ${i===step?"text-brand-500":"text-slate-400"}`}>{label}</span>
+                <span className={`text-xs font-semibold hidden sm:block ${i===step?"text-brand-500":"text-dark-400"}`}>{label}</span>
               </div>
-              {i<STEPS.length-1&&<div className={`flex-1 h-0.5 mx-2 rounded-full ${i<step?"bg-emerald-400":"bg-slate-200"}`}/>}
+              {i<STEPS.length-1&&<div className={`flex-1 h-0.5 mx-2 rounded-full ${i<step?"bg-emerald-400":"bg-dark-200"}`}/>}
             </div>
           ))}
         </div>
@@ -203,13 +198,12 @@ export default function BorrowerPortal(){
 
       {err&&<div className="mb-4 flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-xl"> {err}</div>}
       
-      {/* Profile Picture Reminder */}
       {!user?.profilePictureUrl && (
         <div className="mb-4 flex items-center gap-3 bg-amber-50 border border-amber-200 text-amber-800 text-sm px-4 py-4 rounded-xl">
-          <span className="text-2xl">📷</span>
+          <Camera className="w-6 h-6" />
           <div className="flex-1">
             <p className="font-semibold mb-1">Profile Picture Required</p>
-            <p className="text-xs">Please upload a profile picture before submitting your loan application. You can do this <a href="/borrower/profile" className="text-amber-700 underline font-semibold hover:text-amber-900">on your profile page</a>.</p>
+            <p className="text-xs">Please upload a profile picture before submitting your loan application. You can do this <a href="/borrower/profile" className="text-amber-800 underline font-semibold hover:text-amber-900">on your profile page</a>.</p>
           </div>
         </div>
       )}
@@ -217,9 +211,8 @@ export default function BorrowerPortal(){
       <form onSubmit={handleSubmit(sub)}>
         <div className="card">
 
-          {/* STEP 0: Borrower Info */}
           {step===0&&<div className="animate-fade-in">
-            <h2 className="text-lg font-black text-navy-800 mb-6 pb-2 border-b border-slate-100">01. Taarifa za Mkopaji</h2>
+            <h2 className="text-lg font-black text-dark-800 mb-6 pb-2 border-b border-dark-200">01. Taarifa za Mkopaji</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Fi l="Jina (First)" r={register("firstName")} e={errors.firstName?.message}/>
               <Fi l="Jina (Last)" r={register("lastName")} e={errors.lastName?.message}/>
@@ -237,9 +230,8 @@ export default function BorrowerPortal(){
             </div>
           </div>}
 
-          {/* STEP 1: Business + Collateral */}
           {step===1&&<div className="animate-fade-in">
-            <h2 className="text-lg font-black text-navy-800 mb-6 pb-2 border-b border-slate-100">02. Taarifa za Biashara & Dhamana</h2>
+            <h2 className="text-lg font-black text-dark-800 mb-6 pb-2 border-b border-dark-200">02. Taarifa za Biashara & Dhamana</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Fi l="Jina la biashara" r={register("businessName")} e={errors.businessName?.message}/>
               <Fi l="Mahali pa biashara" r={register("businessLocation")} e={errors.businessLocation?.message}/>
@@ -253,24 +245,22 @@ export default function BorrowerPortal(){
                 <label className="label"> Dhamana ya Mkopo (Collateral / Asset)</label>
                 <textarea {...register("collateral")} rows={3} className="input-field" placeholder="e.g. Nyumba, gari, ardhi, bidhaa za duka... Eleza mali unayoweka dhamana"/>
                 {errors.collateral&&<p className="text-red-500 text-xs mt-1">{errors.collateral.message}</p>}
-                <p className="text-xs text-slate-400 mt-1">Describe the asset or property you are offering as security for this loan.</p>
+                <p className="text-xs text-dark-400 mt-1">Describe the asset or property you are offering as security for this loan.</p>
               </div>
             </div>
           </div>}
 
-          {/* STEP 2: Loan Details */}
           {step===2&&<div className="animate-fade-in">
-            <h2 className="text-lg font-black text-navy-800 mb-6 pb-2 border-b border-slate-100">03. Kiasi & Masharti ya Mkopo</h2>
+            <h2 className="text-lg font-black text-dark-800 mb-6 pb-2 border-b border-dark-200">03. Kiasi & Masharti ya Mkopo</h2>
 
-            {/* Repayment type selector */}
             <div className="mb-6">
               <label className="label">Aina ya Malipo (Repayment Type)</label>
               <div className="grid grid-cols-3 gap-3 mt-2">
                 {([["DAILY","Kila Siku","Daily","3.5%"],["WEEKLY","Kila Wiki","Weekly","10%"],["MONTHLY","Kila Mwezi","Monthly","20%"]] as [string,string,string,string][]).map(([val,sw,en,r])=>(
-                  <label key={val} className={`cursor-pointer border-2 rounded-xl p-3 text-center transition-all ${repaymentType===val?"border-brand-500 bg-brand-50":"border-slate-200 hover:border-slate-300"}`}>
+                  <label key={val} className={`cursor-pointer border-2 rounded-xl p-4 text-center transition-all ${repaymentType===val?"border-primary-500 bg-primary-50":"border-dark-200 hover:border-dark-300"}`}>
                     <input type="radio" {...register("repaymentType")} value={val} className="hidden"/>
-                    <p className="font-black text-navy-800 text-sm">{en}</p>
-                    <p className="text-slate-500 text-xs">{sw}</p>
+                    <p className="font-black text-dark-800 text-sm">{en}</p>
+                    <p className="text-dark-500 text-xs">{sw}</p>
                     <p className="text-brand-600 font-bold text-sm mt-1">{r} interest</p>
                   </label>
                 ))}
@@ -286,30 +276,29 @@ export default function BorrowerPortal(){
               </div>
               <div>
                 <label className="label">{paymentLabel[repaymentType as keyof typeof paymentLabel]} (auto)</label>
-                <input readOnly value={payment>0?`Tsh ${payment.toLocaleString()}`:""} className="input-field bg-slate-50 text-slate-500"/>
+                <input readOnly value={payment>0?`Tsh ${payment.toLocaleString()}`:""} className="input-field bg-dark-50 text-dark-500"/>
               </div>
               <div className="sm:col-span-2">
                 <Fi l="Kiasi kwa maneno" r={register("loanAmountWords")} e={errors.loanAmountWords?.message} p="e.g. Elfu mia tano"/>
               </div>
             </div>
 
-            {amt>0&&<div className="mt-6 bg-navy-800 rounded-2xl p-5 text-white">
-              <p className="text-xs font-semibold text-slate-400 mb-3 uppercase tracking-wide">Muhtasari wa Mkopo</p>
+            {amt>0&&<div className="mt-6 bg-dark-800 rounded-2xl p-5 text-white">
+              <p className="text-xs font-semibold text-dark-300 mb-3 uppercase tracking-wide">Muhtasari wa Mkopo</p>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
                 {[
                   {l:"Principal",v:`Tsh ${amt.toLocaleString()}`},
                   {l:`Interest (${rate}%)`,v:`Tsh ${(amt*rate/100).toLocaleString()}`},
                   {l:"Total Repay",v:`Tsh ${total.toLocaleString()}`},
                   {l:paymentLabel[repaymentType as keyof typeof paymentLabel],v:`Tsh ${payment.toLocaleString()}`},
-                ].map(({l,v})=><div key={l}><p className="text-brand-400 font-black text-lg">{v}</p><p className="text-slate-400 text-xs mt-0.5">{l}</p></div>)}
+                ].map(({l,v})=><div key={l}><p className="text-brand-400 font-black text-lg">{v}</p><p className="text-dark-300 text-xs mt-0.5">{l}</p></div>)}
               </div>
             </div>}
           </div>}
 
-          {/* STEP 3: Guarantors */}
           {step===3&&<div className="animate-fade-in space-y-6">
             <div>
-              <h2 className="text-lg font-black text-navy-800 mb-4 pb-2 border-b border-slate-100">06. Mdhamini wa Kwanza</h2>
+              <h2 className="text-lg font-black text-dark-800 mb-4 pb-2 border-b border-dark-200">06. Mdhamini wa Kwanza</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Fi l="Majina" r={register("guarantor1Name")} e={errors.guarantor1Name?.message}/>
                 <Fi l="Makazi" r={register("guarantor1Address")} e={errors.guarantor1Address?.message}/>
@@ -325,7 +314,7 @@ export default function BorrowerPortal(){
               </div>
             </div>
             <div>
-              <h2 className="text-lg font-black text-navy-800 mb-4 pb-2 border-b border-slate-100">08. Mdhamini wa Pili</h2>
+              <h2 className="text-lg font-black text-dark-800 mb-4 pb-2 border-b border-dark-200">08. Mdhamini wa Pili</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Fi l="Majina" r={register("guarantor2Name")} e={errors.guarantor2Name?.message}/>
                 <Fi l="Makazi" r={register("guarantor2Address")} e={errors.guarantor2Address?.message}/>
@@ -345,7 +334,7 @@ export default function BorrowerPortal(){
 
         <div className="flex items-center justify-between mt-6">
           <button type="button" onClick={prev} disabled={step===0} className="btn-secondary disabled:opacity-30"> Back</button>
-          <span className="text-xs text-slate-400 font-medium">Step {step+1} of {STEPS.length}</span>
+          <span className="text-xs text-dark-400 font-medium">Step {step+1} of {STEPS.length}</span>
           {step<3
             ?<button type="button" onClick={next} className="btn-primary">Next </button>
             :<button type="submit" disabled={busy} className="btn-primary">{busy?"Saving":"Submit"}</button>
