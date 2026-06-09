@@ -51,7 +51,8 @@ export async function POST(request: Request) {
         role: true,
         isActive: true,
         createdAt: true,
-        updatedAt: true
+        updatedAt: true,
+        profilePictureUrl: true
       }
     });
 

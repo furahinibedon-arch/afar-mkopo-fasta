@@ -41,7 +41,23 @@ export async function POST(request: NextRequest) {
     // Update user profile with base64 image
     const updatedUser = await prisma.user.update({
       where: { id: userId },
-      data: { profilePictureUrl: base64Image }
+      data: { profilePictureUrl: base64Image },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        phone: true,
+        role: true,
+        isActive: true,
+        createdAt: true,
+        updatedAt: true,
+        profilePictureUrl: true,
+        borrowerProfile: true,
+        receivedDocuments: {
+          where: { isActive: true }
+        }
+      }
     });
 
     logInfo('Profile picture uploaded successfully', { userId });
