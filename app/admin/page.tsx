@@ -17,7 +17,7 @@ export default function AdminDashboard(){
     const u=localStorage.getItem("user");
     if(!u){router.push("/");return;}
     const role=JSON.parse(u).role;
-    if(!["ADMIN", "DIRECTOR"].includes(role)){router.push(role==="LOAN_OFFICER"?"/staff":"/borrower");return;}
+    if(!["ADMIN", "DIRECTOR", "CEO"].includes(role)){router.push(role==="LOAN_OFFICER"?"/staff":"/borrower");return;}
     getAnalytics().then(setData).catch((e:any)=>setErr(e.message)).finally(()=>setLoading(false));
   },[router, refreshKey]);
 

@@ -15,7 +15,7 @@ export default function CompanyBalance(){
   const[form,setForm]=useState({type:"CREDIT",amount:"",description:""});
   const[msg,setMsg]=useState("");
   const[refreshKey,setRefreshKey]=useState(0);
-  useEffect(()=>{const u=localStorage.getItem("user");if(!u){router.push("/");return;}if(JSON.parse(u).role==="BORROWER"){router.push("/borrower");return;}load();},[router, refreshKey]);
+  useEffect(()=>{const u=localStorage.getItem("user");if(!u){router.push("/");return;}const role=JSON.parse(u).role;if(role==="BORROWER"){router.push("/borrower");return;}load();},[router, refreshKey]);
 
   useEffect(() => {
     const handleFocus = () => setRefreshKey(k => k + 1);

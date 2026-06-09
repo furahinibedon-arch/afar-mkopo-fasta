@@ -27,7 +27,7 @@ export default function AdminLoans(){
   const[adjustmentDirection,setAdjustmentDirection]=useState<"increase"|"decrease">("increase");
   const[adjustedAmount,setAdjustedAmount]=useState<number>(0);
 
-  useEffect(()=>{const u=localStorage.getItem("user");if(!u){router.push("/");return;}const role=JSON.parse(u).role;if(!["ADMIN", "DIRECTOR"].includes(role)){router.push(role==="LOAN_OFFICER"?"/staff":"/borrower");return;}load();},[router, refreshKey]);
+  useEffect(()=>{const u=localStorage.getItem("user");if(!u){router.push("/");return;}const role=JSON.parse(u).role;if(!["ADMIN", "DIRECTOR", "CEO"].includes(role)){router.push(role==="LOAN_OFFICER"?"/staff":"/borrower");return;}load();},[router, refreshKey]);
 
   useEffect(() => {
     const handleFocus = () => setRefreshKey(k => k + 1);

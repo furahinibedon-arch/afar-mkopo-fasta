@@ -6,12 +6,13 @@ import { useLanguage } from "@/context/LanguageContext";
 import { getUsers, getBorrowerDocuments, uploadBorrowerDocument, AppUser, BorrowerDocument } from "@/lib/api";
 import { Upload, FileText } from "lucide-react";
 
-const ROLES = ["BORROWER", "LOAN_OFFICER", "ADMIN", "DIRECTOR"];
+const ROLES = ["BORROWER", "LOAN_OFFICER", "ADMIN", "DIRECTOR", "CEO"];
 const EMPTY = { id: "", email: "", firstName: "", lastName: "", phone: "", role: "BORROWER", password: "", isActive: true };
 
 export default function AdminUsers() {
   const { t } = useLanguage();
   const router = useRouter();
+  const [currentUserRole, setCurrentUserRole] = useState<string | null>(null);
   const [users, setUsers] = useState<AppUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState<"add" | "edit" | "documents" | null>(null);
@@ -19,6 +20,11 @@ export default function AdminUsers() {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
   const [confirm, setConfirm] = useState<string | null>(null);
+
+  useEffect(() => {
+    const u = localStorage.getItem("user");
+    if (u) setCurrentUserRole(JSON.parse(u).role);
+  }, []);
 
   // Document modal state
   const [selectedBorrower, setSelectedBorrower] = useState<AppUser | null>(null);
@@ -29,7 +35,8 @@ export default function AdminUsers() {
   useEffect(() => {
     const u = localStorage.getItem("user");
     if (!u) { router.push("/"); return; }
-    if (JSON.parse(u).role !== "ADMIN") { router.push("/admin"); return; }
+    const userRole = JSON.parse(u).role;
+    if (userRole !== "ADMIN" && userRole !== "CEO") { router.push("/admin"); return; }
     load();
   }, [router, refreshKey]);
 
@@ -109,8 +116,8 @@ export default function AdminUsers() {
   return (
     <Layout portal="admin">
       <div className="mb-6 flex items-center justify-between">
-        <div><h1 className="text-3xl font-black text-dark-800">User Management</h1><p className="text-dark-500 mt-1">Add, edit, restrict or delete users.</p></div>
-        <button onClick={openAdd} className="btn-primary">+ Add User</button>
+        <div><h1 className="text-3xl font-black text-dark-800">User Management</h1><p className="text-dark-500 mt-1">{currentUserRole === "CEO" ? "View all users." : "Add, edit, restrict or delete users."}</p></div>
+        {currentUserRole !== "CEO" && <button onClick={openAdd} className="btn-primary">+ Add User</button>}
       </div>
       {msg && <div className={`mb-4 px-4 py-2.5 rounded-xl text-sm font-semibold ${msg.ok ? "bg-emerald-50 border border-emerald-200 text-emerald-700" : "bg-red-50 border border-red-200 text-red-700"}`}>{msg.text}</div>}
       {loading ? <div className="flex justify-center py-20"><div className="w-8 h-8 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"/></div> :
@@ -127,10 +134,10 @@ export default function AdminUsers() {
                   <td className="py-3 px-3"><span className={`badge-${u.role === "ADMIN" ? "disbursed" : u.role === "LOAN_OFFICER" ? "approved" : u.role === "DIRECTOR" ? "pending" : "pending"}`}>{u.role}</span></td>
                   <td className="py-3 px-3"><span className={u.isActive ? "badge-approved" : "badge-rejected"}>{u.isActive ? t.active_ : t.restricted}</span></td>
                   <td className="py-3 px-3"><div className="flex gap-1 flex-wrap">
-                    <button onClick={() => openEdit(u)} className="btn-secondary text-xs py-1 px-2"> Edit</button>
+                    {currentUserRole !== "CEO" && <button onClick={() => openEdit(u)} className="btn-secondary text-xs py-1 px-2"> Edit</button>}
                     {u.role === "BORROWER" && <button onClick={() => loadDocuments(u)} className="btn-secondary text-xs py-1 px-2"> Docs</button>}
-                    <button onClick={() => toggleRestrict(u)} className={`text-xs py-1 px-2 font-semibold rounded-lg transition-all ${u.isActive ? "bg-amber-100 text-amber-700 hover:bg-amber-200" : "bg-emerald-100 text-emerald-700 hover:bg-emerald-200"}`}>{u.isActive ? t.restrict : t.activate}</button>
-                    <button onClick={() => setConfirm(u.id)} className="btn-danger text-xs py-1 px-2"> Delete</button>
+                    {currentUserRole !== "CEO" && <button onClick={() => toggleRestrict(u)} className={`text-xs py-1 px-2 font-semibold rounded-lg transition-all ${u.isActive ? "bg-amber-100 text-amber-700 hover:bg-amber-200" : "bg-emerald-100 text-emerald-700 hover:bg-emerald-200"}`}>{u.isActive ? t.restrict : t.activate}</button>}
+                    {currentUserRole !== "CEO" && <button onClick={() => setConfirm(u.id)} className="btn-danger text-xs py-1 px-2"> Delete</button>}
                   </div></td>
                 </tr>
               ))}

@@ -7,7 +7,7 @@ export type AppUser = {
   lastName: string;
   phone: string;
   profilePictureUrl?: string | null;
-  role: "ADMIN" | "LOAN_OFFICER" | "BORROWER" | "DIRECTOR";
+  role: "ADMIN" | "LOAN_OFFICER" | "BORROWER" | "DIRECTOR" | "CEO";
   isActive: boolean;
   createdAt: string;
   updatedAt: string;

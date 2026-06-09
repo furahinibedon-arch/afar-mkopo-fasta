@@ -4,7 +4,7 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 import { prisma } from '@/lib/server-auth';
 
-async function guard(request: NextRequest) {
+async function guardWrite(request: NextRequest) {
   const authHeader = request.headers.get('authorization');
   const token = authHeader?.replace('Bearer ', '').trim() || '';
   if (!token) throw { status: 401, error: 'No token' };
@@ -16,7 +16,7 @@ async function guard(request: NextRequest) {
 
 export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    await guard(request);
+    await guardWrite(request);
     const { id } = params;
     const { email, firstName, lastName, phone, role, isActive, password } = await request.json();
     const data: any = {};
@@ -40,7 +40,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
 
 export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    await guard(request);
+    await guardWrite(request);
     const { id } = params;
     await prisma.user.delete({ where: { id } });
     return NextResponse.json({ message: 'User deleted' });
