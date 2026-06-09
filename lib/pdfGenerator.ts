@@ -58,82 +58,70 @@ export function generateLoanApplicationPDF(data: LoanApplicationData) {
   // HEADER WITH COMPANY LOGO
   // ===========================================
   
-  // Header background
-  doc.setFillColor(245, 247, 250);
-  doc.rect(0, 0, pageWidth, 95, 'F');
+  // Header background - light gray
+  doc.setFillColor(248, 250, 252);
+  doc.rect(0, 0, pageWidth, 70, 'F');
 
-  // Company Logo (try to load /logo.png)
-  const logoX = 18;
-  const logoY = 18;
-  const logoSize = 58;
+  // Company Logo - small, fits perfectly
+  const logoX = 15;
+  const logoY = 10;
+  const logoSize = 50;
 
-  // Try to add logo with proper aspect ratio handling
+  // Try to add logo
   try {
-    // Add logo with proper aspect ratio, using square size to maintain proportions
     doc.addImage('/logo.png', 'PNG', logoX, logoY, logoSize, logoSize);
   } catch (e) {
-    // Fallback if logo file not found - create a nice branded circle
+    // Simple fallback circle
     doc.setFillColor(30, 58, 95);
     doc.circle(logoX + logoSize/2, logoY + logoSize/2, logoSize/2, 'F');
-    doc.setFontSize(28);
+    doc.setFontSize(24);
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(245, 158, 11); // Brand color
-    doc.text('AF', logoX + logoSize/2, logoY + logoSize/2 + 10, { align: 'center' });
+    doc.setTextColor(245, 158, 11);
+    doc.text('AF', logoX + logoSize/2, logoY + logoSize/2 + 8, { align: 'center' });
   }
 
-  // Content starts to the right of the logo
-  const contentStartX = logoX + logoSize + 15;
-  let yPos = 28;
+  // Content to the right of logo
+  const contentX = logoX + logoSize + 12;
+  let currentY = 18;
 
-  // Company Name
-  doc.setFontSize(20);
+  // Company Name - big, bold
+  doc.setFontSize(18);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(30, 58, 95);
-  doc.text(COMPANY_DETAILS.tradingName.toUpperCase(), contentStartX, yPos);
+  doc.text(COMPANY_DETAILS.tradingName.toUpperCase(), contentX, currentY);
   
-  yPos += 14;
+  currentY += 10;
   
-  // Parent company
-  doc.setFontSize(10);
+  // Parent company - small
+  doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
-  doc.setTextColor(100, 100, 100);
-  doc.text(`A division of ${COMPANY_DETAILS.parentCompany}`, contentStartX, yPos);
+  doc.setTextColor(107, 114, 128);
+  doc.text(`A division of ${COMPANY_DETAILS.parentCompany}`, contentX, currentY);
   
-  yPos += 12;
+  currentY += 10;
   
-  // 2. Physical Address
-  doc.setFontSize(11);
+  // Location and contact on same line
+  doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(50, 50, 50);
-  doc.text('📍 Location:', contentStartX, yPos);
-  
-  doc.setFontSize(10);
+  doc.setTextColor(55, 65, 81);
+  doc.text('Location:', contentX, currentY);
   doc.setFont('helvetica', 'normal');
-  doc.setTextColor(70, 70, 70);
-  doc.text(COMPANY_DETAILS.address, contentStartX + 20, yPos);
+  doc.text(COMPANY_DETAILS.address, contentX + 28, currentY);
   
-  yPos += 12;
-  
-  // 3. Contact Phone Number
-  doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(50, 50, 50);
-  doc.text('📞 Contact:', contentStartX, yPos);
-  
-  doc.setFontSize(10);
+  doc.text('Contact:', contentX + 90, currentY);
   doc.setFont('helvetica', 'normal');
-  doc.setTextColor(70, 70, 70);
-  doc.text(COMPANY_DETAILS.phone, contentStartX + 20, yPos);
+  doc.text(COMPANY_DETAILS.phone, contentX + 118, currentY);
   
-  yPos += 12;
+  currentY += 10;
   
-  // 4. Company Motto
-  doc.setFontSize(12);
+  // Motto
+  doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(30, 58, 95);
-  doc.text(COMPANY_DETAILS.motto, contentStartX, yPos);
+  doc.text(COMPANY_DETAILS.motto, contentX, currentY);
   
-  yPosition = 100;
+  yPosition = 75;
   
   // Add a decorative line
   yPosition += 15;
