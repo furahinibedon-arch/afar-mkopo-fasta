@@ -187,7 +187,13 @@ function RF() {
     setBusy(true);
     setErr(null);
     try {
-      const r = await registerUser(data);
+      const r = await registerUser(data as {
+        email: string;
+        password: string;
+        firstName: string;
+        lastName: string;
+        phone: string;
+      });
       localStorage.setItem("token", r.token);
       localStorage.setItem("user", JSON.stringify(r.user));
       const uploadResult = await uploadProfilePicture(profilePicture);
