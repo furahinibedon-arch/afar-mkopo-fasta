@@ -26,6 +26,7 @@ export async function GET(request: NextRequest) {
       orderBy: { createdAt: 'desc' },
       select: {
         id: true,
+        requestedAmount: true,
         amount: true,
         interestRate: true,
         repaymentPeriod: true,
@@ -38,7 +39,14 @@ export async function GET(request: NextRequest) {
         updatedAt: true,
         borrowerId: true,
         borrower: { 
-          select: { id: true, firstName: true, lastName: true, email: true, phone: true } 
+          select: { 
+            id: true, 
+            firstName: true, 
+            lastName: true, 
+            email: true, 
+            phone: true,
+            borrowerProfile: true 
+          } 
         },
         repayments: true
       }
@@ -49,10 +57,20 @@ export async function GET(request: NextRequest) {
         const parsed = JSON.parse(l.purpose || '{}');
         if (parsed.__appData) {
           appData = parsed.__appData;
-          return { ...l, purpose: parsed.purpose || '', applicationData: appData };
+          return { 
+            ...l, 
+            purpose: parsed.purpose || '', 
+            applicationData: appData,
+            borrowerProfile: l.borrower?.borrowerProfile,
+            borrower: { ...l.borrower, borrowerProfile: undefined }
+          };
         }
       } catch (e) { }
-      return l;
+      return {
+        ...l,
+        borrowerProfile: l.borrower?.borrowerProfile,
+        borrower: { ...l.borrower, borrowerProfile: undefined }
+      };
     });
     return NextResponse.json(parsedLoans);
   } catch (e) {

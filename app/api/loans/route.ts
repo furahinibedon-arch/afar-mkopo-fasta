@@ -26,17 +26,36 @@ export async function GET(request: NextRequest) {
   try {
     const { userId } = await auth(request);
     logInfo('Fetching loans for user', { userId });
-    const loans = await prisma.loan.findMany({ where: { borrowerId: userId }, orderBy: { createdAt: 'desc' }, include: { repayments: true } });
+    const loans = await prisma.loan.findMany({ 
+      where: { borrowerId: userId }, 
+      orderBy: { createdAt: 'desc' }, 
+      include: { 
+        repayments: true,
+        borrower: {
+          select: { borrowerProfile: true }
+        }
+      } 
+    });
     const parsedLoans = loans.map(l => {
       let appData = {};
       try {
         const parsed = JSON.parse(l.purpose || '{}');
         if (parsed.__appData) {
           appData = parsed.__appData;
-          return { ...l, purpose: parsed.purpose || '', applicationData: appData };
+          return { 
+            ...l, 
+            purpose: parsed.purpose || '', 
+            applicationData: appData,
+            borrowerProfile: l.borrower?.borrowerProfile,
+            borrower: l.borrower ? { ...l.borrower, borrowerProfile: undefined } : undefined
+          };
         }
       } catch (e) { }
-      return l;
+      return {
+        ...l,
+        borrowerProfile: l.borrower?.borrowerProfile,
+        borrower: l.borrower ? { ...l.borrower, borrowerProfile: undefined } : undefined
+      };
     });
     return NextResponse.json(parsedLoans);
   } catch (e: any) {
@@ -64,35 +83,33 @@ export async function POST(request: NextRequest) {
     const purposeText = loanPurpose || purpose || '';
     const purposeField = JSON.stringify({ purpose: purposeText, __appData: rest });
 
-    // try {
-    //   if (nin && dateOfBirth && address && region && district) {
-    //     const profileData = {
-    //       userId,
-    //       nin,
-    //       dateOfBirth: new Date(dateOfBirth),
-    //       address,
-    //       country: country || 'Tanzania',
-    //       region,
-    //       district,
-    //       gender,
-    //       maritalStatus,
-    //       houseNumber,
-    //       spouseName,
-    //       businessName,
-    //       businessLocation,
-    //       businessSince
-    //     };
-    //     await prisma.borrowerProfile.upsert({
-    //       where: { userId },
-    //       update: profileData,
-    //       create: profileData
-    //     });
-    //     logInfo('Updated borrower profile', { userId });
-    //   }
-    // } catch (profileError) {
-    //   logError(profileError, { userId, context: 'borrower profile update' });
-    //   // Don't fail the loan submission because of profile error
-    // }
+    try {
+      const profileData = {
+        userId,
+        nin: nin || null,
+        dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
+        address: address || null,
+        country: country || 'Tanzania',
+        region: region || null,
+        district: district || null,
+        gender: gender || null,
+        maritalStatus: maritalStatus || null,
+        houseNumber: houseNumber || null,
+        spouseName: spouseName || null,
+        businessName: businessName || null,
+        businessLocation: businessLocation || null,
+        businessSince: businessSince || null
+      };
+      await prisma.borrowerProfile.upsert({
+        where: { userId },
+        update: profileData,
+        create: profileData
+      });
+      logInfo('Updated borrower profile', { userId });
+    } catch (profileError) {
+      logError(profileError, { userId, context: 'borrower profile update' });
+      // Don't fail the loan submission because of profile error
+    }
 
     const loan = await prisma.loan.create({
       data: {
