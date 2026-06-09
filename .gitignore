@@ -30,3 +30,6 @@ build/
 *~
 tsconfig.tsbuildinfo
 api-old/
+
+# Scripts
+scripts/
