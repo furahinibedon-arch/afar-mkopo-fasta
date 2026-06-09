@@ -63,7 +63,15 @@ async function ok(r:Response){
     return {};
   });
   console.log("Response data:", d);
-  if(!r.ok)throw new Error(d.error||d.message||`Error ${r.status}`);
+  if(!r.ok) {
+    const errorMsg = [
+      d.error,
+      d.details,
+      d.stack,
+      `Error ${r.status}`
+    ].filter(Boolean).join("\n");
+    throw new Error(errorMsg);
+  }
   return d;
 }
 
