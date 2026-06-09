@@ -4,6 +4,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/server-auth';
 import { logError } from '@/lib/logger';
 
+async function auth(request: NextRequest) {
+  const authHeader = request.headers.get('authorization');
+  const token = authHeader?.replace('Bearer ', '').trim() || '';
+  if (!token) throw Object.assign(new Error('No token'), { status: 401 });
+  const secret = process.env.JWT_SECRET || 'afar-mkopo-fasta-secret';
+  return jwt.verify(token, secret) as { userId: string; role: string };
+}
+
 export async function OPTIONS() {
   return new NextResponse(null, {
     status: 200,
@@ -16,11 +24,7 @@ export async function OPTIONS() {
 
 export async function GET(request: NextRequest) {
   try {
-    const auth = request.headers.get('authorization');
-    const token = auth?.split(' ')[1];
-    if (!token) return NextResponse.json({ error: 'No token' }, { status: 401 });
-    const secret = process.env.JWT_SECRET || 'afar-mkopo-fasta-secret';
-    const { role } = jwt.verify(token, secret) as { role: string };
+    const { role } = await auth(request);
     if (!['ADMIN', 'LOAN_OFFICER'].includes(role)) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     const loans = await prisma.loan.findMany({
       orderBy: { createdAt: 'desc' },
@@ -73,8 +77,9 @@ export async function GET(request: NextRequest) {
       };
     });
     return NextResponse.json(parsedLoans);
-  } catch (e) {
+  } catch (e: any) {
+    console.error('ERROR IN /api/loans/all GET:', JSON.stringify(e, null, 2));
     logError(e, { endpoint: '/api/loans/all', method: 'GET' });
-    return NextResponse.json({ error: 'Failed to get loans', details: (e as Error).message }, { status: 500 });
+    return NextResponse.json({ error: e.message || 'Failed to get loans', details: (e as Error).message }, { status: e.status || 500 });
   }
 }
