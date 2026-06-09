@@ -112,7 +112,7 @@ export default function BorrowerPortal(){
   const repaymentType=watch("repaymentType")||"MONTHLY";
   const rate=RATES[repaymentType]||20;
   const total=amt*(1+rate/100);
-  const periods={DAILY:30,WEEKLY:4,MONTHLY:1};
+  const periods={DAILY:30,WEEKLY:14,MONTHLY:1};
   const period=periods[repaymentType as keyof typeof periods]||1;
   const payment=amt>0?Math.ceil(total/period):0;
   const paymentLabel={DAILY:"Daily Payment",WEEKLY:"Weekly Payment",MONTHLY:"Monthly Payment"};
@@ -141,7 +141,7 @@ export default function BorrowerPortal(){
     setBusy(true);
     setErr(null);
     try{
-      const rp=data.repaymentType==="DAILY"?30:data.repaymentType==="WEEKLY"?4:1;
+      const rp=data.repaymentType==="DAILY"?30:data.repaymentType==="WEEKLY"?14:1;
       const loanData={...data,interestRate:rate,repaymentPeriod:rp,payment,repaymentType:data.repaymentType};
       console.log("Calling submitLoan with:", loanData);
       const result=await submitLoan(loanData);
