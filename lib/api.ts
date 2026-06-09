@@ -12,7 +12,6 @@ export type AppUser = {
   updatedAt: string;
   borrowerProfile?: {
     id: string;
-    profilePictureUrl?: string | null;
     dateOfBirth?: string;
     gender?: string;
     maritalStatus?: string;
@@ -26,8 +25,8 @@ export type AppUser = {
     businessName?: string;
     businessLocation?: string;
     businessSince?: string;
-    borrowerDocuments?: BorrowerDocument[];
   } | null;
+  receivedDocuments?: BorrowerDocument[];
 };
 
 export type BorrowerDocument = {
