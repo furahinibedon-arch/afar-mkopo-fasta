@@ -141,7 +141,7 @@ export function generateLoanApplicationPDF(data: LoanApplicationData) {
       // Render actual profile picture (supports base64)
       const imgWidth = 40;
       const imgHeight = 40;
-      doc.addImage(data.profilePictureUrl, 'JPEG' || 'PNG', 20, yPosition, imgWidth, imgHeight);
+      doc.addImage(data.profilePictureUrl, 'PNG', 20, yPosition, imgWidth, imgHeight);
       
       // Add border
       doc.setDrawColor(30, 58, 95);
