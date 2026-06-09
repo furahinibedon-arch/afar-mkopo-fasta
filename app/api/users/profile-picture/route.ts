@@ -49,10 +49,21 @@ export async function POST(request: NextRequest) {
       }).end(buffer);
     }) as { secure_url: string };
 
-    // Update user profile
+    // Update user profile AND borrower profile to keep both in sync!
     const updatedUser = await prisma.user.update({
       where: { id: userId },
-      data: { profilePictureUrl: result.secure_url },
+      data: { 
+        profilePictureUrl: result.secure_url,
+        borrowerProfile: {
+          upsert: {
+            create: { profilePictureUrl: result.secure_url },
+            update: { profilePictureUrl: result.secure_url }
+          }
+        }
+      },
+      include: {
+        borrowerProfile: true
+      }
     });
 
     logInfo('Profile picture uploaded successfully', { userId });

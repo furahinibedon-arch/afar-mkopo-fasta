@@ -35,7 +35,13 @@ export async function GET(request: NextRequest) {
         role: true,
         isActive: true,
         createdAt: true,
-        updatedAt: true
+        updatedAt: true,
+        profilePictureUrl: true,
+        borrowerProfile: {
+          include: {
+            borrowerDocuments: { where: { isActive: true } }
+          }
+        }
       }
     });
     if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });

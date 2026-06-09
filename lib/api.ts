@@ -10,6 +10,24 @@ export type AppUser = {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+  borrowerProfile?: {
+    id: string;
+    profilePictureUrl?: string | null;
+    dateOfBirth?: string;
+    gender?: string;
+    maritalStatus?: string;
+    nin?: string;
+    country?: string;
+    region?: string;
+    district?: string;
+    address?: string;
+    houseNumber?: string;
+    spouseName?: string;
+    businessName?: string;
+    businessLocation?: string;
+    businessSince?: string;
+    borrowerDocuments?: BorrowerDocument[];
+  } | null;
 };
 
 export type BorrowerDocument = {
