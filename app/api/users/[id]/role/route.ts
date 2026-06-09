@@ -2,7 +2,7 @@ import { UserRole } from '@prisma/client';
 import { NextResponse } from 'next/server';
 import { getCurrentUser, prisma } from '@/lib/server-auth';
 
-const allowedRoles = new Set<UserRole>(['ADMIN', 'LOAN_OFFICER', 'BORROWER']);
+const allowedRoles = new Set<UserRole>(['ADMIN', 'LOAN_OFFICER', 'BORROWER', 'DIRECTOR', 'CEO']);
 
 export async function OPTIONS() {
   return new NextResponse(null, {
