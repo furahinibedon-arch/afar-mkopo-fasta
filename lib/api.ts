@@ -7,6 +7,14 @@ function ah():Record<string,string>{
 
 async function ok(r:Response){
   const d=await r.json().catch(()=>({}));
+  if(r.status===401||r.status===403){
+    if(typeof window!=="undefined"){
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      window.location.href="/";
+    }
+    throw new Error("Session expired. Please login again.");
+  }
   if(!r.ok)throw new Error(d.error||d.message||`Error ${r.status}`);
   return d;
 }
