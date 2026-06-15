@@ -14,11 +14,11 @@
     "isolatedModules": true,
     "jsx": "preserve",
     "plugins": [{"name": "next"}],
-    "ignoreDeprecations": "6.0",
     "baseUrl": ".",
     "paths": {
       "@/*": ["./*"]
-    }
+    },
+    "ignoreDeprecations": "6.0"
   },
   "include": [
     "next-env.d.ts",

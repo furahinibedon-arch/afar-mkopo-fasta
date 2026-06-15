@@ -11,6 +11,10 @@ export interface LoanApplicationData {
   houseNumber?: string;
   spouseName?: string;
   phone?: string;
+  nin?: string; // NIDA Number
+  country?: string;
+  region?: string;
+  district?: string;
   businessName?: string;
   businessLocation?: string;
   businessSince?: string;
@@ -33,214 +37,375 @@ export interface LoanApplicationData {
   guarantor2Relationship?: string;
   guarantor2Phone?: string;
   guarantor2Collateral?: string;
+  profilePictureUrl?: string;
 }
+
+const COMPANY_DETAILS = {
+  parentCompany: 'Helder Company',
+  tradingName: 'Afar Mkopo Fasta',
+  address: 'Mbeya, Tanzania',
+  phone: '0741525547',
+  motto: 'PATA MKOPO WAKO FASTA'
+};
 
 export function generateLoanApplicationPDF(data: LoanApplicationData) {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.width;
+  const pageHeight = doc.internal.pageSize.height;
   let yPosition = 20;
 
-  // Header
+  // ===========================================
+  // HEADER WITH COMPANY LOGO
+  // ===========================================
+  
+  // Header background - light gray
+  doc.setFillColor(248, 250, 252);
+  doc.rect(0, 0, pageWidth, 70, 'F');
+
+  // Company Logo - small, fits perfectly
+  const logoX = 15;
+  const logoY = 10;
+  const logoSize = 50;
+
+  // Try to add logo
+  try {
+    doc.addImage('/logo.png', 'PNG', logoX, logoY, logoSize, logoSize);
+  } catch (e) {
+    // Simple fallback circle
+    doc.setFillColor(30, 58, 95);
+    doc.circle(logoX + logoSize/2, logoY + logoSize/2, logoSize/2, 'F');
+    doc.setFontSize(24);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(245, 158, 11);
+    doc.text('AF', logoX + logoSize/2, logoY + logoSize/2 + 8, { align: 'center' });
+  }
+
+  // Content to the right of logo
+  const contentX = logoX + logoSize + 12;
+  let currentY = 18;
+
+  // Company Name - big, bold
   doc.setFontSize(18);
   doc.setFont('helvetica', 'bold');
-  doc.text('AFAR MKOPO FASTA', pageWidth / 2, yPosition, { align: 'center' });
+  doc.setTextColor(30, 58, 95);
+  doc.text(COMPANY_DETAILS.tradingName.toUpperCase(), contentX, currentY);
+  
+  currentY += 10;
+  
+  // Parent company - small
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(107, 114, 128);
+  doc.text(`A division of ${COMPANY_DETAILS.parentCompany}`, contentX, currentY);
+  
+  currentY += 10;
+  
+  // Location and contact on same line
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(55, 65, 81);
+  doc.text('Location:', contentX, currentY);
+  doc.setFont('helvetica', 'normal');
+  doc.text(COMPANY_DETAILS.address, contentX + 28, currentY);
+  
+  doc.setFont('helvetica', 'bold');
+  doc.text('Contact:', contentX + 90, currentY);
+  doc.setFont('helvetica', 'normal');
+  doc.text(COMPANY_DETAILS.phone, contentX + 118, currentY);
+  
+  currentY += 10;
+  
+  // Motto
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(30, 58, 95);
+  doc.text(COMPANY_DETAILS.motto, contentX, currentY);
+  
+  yPosition = 75;
+  
+  // Add a decorative line
+  yPosition += 15;
+  doc.setDrawColor(200, 200, 200);
+  doc.line(20, yPosition, pageWidth - 20, yPosition);
   
   yPosition += 15;
-  doc.setFontSize(14);
+  doc.setTextColor(0, 0, 0);
+
+  // Document Title
+  doc.setFontSize(16);
   doc.setFont('helvetica', 'bold');
+  doc.setTextColor(30, 58, 95);
+  doc.text('LOAN APPLICATION FORM', pageWidth / 2, yPosition, { align: 'center' });
+  
+  yPosition += 6;
+  doc.setFontSize(13);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(80, 80, 80);
   doc.text('FOMU YA MAOMBI YA MKOPO', pageWidth / 2, yPosition, { align: 'center' });
   
-  yPosition += 10;
+  yPosition += 15;
+  doc.setTextColor(0, 0, 0);
+
+  // Borrower Photo Section
+  if (data.profilePictureUrl) {
+    try {
+      // Render actual profile picture (supports base64)
+      const imgWidth = 40;
+      const imgHeight = 40;
+      doc.addImage(data.profilePictureUrl, 'PNG', 20, yPosition, imgWidth, imgHeight);
+      
+      // Add border
+      doc.setDrawColor(30, 58, 95);
+      doc.setLineWidth(1);
+      doc.roundedRect(20, yPosition, imgWidth, imgHeight, 3, 3, 'S');
+      
+      // Move yPosition
+      yPosition += 50;
+    } catch (e) {
+      // Fallback if image fails to load
+      doc.setFillColor(240, 240, 240);
+      doc.roundedRect(20, yPosition, 40, 40, 3, 3, 'F');
+      doc.setTextColor(100, 100, 100);
+      doc.setFontSize(9);
+      doc.text('PHOTO', 40, yPosition + 22, { align: 'center' });
+      yPosition += 50;
+    }
+  }
 
   // Section 1: Borrower Information
-  yPosition += 10;
+  doc.setFillColor(30, 58, 95);
+  doc.rect(14, yPosition - 6, pageWidth - 28, 22, 'F');
+  doc.setTextColor(255, 255, 255);
   doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
-  doc.text('01. TAARIFA ZA MKOPAJI', 14, yPosition);
+  doc.text('01. BORROWER INFORMATION | TAARIFA ZA MKOPAJI', 20, yPosition + 8);
   
-  yPosition += 8;
+  yPosition += 24;
+  doc.setTextColor(0, 0, 0);
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
   const tableData1 = [
-    ['Majina kamili:', `${data.firstName || ''} ${data.lastName || ''}`],
-    ['Tarehe ya kuzaliwa:', data.dateOfBirth || ''],
-    ['Jinsia:', data.gender || ''],
-    ['Halya ndoa:', data.maritalStatus || ''],
-    ['Sehemu ya makazi/mtaa:', data.address || ''],
-    ['Nyumba no:', data.houseNumber || ''],
-    ['Jina kamili la mwenzi:', data.spouseName || ''],
-    ['Namba za simu:', data.phone || ''],
+    ['Full Name / Majina kamili:', `${data.firstName || ''} ${data.lastName || ''}`],
+    ['NIDA Number (NIN):', data.nin || ''],
+    ['Date of Birth / Tarehe ya kuzaliwa:', data.dateOfBirth || ''],
+    ['Gender / Jinsia:', data.gender || ''],
+    ['Marital Status / Halya ndoa:', data.maritalStatus || ''],
+    ['Country / Nchi:', data.country || ''],
+    ['Region / Mkoa:', data.region || ''],
+    ['District / Wilaya:', data.district || ''],
+    ['Residence Address / Sehemu ya makazi/mtaa:', data.address || ''],
+    ['House Number / Nyumba no:', data.houseNumber || ''],
+    ['Spouse Name / Jina kamili la mwenzi:', data.spouseName || ''],
+    ['Phone Number / Namba za simu:', data.phone || ''],
   ];
   
   autoTable(doc, {
     startY: yPosition,
     head: [],
     body: tableData1,
-    theme: 'plain',
-    styles: { fontSize: 10 },
+    theme: 'striped',
+    styles: { fontSize: 10, cellPadding: 4 },
     columnStyles: {
-      0: { cellWidth: 60, fontStyle: 'bold' },
+      0: { cellWidth: 85, fontStyle: 'bold' },
       1: { cellWidth: 'auto' },
     },
   });
   
-  yPosition = (doc as any).lastAutoTable.finalY + 10;
+  yPosition = (doc as any).lastAutoTable.finalY + 16;
 
   // Section 2: Business Information
+  doc.setFillColor(30, 58, 95);
+  doc.rect(14, yPosition - 6, pageWidth - 28, 22, 'F');
+  doc.setTextColor(255, 255, 255);
   doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
-  doc.text('02. TAARIFA ZA BIASHARA YA MKOPAJI', 14, yPosition);
+  doc.text('02. BUSINESS INFORMATION | TAARIFA ZA BIASHARA', 20, yPosition + 8);
   
-  yPosition += 8;
+  yPosition += 24;
+  doc.setTextColor(0, 0, 0);
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
   const tableData2 = [
-    ['Aina/jina la biashara:', data.businessName || ''],
-    ['Mahali pa biashara:', data.businessLocation || ''],
-    ['Umefanya biashara tangu lini:', data.businessSince || ''],
-    ['Dhumuni la mkopo:', data.loanPurpose || ''],
+    ['Business Type/Name / Aina/jina la biashara:', data.businessName || ''],
+    ['Business Location / Mahali pa biashara:', data.businessLocation || ''],
+    ['Business Since / Umefanya biashara tangu lini:', data.businessSince || ''],
+    ['Loan Purpose / Dhumuni la mkopo:', data.loanPurpose || ''],
   ];
   
   autoTable(doc, {
     startY: yPosition,
     head: [],
     body: tableData2,
-    theme: 'plain',
-    styles: { fontSize: 10 },
+    theme: 'striped',
+    styles: { fontSize: 10, cellPadding: 4 },
     columnStyles: {
-      0: { cellWidth: 60, fontStyle: 'bold' },
+      0: { cellWidth: 85, fontStyle: 'bold' },
       1: { cellWidth: 'auto' },
     },
   });
   
-  yPosition = (doc as any).lastAutoTable.finalY + 10;
+  yPosition = (doc as any).lastAutoTable.finalY + 16;
 
   // Section 3: Loan Amount
+  doc.setFillColor(30, 58, 95);
+  doc.rect(14, yPosition - 6, pageWidth - 28, 22, 'F');
+  doc.setTextColor(255, 255, 255);
   doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
-  doc.text('03. KIASI CHA MKOPO KWA ASILIMIA TATU POINT TANO TU.', 14, yPosition);
+  doc.text('03. LOAN DETAILS | KIASI CHA MKOPO', 20, yPosition + 8);
   
-  yPosition += 8;
+  yPosition += 24;
+  doc.setTextColor(0, 0, 0);
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
   const tableData3 = [
-    ['Mimi Nakubali kupokea:', ''],
-    ['Kiasi kwa tarakimu:', data.loanAmount ? `Tsh ${data.loanAmount.toLocaleString()}` : ''],
-    ['Kiasi kwa maneno:', data.loanAmountWords || ''],
-    ['Kiasi cha kurejesha kwa siku:', data.dailyPayment ? `Tsh ${data.dailyPayment.toLocaleString()}` : ''],
-    ['Riba ya mkopo:', data.interestRate ? `${data.interestRate}%` : ''],
+    ['I agree to receive / Mimi Nakubali kupokea:', ''],
+    ['Amount (Figures) / Kiasi kwa tarakimu:', data.loanAmount ? `Tsh ${data.loanAmount.toLocaleString()}` : ''],
+    ['Amount (Words) / Kiasi kwa maneno:', data.loanAmountWords || ''],
+    ['Daily Repayment / Kiasi cha kurejesha kwa siku:', data.dailyPayment ? `Tsh ${data.dailyPayment.toLocaleString()}` : ''],
+    ['Interest Rate / Riba ya mkopo:', data.interestRate ? `${data.interestRate}%` : ''],
   ];
   
   autoTable(doc, {
     startY: yPosition,
     head: [],
     body: tableData3,
-    theme: 'plain',
-    styles: { fontSize: 10 },
+    theme: 'striped',
+    styles: { fontSize: 10, cellPadding: 4 },
     columnStyles: {
-      0: { cellWidth: 60, fontStyle: 'bold' },
+      0: { cellWidth: 85, fontStyle: 'bold' },
       1: { cellWidth: 'auto' },
     },
   });
   
-  yPosition = (doc as any).lastAutoTable.finalY + 10;
+  yPosition = (doc as any).lastAutoTable.finalY + 16;
 
   // Section 4: Loan Terms
+  doc.setFillColor(30, 58, 95);
+  doc.rect(14, yPosition - 6, pageWidth - 28, 22, 'F');
+  doc.setTextColor(255, 255, 255);
   doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
-  doc.text('TAARIFA YA MKOPO', 14, yPosition);
+  doc.text('04. LOAN TERMS | TAARIFA YA MKOPO', 20, yPosition + 8);
   
-  yPosition += 8;
+  yPosition += 24;
+  doc.setTextColor(0, 0, 0);
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
-  doc.text('Gharama ya fomu (10% ya mkopo): Tsh ' + (data.loanAmount ? (data.loanAmount * 0.1).toLocaleString() : '0'), 14, yPosition);
-  yPosition += 7;
-  doc.text('Riba ya mkopo itakuwa asilimia ishirini (20%)', 14, yPosition);
-  yPosition += 7;
-  doc.text('Maarejesho ni ya kila siku', 14, yPosition);
-  yPosition += 7;
-  doc.text('Faini ni shilingi 1000/=', 14, yPosition);
-  yPosition += 10;
+  
+  const termsData = [
+    ['Form Fee (10% of loan) / Gharama ya fomu:', `Tsh ${data.loanAmount ? (data.loanAmount * 0.1).toLocaleString() : '0'}`],
+    ['Interest Rate / Riba ya mkopo:', 'Twenty percent (20%) / Asilimia ishirini (20%)'],
+    ['Repayment Frequency / Mara ya marejesho:', 'Daily / Kila siku'],
+    ['Penalty / Faini:', 'Tsh 1,000/='],
+  ];
+  
+  autoTable(doc, {
+    startY: yPosition,
+    head: [],
+    body: termsData,
+    theme: 'striped',
+    styles: { fontSize: 10, cellPadding: 4 },
+    columnStyles: {
+      0: { cellWidth: 85, fontStyle: 'bold' },
+      1: { cellWidth: 'auto' },
+    },
+  });
+  
+  yPosition = (doc as any).lastAutoTable.finalY + 16;
 
   // Section 5: First Guarantor
   if (data.guarantor1Name) {
+    doc.setFillColor(30, 58, 95);
+    doc.rect(14, yPosition - 6, pageWidth - 28, 22, 'F');
+    doc.setTextColor(255, 255, 255);
     doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
-    doc.text('06. TAARIFA ZA WADHAMINI - MDHAMINI WA KWANZA', 14, yPosition);
+    doc.text('05. FIRST GUARANTOR | MDHAMINI WA KWANZA', 20, yPosition + 8);
     
-    yPosition += 8;
+    yPosition += 24;
+    doc.setTextColor(0, 0, 0);
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
     const tableData4 = [
-      ['Majina ya mdhamini:', data.guarantor1Name],
-      ['Sehemu ya makazi:', data.guarantor1Address || ''],
-      ['Nyumba no:', data.guarantor1HouseNumber || ''],
-      ['Sehemu ya biashara:', data.guarantor1Business || ''],
-      ['Uhusiano wake na mkopaji:', data.guarantor1Relationship || ''],
-      ['Namba za simu:', data.guarantor1Phone || ''],
-      ['Dhamana anazoandikisha:', data.guarantor1Collateral || ''],
+      ['Guarantor Name / Majina ya mdhamini:', data.guarantor1Name],
+      ['Residence / Sehemu ya makazi:', data.guarantor1Address || ''],
+      ['House Number / Nyumba no:', data.guarantor1HouseNumber || ''],
+      ['Business Location / Sehemu ya biashara:', data.guarantor1Business || ''],
+      ['Relationship / Uhusiano wake na mkopaji:', data.guarantor1Relationship || ''],
+      ['Phone Number / Namba za simu:', data.guarantor1Phone || ''],
+      ['Collateral / Dhamana anazoandikisha:', data.guarantor1Collateral || ''],
     ];
     
     autoTable(doc, {
       startY: yPosition,
       head: [],
       body: tableData4,
-      theme: 'plain',
-      styles: { fontSize: 10 },
+      theme: 'striped',
+      styles: { fontSize: 10, cellPadding: 4 },
       columnStyles: {
-        0: { cellWidth: 60, fontStyle: 'bold' },
+        0: { cellWidth: 85, fontStyle: 'bold' },
         1: { cellWidth: 'auto' },
       },
     });
     
-    yPosition = (doc as any).lastAutoTable.finalY + 10;
+    yPosition = (doc as any).lastAutoTable.finalY + 16;
   }
 
   // Section 6: Second Guarantor
   if (data.guarantor2Name) {
+    doc.setFillColor(30, 58, 95);
+    doc.rect(14, yPosition - 6, pageWidth - 28, 22, 'F');
+    doc.setTextColor(255, 255, 255);
     doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
-    doc.text('08. MDHAMINI WA PILI', 14, yPosition);
+    doc.text('06. SECOND GUARANTOR | MDHAMINI WA PILI', 20, yPosition + 8);
     
-    yPosition += 8;
+    yPosition += 24;
+    doc.setTextColor(0, 0, 0);
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
     const tableData5 = [
-      ['Majina ya mdhamini:', data.guarantor2Name],
-      ['Sehemu ya makazi:', data.guarantor2Address || ''],
-      ['Nyumba no:', data.guarantor2HouseNumber || ''],
-      ['Sehemu ya biashara:', data.guarantor2Business || ''],
-      ['Uhusiano wake na mkopaji:', data.guarantor2Relationship || ''],
-      ['Namba za simu:', data.guarantor2Phone || ''],
-      ['Dhamana anazoandikisha:', data.guarantor2Collateral || ''],
+      ['Guarantor Name / Majina ya mdhamini:', data.guarantor2Name],
+      ['Residence / Sehemu ya makazi:', data.guarantor2Address || ''],
+      ['House Number / Nyumba no:', data.guarantor2HouseNumber || ''],
+      ['Business Location / Sehemu ya biashara:', data.guarantor2Business || ''],
+      ['Relationship / Uhusiano wake na mkopaji:', data.guarantor2Relationship || ''],
+      ['Phone Number / Namba za simu:', data.guarantor2Phone || ''],
+      ['Collateral / Dhamana anazoandikisha:', data.guarantor2Collateral || ''],
     ];
     
     autoTable(doc, {
       startY: yPosition,
       head: [],
       body: tableData5,
-      theme: 'plain',
-      styles: { fontSize: 10 },
+      theme: 'striped',
+      styles: { fontSize: 10, cellPadding: 4 },
       columnStyles: {
-        0: { cellWidth: 60, fontStyle: 'bold' },
+        0: { cellWidth: 85, fontStyle: 'bold' },
         1: { cellWidth: 'auto' },
       },
     });
     
-    yPosition = (doc as any).lastAutoTable.finalY + 10;
+    yPosition = (doc as any).lastAutoTable.finalY + 16;
   }
 
-  // Footer with payment schedule
-  if (yPosition > 200) {
+  // Add new page for payment schedule if needed
+  if (yPosition > pageHeight - 80) {
     doc.addPage();
-    yPosition = 20;
+    yPosition = 30;
   }
   
+  // Payment Schedule
+  doc.setFillColor(30, 58, 95);
+  doc.rect(14, yPosition - 6, pageWidth - 28, 22, 'F');
+  doc.setTextColor(255, 255, 255);
   doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
-  doc.text('RUTIBA YA MAREJESHO', 14, yPosition);
+  doc.text('PAYMENT SCHEDULE | RUTIBA YA MAREJESHO', 20, yPosition + 8);
   
-  yPosition += 8;
+  yPosition += 24;
+  doc.setTextColor(0, 0, 0);
   const scheduleData = [];
   for (let i = 1; i <= 30; i++) {
     scheduleData.push([i, '', 'INSTALMENT', '']);
@@ -248,11 +413,12 @@ export function generateLoanApplicationPDF(data: LoanApplicationData) {
   
   autoTable(doc, {
     startY: yPosition,
-    head: [['NO', 'TAREHE', 'REJESHO', 'SAHIHI']],
+    head: [['NO', 'DATE / TAREHE', 'PAYMENT / REJESHO', 'SIGNATURE / SAHIHI']],
     body: scheduleData,
     theme: 'grid',
-    styles: { fontSize: 10 },
-    headStyles: { fillColor: [66, 153, 225], textColor: 255 },
+    styles: { fontSize: 10, cellPadding: 3 },
+    headStyles: { fillColor: [30, 58, 95], textColor: 255, fontStyle: 'bold' },
+    alternateRowStyles: { fillColor: [245, 245, 245] },
   });
 
   doc.save(`Loan_Application_${data.firstName || 'Unknown'}_${data.lastName || 'Unknown'}.pdf`);

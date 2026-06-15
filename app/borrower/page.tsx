@@ -7,17 +7,71 @@ import{useRouter}from"next/navigation";
 import Layout from"@/components/Layout";
 import{useLanguage}from"@/context/LanguageContext";
 import{submitLoan,getMe,getMyLoans}from"@/lib/api";
-import{generateLoanApplicationPDF}from"@/lib/pdfGenerator";
+import { TANZANIA_REGIONS } from "@/lib/tanzaniaLocations";
+import { Check, Camera, User } from "lucide-react";
 
 const STEPS=["Borrower Info","Business & Collateral","Loan Details","Guarantors"];
 
-// Interest rates per repayment type
-const RATES:Record<string,number>={DAILY:3.5,WEEKLY:10,MONTHLY:20};
+// Convert number to Swahili words
+function numberToSwahili(num: number): string {
+  if (num === 0) return "sifuri";
+  
+  const ones = ["", "moja", "mbili", "tatu", "nne", "tano", "sita", "saba", "nane", "tisa"];
+  const teens = ["kumi", "kumi na moja", "kumi na mbili", "kumi na tatu", "kumi na nne", "kumi na tano", "kumi na sita", "kumi na saba", "kumi na nane", "kumi na tisa"];
+  const tens = ["", "", "ishirini", "thelathini", "arubaini", "hamsini", "sitini", "sabini", "themanini", "tisini"];
+  
+  function convert(n: number): string {
+    if (n < 10) return ones[n];
+    if (n < 20) return teens[n - 10];
+    if (n < 100) {
+      const ten = Math.floor(n / 10);
+      const one = n % 10;
+      return tens[ten] + (one > 0 ? " na " + ones[one] : "");
+    }
+    if (n < 1000) {
+      const hundred = Math.floor(n / 100);
+      const rest = n % 100;
+      let res = "mia " + ones[hundred];
+      if (rest > 0) {
+        res += rest < 10 ? " na " + convert(rest) : " na " + convert(rest);
+      }
+      return res;
+    }
+    if (n < 1000000) {
+      const thousand = Math.floor(n / 1000);
+      const rest = n % 1000;
+      let res = "elfu " + convert(thousand);
+      if (rest > 0) {
+        res += rest < 100 ? " na " + convert(rest) : " " + convert(rest);
+      }
+      return res;
+    }
+    if (n < 1000000000) {
+      const million = Math.floor(n / 1000000);
+      const rest = n % 1000000;
+      let res = "milioni " + convert(million);
+      if (rest > 0) {
+        res += rest < 100000 ? " na " + convert(rest) : " " + convert(rest);
+      }
+      return res;
+    }
+    return num.toString();
+  }
+  
+  return convert(Math.floor(num));
+}
+
+const RATES:Record<string,number>={DAILY:20,WEEKLY:47,MONTHLY:28};
 
 const S=z.object({
   firstName:z.string().min(2,"Required"),lastName:z.string().min(2,"Required"),
   dateOfBirth:z.string().min(1,"Required"),gender:z.string().min(1,"Required"),
-  maritalStatus:z.string().min(1,"Required"),address:z.string().min(2,"Required"),
+  maritalStatus:z.string().min(1,"Required"),
+  nin: z.string().min(3, "NIN is required"),
+  country: z.string().default("Tanzania"),
+  region: z.string().min(1, "Region is required"),
+  district: z.string().min(1, "District is required"),
+  address:z.string().min(2,"Required"),
   houseNumber:z.string().min(1,"Required"),spouseName:z.string().optional(),
   phone:z.string().min(10,"Min 10 digits"),
   businessName:z.string().min(2,"Required"),businessLocation:z.string().min(2,"Required"),
@@ -26,14 +80,14 @@ const S=z.object({
   repaymentType:z.enum(["DAILY","WEEKLY","MONTHLY"],{required_error:"Select repayment type"}),
   loanAmount:z.coerce.number().min(1000,"Min Tsh 1,000"),
   loanAmountWords:z.string().min(1,"Required"),
-  guarantor1Name:z.string().optional(),guarantor1Address:z.string().optional(),
-  guarantor1HouseNumber:z.string().optional(),guarantor1Business:z.string().optional(),
-  guarantor1Relationship:z.string().optional(),guarantor1Phone:z.string().optional(),
-  guarantor1Collateral:z.string().optional(),
-  guarantor2Name:z.string().optional(),guarantor2Address:z.string().optional(),
-  guarantor2HouseNumber:z.string().optional(),guarantor2Business:z.string().optional(),
-  guarantor2Relationship:z.string().optional(),guarantor2Phone:z.string().optional(),
-  guarantor2Collateral:z.string().optional(),
+  guarantor1Name:z.string().min(2,"Required"),guarantor1Address:z.string().min(2,"Required"),
+  guarantor1HouseNumber:z.string().min(1,"Required"),guarantor1Business:z.string().min(2,"Required"),
+  guarantor1Relationship:z.string().min(2,"Required"),guarantor1Phone:z.string().min(10,"Min 10 digits"),
+  guarantor1Collateral:z.string().min(3,"Required"),
+  guarantor2Name:z.string().min(2,"Required"),guarantor2Address:z.string().min(2,"Required"),
+  guarantor2HouseNumber:z.string().min(1,"Required"),guarantor2Business:z.string().min(2,"Required"),
+  guarantor2Relationship:z.string().min(2,"Required"),guarantor2Phone:z.string().min(10,"Min 10 digits"),
+  guarantor2Collateral:z.string().min(3,"Required"),
 });
 type FD=z.infer<typeof S>;
 
@@ -44,27 +98,89 @@ export default function BorrowerPortal(){
   const[done,setDone]=useState(false);
   const[busy,setBusy]=useState(false);
   const[err,setErr]=useState<string|null>(null);
-  useEffect(()=>{const u=localStorage.getItem("user");if(!u){router.push("/");return;}setUser(JSON.parse(u));getMe().then(setUser).catch(()=>router.push("/"));},[router]);
-
-  const{register,handleSubmit,watch,trigger,control,formState:{errors}}=useForm<FD>({
+  const[selectedRegion, setSelectedRegion] = useState<string>("");
+  const[districts, setDistricts] = useState<string[]>([]);
+  const[hasProfilePicture, setHasProfilePicture] = useState(false);
+  
+  const{register,handleSubmit,watch,trigger,control,formState:{errors},setValue,reset}=useForm<FD>({
     resolver:zodResolver(S),
-    defaultValues:{loanAmountWords:"",repaymentType:"MONTHLY"}
+    defaultValues:{loanAmountWords:"",repaymentType:"MONTHLY", country: "Tanzania"}
   });
+  
+  const watchedRegion = watch("region");
+  useEffect(() => {
+    if (watchedRegion) {
+      const region = TANZANIA_REGIONS.find(r => r.name === watchedRegion);
+      if (region) {
+        setDistricts(region.districts.map(d => d.name));
+      }
+    }
+  }, [watchedRegion]);
+
+  useEffect(()=>{
+    const u=localStorage.getItem("user");
+    if(!u){router.push("/");return;}
+    setUser(JSON.parse(u));
+    getMe().then((userData) => {
+      console.log("Got user data:", userData);
+      setUser(userData);
+      localStorage.setItem("user", JSON.stringify(userData));
+      if (userData.borrowerProfile) {
+        reset({
+          firstName: userData.firstName,
+          lastName: userData.lastName,
+          dateOfBirth: userData.borrowerProfile.dateOfBirth.split('T')[0],
+          gender: userData.borrowerProfile.gender,
+          maritalStatus: userData.borrowerProfile.maritalStatus,
+          nin: userData.borrowerProfile.nin,
+          country: userData.borrowerProfile.country || "Tanzania",
+          region: userData.borrowerProfile.region,
+          district: userData.borrowerProfile.district,
+          address: userData.borrowerProfile.address,
+          houseNumber: userData.borrowerProfile.houseNumber,
+          spouseName: userData.borrowerProfile.spouseName,
+          phone: userData.phone,
+          businessName: userData.borrowerProfile.businessName,
+          businessLocation: userData.borrowerProfile.businessLocation,
+          businessSince: userData.borrowerProfile.businessSince,
+          loanAmountWords: "",
+          repaymentType: "MONTHLY",
+        });
+        setSelectedRegion(userData.borrowerProfile.region);
+        const region = TANZANIA_REGIONS.find(r => r.name === userData.borrowerProfile.region);
+        if (region) {
+          setDistricts(region.districts.map(d => d.name));
+        }
+      }
+    }).catch((e:any)=>{
+      console.error("getMe failed:", e);
+    });
+  },[router, reset]);
 
   const amt=watch("loanAmount")||0;
   const repaymentType=watch("repaymentType")||"MONTHLY";
   const rate=RATES[repaymentType]||20;
   const total=amt*(1+rate/100);
-  const periods={DAILY:30,WEEKLY:4,MONTHLY:1};
+  const periods={DAILY:30,WEEKLY:14,MONTHLY:1};
   const period=periods[repaymentType as keyof typeof periods]||1;
   const payment=amt>0?Math.ceil(total/period):0;
   const paymentLabel={DAILY:"Daily Payment",WEEKLY:"Weekly Payment",MONTHLY:"Monthly Payment"};
+  
+  // Auto-update loanAmountWords when loanAmount changes
+  useEffect(() => {
+    if (amt > 0) {
+      const words = numberToSwahili(amt);
+      setValue("loanAmountWords", words);
+    } else {
+      setValue("loanAmountWords", "");
+    }
+  }, [amt, setValue]);
 
   const sf:string[][]=[
-    ["firstName","lastName","dateOfBirth","gender","maritalStatus","address","houseNumber","phone"],
+    ["firstName","lastName","dateOfBirth","gender","maritalStatus","nin","country","region","district","address","houseNumber","phone"],
     ["businessName","businessLocation","businessSince","loanPurpose","collateral"],
     ["repaymentType","loanAmount","loanAmountWords"],
-    [],
+    ["guarantor1Name","guarantor1Address","guarantor1HouseNumber","guarantor1Business","guarantor1Relationship","guarantor1Phone","guarantor1Collateral","guarantor2Name","guarantor2Address","guarantor2HouseNumber","guarantor2Business","guarantor2Relationship","guarantor2Phone","guarantor2Collateral"],
   ];
 
   const next=async()=>{
@@ -74,26 +190,45 @@ export default function BorrowerPortal(){
   const prev=()=>setStep(s=>Math.max(s-1,0));
 
   const sub=async(data:FD)=>{
-    setBusy(true);setErr(null);
+    console.log("Submitting loan application:", data);
+    
+    if (!user?.profilePictureUrl) {
+      setErr("Please upload a profile picture before submitting your loan application.");
+      return;
+    }
+    
+    setBusy(true);
+    setErr(null);
     try{
-      const rp=data.repaymentType==="DAILY"?30:data.repaymentType==="WEEKLY"?4:1;
-      await submitLoan({...data,interestRate:rate,repaymentPeriod:rp,payment,repaymentType:data.repaymentType});
-      generateLoanApplicationPDF({...data,interestRate:rate,dailyPayment:payment});
+      const rp=data.repaymentType==="DAILY"?30:data.repaymentType==="WEEKLY"?14:1;
+      const loanData={...data,interestRate:rate,repaymentPeriod:rp,payment,repaymentType:data.repaymentType};
+      console.log("Calling submitLoan with:", loanData);
+      const result=await submitLoan(loanData);
+      console.log("submitLoan success:", result);
       setDone(true);
-    }catch(e:any){setErr(e.message);}
-    finally{setBusy(false);}
+    }catch(e:any){
+      console.error("submitLoan failed:", e);
+      setErr(e.message || "Failed to submit application");
+    }finally{
+      setBusy(false);
+    }
   };
 
   if(done)return(
     <Layout portal="borrower">
       <div className="max-w-lg mx-auto text-center py-16 animate-fade-in">
         <div className="w-20 h-20 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-6">
-          <svg className="w-10 h-10 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>
+          <Check className="w-10 h-10 text-emerald-600" />
         </div>
-        <h2 className="text-3xl font-black text-navy-800 mb-3">{t.applicationSubmitted}</h2>
-        <p className="text-slate-500 mb-8">{t.applicationSuccessMsg}</p>
+        <h2 className="text-3xl font-black text-dark-800 mb-3">{t.applicationSubmitted}</h2>
+        <p className="text-dark-500 mb-8">{t.applicationSuccessMsg}</p>
         <div className="flex gap-3 justify-center">
-          <button onClick={()=>{setDone(false);setStep(0);}} className="btn-primary">New Application</button>
+          <button onClick={()=>{
+            setDone(false);
+            setStep(0);
+            setErr(null);
+            reset();
+          }} className="btn-primary">New Application</button>
           <a href="/borrower/loans" className="btn-secondary">View My Loans</a>
         </div>
       </div>
@@ -103,39 +238,51 @@ export default function BorrowerPortal(){
   return(
     <Layout portal="borrower">
       <div className="mb-8">
-        <p className="text-slate-500 text-sm mb-1">Welcome back, <span className="font-semibold text-navy-800">{user?.firstName}</span></p>
-        <h1 className="text-3xl font-black text-navy-800">{t.applyForLoan}</h1>
+        <p className="text-dark-500 text-sm mb-1">Welcome back, <span className="font-semibold text-dark-800">{user?.firstName}</span></p>
+        <h1 className="text-3xl font-black text-dark-800">{t.applyForLoan}</h1>
       </div>
 
-      {/* Wizard steps */}
       <div className="card mb-6 p-4">
         <div className="flex items-center">
           {STEPS.map((label,i)=>(
             <div key={i} className="flex items-center flex-1 last:flex-none">
               <div className="flex flex-col items-center gap-1">
                 <div className={i<step?"wizard-step-done":i===step?"wizard-step-active":"wizard-step-inactive"}>{i<step?"":i+1}</div>
-                <span className={`text-xs font-semibold hidden sm:block ${i===step?"text-brand-500":"text-slate-400"}`}>{label}</span>
+                <span className={`text-xs font-semibold hidden sm:block ${i===step?"text-brand-500":"text-dark-400"}`}>{label}</span>
               </div>
-              {i<STEPS.length-1&&<div className={`flex-1 h-0.5 mx-2 rounded-full ${i<step?"bg-emerald-400":"bg-slate-200"}`}/>}
+              {i<STEPS.length-1&&<div className={`flex-1 h-0.5 mx-2 rounded-full ${i<step?"bg-emerald-400":"bg-dark-200"}`}/>}
             </div>
           ))}
         </div>
       </div>
 
       {err&&<div className="mb-4 flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-xl"> {err}</div>}
+      
+      {!user?.profilePictureUrl && (
+        <div className="mb-4 flex items-center gap-3 bg-amber-50 border border-amber-200 text-amber-800 text-sm px-4 py-4 rounded-xl">
+          <Camera className="w-6 h-6" />
+          <div className="flex-1">
+            <p className="font-semibold mb-1">Profile Picture Required</p>
+            <p className="text-xs">Please upload a profile picture before submitting your loan application. You can do this <a href="/borrower/profile" className="text-amber-800 underline font-semibold hover:text-amber-900">on your profile page</a>.</p>
+          </div>
+        </div>
+      )}
 
       <form onSubmit={handleSubmit(sub)}>
         <div className="card">
 
-          {/* STEP 0: Borrower Info */}
           {step===0&&<div className="animate-fade-in">
-            <h2 className="text-lg font-black text-navy-800 mb-6 pb-2 border-b border-slate-100">01. Taarifa za Mkopaji</h2>
+            <h2 className="text-lg font-black text-dark-800 mb-6 pb-2 border-b border-dark-200">01. Taarifa za Mkopaji</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Fi l="Jina (First)" r={register("firstName")} e={errors.firstName?.message}/>
               <Fi l="Jina (Last)" r={register("lastName")} e={errors.lastName?.message}/>
+              <Fi l="NIDA Number (NIN)" r={register("nin")} e={errors.nin?.message} p="Enter NIN"/>
               <Fi l="Tarehe ya kuzaliwa" t="date" r={register("dateOfBirth")} e={errors.dateOfBirth?.message}/>
               <Sel l="Jinsia" r={register("gender")} e={errors.gender?.message} opts={[["male","Mwanaume"],["female","Mwanamke"]]}/>
               <div className="sm:col-span-2"><Sel l="Hali ya ndoa" r={register("maritalStatus")} e={errors.maritalStatus?.message} opts={[["married","Ameoa/Ameolewa"],["single","Hajaoa/Hajaolewa"],["divorced","Talaka/Mjane"]]}/></div>
+              <Sel l="Nchi" r={register("country")} e={errors.country?.message} opts={[["Tanzania","Tanzania"]]}/>
+              <Sel l="Mkoa" r={register("region")} e={errors.region?.message} opts={TANZANIA_REGIONS.map(r => [r.name, r.name])}/>
+              <Sel l="Wilaya" r={register("district")} e={errors.district?.message} opts={districts.map(d => [d, d])}/>
               <Fi l="Makazi/Mtaa" r={register("address")} e={errors.address?.message}/>
               <Fi l="Nyumba No." r={register("houseNumber")} e={errors.houseNumber?.message}/>
               <Fi l="Jina la mwenzi (optional)" r={register("spouseName")}/>
@@ -143,9 +290,8 @@ export default function BorrowerPortal(){
             </div>
           </div>}
 
-          {/* STEP 1: Business + Collateral */}
           {step===1&&<div className="animate-fade-in">
-            <h2 className="text-lg font-black text-navy-800 mb-6 pb-2 border-b border-slate-100">02. Taarifa za Biashara & Dhamana</h2>
+            <h2 className="text-lg font-black text-dark-800 mb-6 pb-2 border-b border-dark-200">02. Taarifa za Biashara & Dhamana</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Fi l="Jina la biashara" r={register("businessName")} e={errors.businessName?.message}/>
               <Fi l="Mahali pa biashara" r={register("businessLocation")} e={errors.businessLocation?.message}/>
@@ -159,24 +305,22 @@ export default function BorrowerPortal(){
                 <label className="label"> Dhamana ya Mkopo (Collateral / Asset)</label>
                 <textarea {...register("collateral")} rows={3} className="input-field" placeholder="e.g. Nyumba, gari, ardhi, bidhaa za duka... Eleza mali unayoweka dhamana"/>
                 {errors.collateral&&<p className="text-red-500 text-xs mt-1">{errors.collateral.message}</p>}
-                <p className="text-xs text-slate-400 mt-1">Describe the asset or property you are offering as security for this loan.</p>
+                <p className="text-xs text-dark-400 mt-1">Describe the asset or property you are offering as security for this loan.</p>
               </div>
             </div>
           </div>}
 
-          {/* STEP 2: Loan Details */}
           {step===2&&<div className="animate-fade-in">
-            <h2 className="text-lg font-black text-navy-800 mb-6 pb-2 border-b border-slate-100">03. Kiasi & Masharti ya Mkopo</h2>
+            <h2 className="text-lg font-black text-dark-800 mb-6 pb-2 border-b border-dark-200">03. Kiasi & Masharti ya Mkopo</h2>
 
-            {/* Repayment type selector */}
             <div className="mb-6">
               <label className="label">Aina ya Malipo (Repayment Type)</label>
               <div className="grid grid-cols-3 gap-3 mt-2">
-                {([["DAILY","Kila Siku","Daily","3.5%"],["WEEKLY","Kila Wiki","Weekly","10%"],["MONTHLY","Kila Mwezi","Monthly","20%"]] as [string,string,string,string][]).map(([val,sw,en,r])=>(
-                  <label key={val} className={`cursor-pointer border-2 rounded-xl p-3 text-center transition-all ${repaymentType===val?"border-brand-500 bg-brand-50":"border-slate-200 hover:border-slate-300"}`}>
+                {([["DAILY","Kila Siku","Daily","20%"],["WEEKLY","Kila Wiki","Weekly","47%"],["MONTHLY","Kila Mwezi","Monthly","28%"]] as [string,string,string,string][]).map(([val,sw,en,r])=>(
+                  <label key={val} className={`cursor-pointer border-2 rounded-xl p-4 text-center transition-all ${repaymentType===val?"border-primary-500 bg-primary-50":"border-dark-200 hover:border-dark-300"}`}>
                     <input type="radio" {...register("repaymentType")} value={val} className="hidden"/>
-                    <p className="font-black text-navy-800 text-sm">{en}</p>
-                    <p className="text-slate-500 text-xs">{sw}</p>
+                    <p className="font-black text-dark-800 text-sm">{en}</p>
+                    <p className="text-dark-500 text-xs">{sw}</p>
                     <p className="text-brand-600 font-bold text-sm mt-1">{r} interest</p>
                   </label>
                 ))}
@@ -192,44 +336,57 @@ export default function BorrowerPortal(){
               </div>
               <div>
                 <label className="label">{paymentLabel[repaymentType as keyof typeof paymentLabel]} (auto)</label>
-                <input readOnly value={payment>0?`Tsh ${payment.toLocaleString()}`:""} className="input-field bg-slate-50 text-slate-500"/>
+                <input readOnly value={payment>0?`Tsh ${payment.toLocaleString()}`:""} className="input-field bg-dark-50 text-dark-500"/>
               </div>
               <div className="sm:col-span-2">
                 <Fi l="Kiasi kwa maneno" r={register("loanAmountWords")} e={errors.loanAmountWords?.message} p="e.g. Elfu mia tano"/>
               </div>
             </div>
 
-            {amt>0&&<div className="mt-6 bg-navy-800 rounded-2xl p-5 text-white">
-              <p className="text-xs font-semibold text-slate-400 mb-3 uppercase tracking-wide">Muhtasari wa Mkopo</p>
+            {amt>0&&<div className="mt-6 bg-dark-800 rounded-2xl p-5 text-white">
+              <p className="text-xs font-semibold text-dark-300 mb-3 uppercase tracking-wide">Muhtasari wa Mkopo</p>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
                 {[
                   {l:"Principal",v:`Tsh ${amt.toLocaleString()}`},
                   {l:`Interest (${rate}%)`,v:`Tsh ${(amt*rate/100).toLocaleString()}`},
                   {l:"Total Repay",v:`Tsh ${total.toLocaleString()}`},
                   {l:paymentLabel[repaymentType as keyof typeof paymentLabel],v:`Tsh ${payment.toLocaleString()}`},
-                ].map(({l,v})=><div key={l}><p className="text-brand-400 font-black text-lg">{v}</p><p className="text-slate-400 text-xs mt-0.5">{l}</p></div>)}
+                ].map(({l,v})=><div key={l}><p className="text-brand-400 font-black text-lg">{v}</p><p className="text-dark-300 text-xs mt-0.5">{l}</p></div>)}
               </div>
             </div>}
           </div>}
 
-          {/* STEP 3: Guarantors */}
           {step===3&&<div className="animate-fade-in space-y-6">
             <div>
-              <h2 className="text-lg font-black text-navy-800 mb-4 pb-2 border-b border-slate-100">06. Mdhamini wa Kwanza</h2>
+              <h2 className="text-lg font-black text-dark-800 mb-4 pb-2 border-b border-dark-200">06. Mdhamini wa Kwanza</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Fi l="Majina" r={register("guarantor1Name")}/><Fi l="Makazi" r={register("guarantor1Address")}/>
-                <Fi l="Nyumba No." r={register("guarantor1HouseNumber")}/><Fi l="Biashara" r={register("guarantor1Business")}/>
-                <Fi l="Uhusiano" r={register("guarantor1Relationship")}/><Fi l="Simu" r={register("guarantor1Phone")}/>
-                <div className="sm:col-span-2"><label className="label">Dhamana anazoandikisha</label><textarea {...register("guarantor1Collateral")} rows={2} className="input-field"/></div>
+                <Fi l="Majina" r={register("guarantor1Name")} e={errors.guarantor1Name?.message}/>
+                <Fi l="Makazi" r={register("guarantor1Address")} e={errors.guarantor1Address?.message}/>
+                <Fi l="Nyumba No." r={register("guarantor1HouseNumber")} e={errors.guarantor1HouseNumber?.message}/>
+                <Fi l="Biashara" r={register("guarantor1Business")} e={errors.guarantor1Business?.message}/>
+                <Fi l="Uhusiano" r={register("guarantor1Relationship")} e={errors.guarantor1Relationship?.message}/>
+                <Fi l="Simu" r={register("guarantor1Phone")} e={errors.guarantor1Phone?.message}/>
+                <div className="sm:col-span-2">
+                  <label className="label">Dhamana anazoandikisha</label>
+                  <textarea {...register("guarantor1Collateral")} rows={2} className="input-field"/>
+                  {errors.guarantor1Collateral && <p className="text-red-500 text-xs mt-1">{errors.guarantor1Collateral.message}</p>}
+                </div>
               </div>
             </div>
             <div>
-              <h2 className="text-lg font-black text-navy-800 mb-4 pb-2 border-b border-slate-100">08. Mdhamini wa Pili</h2>
+              <h2 className="text-lg font-black text-dark-800 mb-4 pb-2 border-b border-dark-200">08. Mdhamini wa Pili</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Fi l="Majina" r={register("guarantor2Name")}/><Fi l="Makazi" r={register("guarantor2Address")}/>
-                <Fi l="Nyumba No." r={register("guarantor2HouseNumber")}/><Fi l="Biashara" r={register("guarantor2Business")}/>
-                <Fi l="Uhusiano" r={register("guarantor2Relationship")}/><Fi l="Simu" r={register("guarantor2Phone")}/>
-                <div className="sm:col-span-2"><label className="label">Dhamana anazoandikisha</label><textarea {...register("guarantor2Collateral")} rows={2} className="input-field"/></div>
+                <Fi l="Majina" r={register("guarantor2Name")} e={errors.guarantor2Name?.message}/>
+                <Fi l="Makazi" r={register("guarantor2Address")} e={errors.guarantor2Address?.message}/>
+                <Fi l="Nyumba No." r={register("guarantor2HouseNumber")} e={errors.guarantor2HouseNumber?.message}/>
+                <Fi l="Biashara" r={register("guarantor2Business")} e={errors.guarantor2Business?.message}/>
+                <Fi l="Uhusiano" r={register("guarantor2Relationship")} e={errors.guarantor2Relationship?.message}/>
+                <Fi l="Simu" r={register("guarantor2Phone")} e={errors.guarantor2Phone?.message}/>
+                <div className="sm:col-span-2">
+                  <label className="label">Dhamana anazoandikisha</label>
+                  <textarea {...register("guarantor2Collateral")} rows={2} className="input-field"/>
+                  {errors.guarantor2Collateral && <p className="text-red-500 text-xs mt-1">{errors.guarantor2Collateral.message}</p>}
+                </div>
               </div>
             </div>
           </div>}
@@ -237,10 +394,10 @@ export default function BorrowerPortal(){
 
         <div className="flex items-center justify-between mt-6">
           <button type="button" onClick={prev} disabled={step===0} className="btn-secondary disabled:opacity-30"> Back</button>
-          <span className="text-xs text-slate-400 font-medium">Step {step+1} of {STEPS.length}</span>
+          <span className="text-xs text-dark-400 font-medium">Step {step+1} of {STEPS.length}</span>
           {step<3
             ?<button type="button" onClick={next} className="btn-primary">Next </button>
-            :<button type="submit" disabled={busy} className="btn-primary">{busy?"Saving":"Submit & Print PDF"}</button>
+            :<button type="submit" disabled={busy} className="btn-primary">{busy?"Saving":"Submit"}</button>
           }
         </div>
       </form>

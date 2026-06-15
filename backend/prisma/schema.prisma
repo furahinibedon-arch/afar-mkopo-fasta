@@ -13,6 +13,20 @@ enum UserRole {
   BORROWER
   LOAN_OFFICER
   ADMIN
+  DIRECTOR
+}
+
+enum AuditLogAction {
+  LOAN_DELETED
+  LOAN_STATUS_CHANGED
+  USER_CREATED
+  USER_DELETED
+  USER_ROLE_CHANGED
+  USER_PERMISSION_CHANGED
+  SYSTEM_CONFIG_CHANGED
+  DATA_EXPORT
+  BACKUP_INITIATED
+  RESTORE_INITIATED
 }
 
 enum LoanStatus {
@@ -43,6 +57,7 @@ model User {
   firstName        String
   lastName         String
   phone            String            @unique
+  profilePictureUrl String?
   role             UserRole          @default(BORROWER)
   isActive         Boolean           @default(true)
   createdAt        DateTime          @default(now())
@@ -50,22 +65,52 @@ model User {
   borrowerProfile  BorrowerProfile?
   loans            Loan[]            @relation("BorrowerLoans")
   staffActions     StaffAction[]     @relation("StaffActions")
+  uploadedDocuments BorrowerDocument[] @relation("UploadedBy")
+  receivedDocuments BorrowerDocument[] @relation("BorrowerDocuments")
+  auditLogs        AuditLog[]
 
   @@map("users")
+}
+
+model BorrowerDocument {
+  id               String   @id @default(cuid())
+  borrowerId       String
+  loanId           String?
+  uploadedById     String
+  fileName         String
+  fileUrl          String
+  fileType         String
+  fileSize         Int      // in bytes
+  version          Int      @default(1)
+  description      String?
+  isActive         Boolean  @default(true)
+  uploadedBy       User     @relation("UploadedBy", fields: [uploadedById], references: [id], onDelete: Cascade)
+  borrower         User     @relation("BorrowerDocuments", fields: [borrowerId], references: [id], onDelete: Cascade)
+  loan             Loan?    @relation(fields: [loanId], references: [id], onDelete: Cascade)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@map("borrower_documents")
 }
 
 model BorrowerProfile {
   id               String   @id @default(cuid())
   userId           String   @unique
-  idNumber         String   @unique
-  address          String
-  dateOfBirth      DateTime
+  nin              String?  // NIDA Number (NIN) - Made optional temporarily
+  address          String?
+  country          String   @default("Tanzania")
+  region           String?
+  district         String?
+  dateOfBirth      DateTime?
+  gender           String?
+  maritalStatus    String?
+  houseNumber      String?
+  spouseName       String?
   kycVerified      Boolean  @default(false)
   kycDocuments     Json?
-  guarantorName    String?
-  guarantorPhone   String?
-  guarantorAddress String?
-  creditScore      Int?
+  businessName     String?
+  businessLocation String?
+  businessSince    String?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
   user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -74,24 +119,42 @@ model BorrowerProfile {
 }
 
 model Loan {
-  id               String          @id @default(cuid())
+  id               String              @id @default(cuid())
   borrowerId       String
-  amount           Decimal         @db.Decimal(15, 2)
-  interestRate     Decimal         @db.Decimal(5, 2)
+  requestedAmount  Decimal             @db.Decimal(15,2)
+  amount           Decimal             @db.Decimal(15,2)
+  interestRate     Decimal             @db.Decimal(5,2)
   repaymentPeriod  Int
-  totalAmount      Decimal         @db.Decimal(15, 2)
-  monthlyPayment   Decimal         @db.Decimal(15, 2)
-  status           LoanStatus      @default(PENDING)
+  totalAmount      Decimal             @db.Decimal(15,2)
+  monthlyPayment   Decimal             @db.Decimal(15,2)
+  status           LoanStatus          @default(PENDING)
   purpose          String?
   disbursedAt      DateTime?
-  createdAt        DateTime        @default(now())
-  updatedAt        DateTime        @updatedAt
-  borrower         User            @relation("BorrowerLoans", fields: [borrowerId], references: [id], onDelete: Cascade)
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+  borrower         User                @relation("BorrowerLoans", fields: [borrowerId], references: [id], onDelete: Cascade)
   transactions     Transaction[]
   repayments       Repayment[]
   staffActions     StaffAction[]
+  auditLogs        AuditLog[]
+  borrowerDocuments BorrowerDocument[]
 
   @@map("loans")
+}
+
+model AuditLog {
+  id               String          @id @default(cuid())
+  action           AuditLogAction
+  userId           String?
+  user             User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
+  loanId           String?
+  loan             Loan?           @relation(fields: [loanId], references: [id], onDelete: SetNull)
+  oldStatus        LoanStatus?
+  newStatus        LoanStatus?
+  details          String?
+  createdAt        DateTime        @default(now())
+
+  @@map("audit_logs")
 }
 
 model Repayment {

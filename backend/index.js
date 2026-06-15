@@ -13,13 +13,24 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
+const logError = (error, context = {}) => {
+  console.error(`[${new Date().toISOString()}] ERROR:`, {
+    message: error.message,
+    stack: error.stack,
+    context
+  });
+};
+
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
   if (!token) return res.sendStatus(401);
 
   jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
-    if (err) return res.sendStatus(403);
+    if (err) {
+      logError(err, { endpoint: req.path });
+      return res.sendStatus(403);
+    }
     req.user = user;
     next();
   });
@@ -48,8 +59,8 @@ app.post('/api/auth/register', async (req, res) => {
     const token = jwt.sign({ userId: user.id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '24h' });
     res.json({ token, user: { ...user, password: undefined } });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Registration failed' });
+    logError(error, { endpoint: '/api/auth/register', body: req.body });
+    res.status(500).json({ error: 'Registration failed', details: error.message });
   }
 });
 
@@ -63,8 +74,8 @@ app.post('/api/auth/login', async (req, res) => {
     const token = jwt.sign({ userId: user.id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '24h' });
     res.json({ token, user: { ...user, password: undefined } });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Login failed' });
+    logError(error, { endpoint: '/api/auth/login', body: req.body });
+    res.status(500).json({ error: 'Login failed', details: error.message });
   }
 });
 
@@ -76,7 +87,8 @@ app.get('/api/me', authenticateToken, async (req, res) => {
     });
     res.json({ ...user, password: undefined });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch user' });
+    logError(error, { endpoint: '/api/me', userId: req.user.userId });
+    res.status(500).json({ error: 'Failed to fetch user', details: error.message });
   }
 });
 
@@ -89,19 +101,22 @@ app.post('/api/borrower/profile', authenticateToken, authorizeRole('BORROWER'), 
     });
     res.json(profile);
   } catch (error) {
-    res.status(500).json({ error: 'Failed to update profile' });
+    logError(error, { endpoint: '/api/borrower/profile', userId: req.user.userId, body: req.body });
+    res.status(500).json({ error: 'Failed to update profile', details: error.message });
   }
 });
 
 app.post('/api/loans', authenticateToken, authorizeRole('BORROWER'), async (req, res) => {
   try {
-    const { amount, interestRate, repaymentPeriod, purpose } = req.body;
-    const totalAmount = Number(amount) * (1 + Number(interestRate) / 100);
+    const { amount, requestedAmount, interestRate, repaymentPeriod, purpose } = req.body;
+    const finalRequestedAmount = requestedAmount || amount;
+    const totalAmount = Number(finalRequestedAmount) * (1 + Number(interestRate) / 100);
     const monthlyPayment = totalAmount / Number(repaymentPeriod);
     const loan = await prisma.loan.create({
       data: {
         borrowerId: req.user.userId,
-        amount,
+        requestedAmount: finalRequestedAmount,
+        amount: finalRequestedAmount,
         interestRate,
         repaymentPeriod,
         totalAmount,
@@ -111,7 +126,8 @@ app.post('/api/loans', authenticateToken, authorizeRole('BORROWER'), async (req,
     });
     res.json(loan);
   } catch (error) {
-    res.status(500).json({ error: 'Failed to apply for loan' });
+    logError(error, { endpoint: '/api/loans', userId: req.user.userId, body: req.body });
+    res.status(500).json({ error: 'Failed to apply for loan', details: error.message });
   }
 });
 
@@ -130,7 +146,8 @@ app.get('/api/loans', authenticateToken, async (req, res) => {
     }
     res.json(loans);
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch loans' });
+    logError(error, { endpoint: '/api/loans', userId: req.user.userId });
+    res.status(500).json({ error: 'Failed to fetch loans', details: error.message });
   }
 });
 
@@ -143,7 +160,8 @@ app.patch('/api/loans/:id/status', authenticateToken, authorizeRole('LOAN_OFFICE
     });
     res.json(loan);
   } catch (error) {
-    res.status(500).json({ error: 'Failed to update loan status' });
+    logError(error, { endpoint: '/api/loans/:id/status', loanId: req.params.id, userId: req.user.userId, body: req.body });
+    res.status(500).json({ error: 'Failed to update loan status', details: error.message });
   }
 });
 
@@ -170,7 +188,8 @@ app.get('/api/dashboard/analytics', authenticateToken, authorizeRole('ADMIN', 'L
       overdueRepayments,
     });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch analytics' });
+    logError(error, { endpoint: '/api/dashboard/analytics', userId: req.user.userId });
+    res.status(500).json({ error: 'Failed to fetch analytics', details: error.message });
   }
 });
 
