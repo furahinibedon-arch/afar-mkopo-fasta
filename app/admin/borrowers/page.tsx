@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Layout from "@/components/Layout";
@@ -97,20 +97,39 @@ export default function AdminUsers() {
     const method = modal === "add" ? "POST" : "PATCH";
     const body: any = { email: form.email, firstName: form.firstName, lastName: form.lastName, phone: form.phone, role: form.role, isActive: form.isActive };
     if (form.password) body.password = form.password;
-    try { const r = await fetch(url, { method, headers: ah(), body: JSON.stringify(body) }); const d = await r.json(); if (!r.ok) throw new Error(d.error); toast(modal === "add" ? "User created!" : "User updated!"); closeModal(); load(); }
+    try {
+      const r = await fetch(url, { method, headers: ah(), body: JSON.stringify(body) });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error);
+      // If the edited user is the currently logged-in user, sync localStorage so the
+      // UI role reflects the change immediately (without requiring a re-login).
+      if (modal === "edit") {
+        const stored = localStorage.getItem("user");
+        if (stored) {
+          const me = JSON.parse(stored);
+          if (me.id === form.id) {
+            localStorage.setItem("user", JSON.stringify({ ...me, ...d }));
+            setCurrentUserRole(d.role);
+          }
+        }
+      }
+      toast(modal === "add" ? "User created!" : "User updated!");
+      closeModal();
+      load();
+    }
     catch (e: any) { toast(e.message, false); } finally { setBusy(false); }
   };
   const deleteUser = async (id: string) => {
     setBusy(true);
     const BASE = process.env.NEXT_PUBLIC_API_URL || "";
     function ah() { const t = typeof window !== "undefined" ? localStorage.getItem("token") : null; return { "Content-Type": "application/json", ...(t ? { Authorization: `Bearer ${t}` } : {}) }; }
-    try { const r = await fetch(`${BASE}/api/admin/users/${id}`, { method: "DELETE", headers: ah() }); const d = await r.json(); if (!r.ok) throw new Error(d.error); toast("User deleted"); setConfirm(null); load(); }
+    try { const r = await fetch(`${BASE}/api/users/${id}`, { method: "DELETE", headers: ah() }); const d = await r.json(); if (!r.ok) throw new Error(d.error); toast("User deleted"); setConfirm(null); load(); }
     catch (e: any) { toast(e.message, false); } finally { setBusy(false); }
   };
   const toggleRestrict = async (u: any) => {
     const BASE = process.env.NEXT_PUBLIC_API_URL || "";
     function ah() { const t = typeof window !== "undefined" ? localStorage.getItem("token") : null; return { "Content-Type": "application/json", ...(t ? { Authorization: `Bearer ${t}` } : {}) }; }
-    try { const r = await fetch(`${BASE}/api/admin/users/${u.id}`, { method: "PATCH", headers: ah(), body: JSON.stringify({ isActive: !u.isActive }) }); const d = await r.json(); if (!r.ok) throw new Error(d.error); toast(u.isActive ? "User restricted" : "User activated"); load(); }
+    try { const r = await fetch(`${BASE}/api/users/${u.id}`, { method: "PATCH", headers: ah(), body: JSON.stringify({ isActive: !u.isActive }) }); const d = await r.json(); if (!r.ok) throw new Error(d.error); toast(u.isActive ? "User restricted" : "User activated"); load(); }
     catch (e: any) { toast(e.message, false); }
   };
   return (
@@ -195,8 +214,8 @@ export default function AdminUsers() {
                       <div>
                         <p className="font-semibold text-dark-800 text-sm">{doc.fileName}</p>
                         <p className="text-xs text-dark-500">
-                          {new Date(doc.createdAt).toLocaleDateString()} •
-                          {(doc.fileSize / 1024 / 1024 > 1 ? `${(doc.fileSize / 1024 / 1024).toFixed(2)} MB` : `${(doc.fileSize / 1024).toFixed(2)} KB`)} •
+                          {new Date(doc.createdAt).toLocaleDateString()} â€¢
+                          {(doc.fileSize / 1024 / 1024 > 1 ? `${(doc.fileSize / 1024 / 1024).toFixed(2)} MB` : `${(doc.fileSize / 1024).toFixed(2)} KB`)} â€¢
                           Uploaded by {doc.uploadedBy.firstName}
                         </p>
                       </div>
@@ -227,3 +246,4 @@ export default function AdminUsers() {
     </Layout>
   );
 }
+

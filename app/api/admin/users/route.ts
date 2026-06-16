@@ -1,25 +1,32 @@
-
-import { NextRequest, NextResponse } from 'next/server';
+﻿import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 import { prisma } from '@/lib/server-auth';
 
-async function guardRead(request: NextRequest) {
+async function verifyAndFetchUser(request: NextRequest) {
   const authHeader = request.headers.get('authorization');
   const token = authHeader?.replace('Bearer ', '').trim() || '';
   if (!token) throw { status: 401, error: 'No token' };
   const secret = process.env.JWT_SECRET || 'afar-mkopo-fasta-secret';
-  const user = jwt.verify(token, secret) as { role: string; userId: string };
+  const payload = jwt.verify(token, secret) as { role: string; userId: string };
+
+  // Always re-fetch from DB so stale tokens don't bypass role changes
+  const dbUser = await prisma.user.findUnique({
+    where: { id: payload.userId },
+    select: { id: true, role: true, isActive: true },
+  });
+  if (!dbUser || !dbUser.isActive) throw { status: 401, error: 'No token' };
+  return dbUser;
+}
+
+async function guardRead(request: NextRequest) {
+  const user = await verifyAndFetchUser(request);
   if (user.role !== 'ADMIN' && user.role !== 'CEO') throw { status: 403, error: 'Forbidden' };
   return user;
 }
 
 async function guardWrite(request: NextRequest) {
-  const authHeader = request.headers.get('authorization');
-  const token = authHeader?.replace('Bearer ', '').trim() || '';
-  if (!token) throw { status: 401, error: 'No token' };
-  const secret = process.env.JWT_SECRET || 'afar-mkopo-fasta-secret';
-  const user = jwt.verify(token, secret) as { role: string; userId: string };
+  const user = await verifyAndFetchUser(request);
   if (user.role !== 'ADMIN') throw { status: 403, error: 'Admins only' };
   return user;
 }
