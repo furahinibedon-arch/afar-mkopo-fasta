@@ -93,7 +93,7 @@ export default function AdminUsers() {
     setBusy(true);
     const BASE = process.env.NEXT_PUBLIC_API_URL || "";
     function ah() { const t = typeof window !== "undefined" ? localStorage.getItem("token") : null; return { "Content-Type": "application/json", ...(t ? { Authorization: `Bearer ${t}` } : {}) }; }
-    const url = modal === "add" ? `${BASE}/api/admin/users` : `${BASE}/api/admin/users/${form.id}`;
+    const url = modal === "add" ? `${BASE}/api/admin/users` : `${BASE}/api/users/${form.id}`;
     const method = modal === "add" ? "POST" : "PATCH";
     const body: any = { email: form.email, firstName: form.firstName, lastName: form.lastName, phone: form.phone, role: form.role, isActive: form.isActive };
     if (form.password) body.password = form.password;
@@ -246,4 +246,5 @@ export default function AdminUsers() {
     </Layout>
   );
 }
+
 
