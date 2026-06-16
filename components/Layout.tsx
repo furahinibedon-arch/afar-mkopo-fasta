@@ -89,7 +89,10 @@ export default function Layout({ children, portal = "public" }: { children: Reac
 
             {/* User info card  shown when logged in */}
             {!isPublic && portalUser && (
-              <div className="flex items-center gap-2 pl-2 border-l border-dark-200">
+              <Link
+                href={portal === "borrower" ? "/borrower/profile" : portal === "staff" ? "/staff/profile" : "/admin/profile"}
+                className="flex items-center gap-2 pl-2 border-l border-dark-200 hover:opacity-80 transition-opacity cursor-pointer"
+              >
                 {/* Avatar */}
                 <div className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center bg-gradient-to-br from-primary-500 to-brand-500 shrink-0 ring-2 ring-white shadow">
                   {portalUser.profilePictureUrl ? (
@@ -105,7 +108,7 @@ export default function Layout({ children, portal = "public" }: { children: Reac
                   <span className="text-dark-800 text-xs font-bold truncate max-w-[120px]">{displayName}</span>
                   <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full w-fit ${rolePill}`}>{roleLabel.replace("_", " ")}</span>
                 </div>
-              </div>
+              </Link>
             )}
 
             {/* Logout */}
@@ -126,4 +129,5 @@ function NL({ href, label, p, exact = false }: { href: string; label: string; p:
   const active = exact ? p === href : p.startsWith(href);
   return <Link href={href} className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${active ? "bg-gradient-to-r from-primary-600 to-primary-500 text-white shadow-md" : "text-dark-700 hover:bg-gradient-to-r hover:from-dark-100 hover:to-primary-100"}`}>{label}</Link>;
 }
+
 
