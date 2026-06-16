@@ -36,7 +36,7 @@ export default function AdminUsers() {
     const u = localStorage.getItem("user");
     if (!u) { router.push("/"); return; }
     const userRole = JSON.parse(u).role;
-    if (userRole !== "ADMIN" && userRole !== "CEO") { router.push("/admin"); return; }
+    if (!["ADMIN", "CEO", "DIRECTOR"].includes(userRole)) { router.push("/admin"); return; }
     load();
   }, [router, refreshKey]);
 
@@ -135,8 +135,8 @@ export default function AdminUsers() {
   return (
     <Layout portal="admin">
       <div className="mb-6 flex items-center justify-between">
-        <div><h1 className="text-3xl font-black text-dark-800">User Management</h1><p className="text-dark-500 mt-1">{currentUserRole === "CEO" ? "View all users." : "Add, edit, restrict or delete users."}</p></div>
-        {currentUserRole !== "CEO" && <button onClick={openAdd} className="btn-primary">+ Add User</button>}
+        <div><h1 className="text-3xl font-black text-dark-800">User Management</h1><p className="text-dark-500 mt-1">{(currentUserRole === "CEO" || currentUserRole === "DIRECTOR") ? "View all users." : "Add, edit, restrict or delete users."}</p></div>
+        {(currentUserRole !== "CEO" && currentUserRole !== "DIRECTOR") && <button onClick={openAdd} className="btn-primary">+ Add User</button>}
       </div>
       {msg && <div className={`mb-4 px-4 py-2.5 rounded-xl text-sm font-semibold ${msg.ok ? "bg-emerald-50 border border-emerald-200 text-emerald-700" : "bg-red-50 border border-red-200 text-red-700"}`}>{msg.text}</div>}
       {loading ? <div className="flex justify-center py-20"><div className="w-8 h-8 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"/></div> :
@@ -150,13 +150,13 @@ export default function AdminUsers() {
                   <td className="py-3 px-3 font-semibold text-dark-800">{u.firstName} {u.lastName}</td>
                   <td className="py-3 px-3 text-dark-500 text-xs">{u.email}</td>
                   <td className="py-3 px-3 text-dark-500">{u.phone}</td>
-                  <td className="py-3 px-3"><span className={`badge-${u.role === "ADMIN" ? "disbursed" : u.role === "LOAN_OFFICER" ? "approved" : u.role === "DIRECTOR" ? "pending" : "pending"}`}>{u.role}</span></td>
+                  <td className="py-3 px-3"><span className={`badge-${u.role === "ADMIN" ? "disbursed" : u.role === "LOAN_OFFICER" ? "approved" : u.role === "DIRECTOR" ? "pending" : u.role === "CEO" ? "rejected" : "pending"}`}>{u.role}</span></td>
                   <td className="py-3 px-3"><span className={u.isActive ? "badge-approved" : "badge-rejected"}>{u.isActive ? t.active_ : t.restricted}</span></td>
                   <td className="py-3 px-3"><div className="flex gap-1 flex-wrap">
-                    {currentUserRole !== "CEO" && <button onClick={() => openEdit(u)} className="btn-secondary text-xs py-1 px-2"> Edit</button>}
+                    {(currentUserRole !== "CEO" && currentUserRole !== "DIRECTOR") && <button onClick={() => openEdit(u)} className="btn-secondary text-xs py-1 px-2"> Edit</button>}
                     {u.role === "BORROWER" && <button onClick={() => loadDocuments(u)} className="btn-secondary text-xs py-1 px-2"> Docs</button>}
-                    {currentUserRole !== "CEO" && <button onClick={() => toggleRestrict(u)} className={`text-xs py-1 px-2 font-semibold rounded-lg transition-all ${u.isActive ? "bg-amber-100 text-amber-700 hover:bg-amber-200" : "bg-emerald-100 text-emerald-700 hover:bg-emerald-200"}`}>{u.isActive ? t.restrict : t.activate}</button>}
-                    {currentUserRole !== "CEO" && <button onClick={() => setConfirm(u.id)} className="btn-danger text-xs py-1 px-2"> Delete</button>}
+                    {(currentUserRole !== "CEO" && currentUserRole !== "DIRECTOR") && <button onClick={() => toggleRestrict(u)} className={`text-xs py-1 px-2 font-semibold rounded-lg transition-all ${u.isActive ? "bg-amber-100 text-amber-700 hover:bg-amber-200" : "bg-emerald-100 text-emerald-700 hover:bg-emerald-200"}`}>{u.isActive ? t.restrict : t.activate}</button>}
+                    {(currentUserRole !== "CEO" && currentUserRole !== "DIRECTOR") && <button onClick={() => setConfirm(u.id)} className="btn-danger text-xs py-1 px-2"> Delete</button>}
                   </div></td>
                 </tr>
               ))}
@@ -246,5 +246,6 @@ export default function AdminUsers() {
     </Layout>
   );
 }
+
 
 
