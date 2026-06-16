@@ -213,7 +213,7 @@ export default function Layout({
           ${sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}
       >
         <nav className="flex-1 p-3 space-y-0.5">
-          <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-widest px-3 pt-2 pb-1.5">Navigation</p>
+          <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-widest px-3 pt-2 pb-1.5">Menu</p>
           {ADMIN_NAV.map(item => {
             const active = item.exact ? pathname === item.href : pathname.startsWith(item.href);
             const Icon = item.icon;
@@ -224,9 +224,12 @@ export default function Layout({
                 onClick={() => setSidebarOpen(false)}
                 className={active ? "nav-link-active" : "nav-link"}
               >
-                <Icon className="w-4 h-4 shrink-0" />
+                <span className={`w-7 h-7 rounded-md flex items-center justify-center shrink-0 transition-colors
+                  ${active ? "bg-sky-100" : "bg-zinc-100 group-hover:bg-zinc-200"}`}>
+                  <Icon className={`w-3.5 h-3.5 ${active ? "text-sky-600" : "text-zinc-500"}`} />
+                </span>
                 {item.label}
-                {active && <ChevronRight className="w-3 h-3 ml-auto text-primary-400" />}
+                {active && <ChevronRight className="w-3 h-3 ml-auto text-sky-400" />}
               </Link>
             );
           })}
@@ -284,3 +287,4 @@ export default function Layout({
     </div>
   );
 }
+
