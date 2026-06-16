@@ -71,7 +71,7 @@ export default function Layout({ children, portal = "public" }: { children: Reac
                 }}
               />
             </div>
-            {!isPublic && portal !== "public" && <span className="hidden sm:block ml-2 px-2 py-0.5 bg-gradient-to-r from-dark-100 to-primary-100 text-dark-700 text-xs font-semibold rounded-md capitalize">{portal}</span>}
+            
           </Link>
 
           {/* Right side */}
@@ -126,3 +126,4 @@ function NL({ href, label, p, exact = false }: { href: string; label: string; p:
   const active = exact ? p === href : p.startsWith(href);
   return <Link href={href} className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${active ? "bg-gradient-to-r from-primary-600 to-primary-500 text-white shadow-md" : "text-dark-700 hover:bg-gradient-to-r hover:from-dark-100 hover:to-primary-100"}`}>{label}</Link>;
 }
+
