@@ -6,7 +6,7 @@ import{getAllLoans,updateLoanStatus}from"@/lib/api";
 import{useLanguage}from"@/context/LanguageContext";
 import{generateLoanApplicationPDF}from"@/lib/pdfGenerator";
 import DocumentManagement from '@/components/DocumentManagement';
-import { Printer, FileText, X } from 'lucide-react';
+import { Printer, FileText, X, CheckCircle, XCircle } from 'lucide-react';
 
 export default function StaffPortal(){
   const router=useRouter();
@@ -247,14 +247,32 @@ export default function StaffPortal(){
 
             <div className="p-6 border-t border-dark-200">
               {viewing.status==="PENDING"?(
-                <div className="flex gap-3">
-                  <button onClick={()=>action(viewing.id,"APPROVED")} disabled={busy===viewing.id} className="btn-success flex-1 py-3 text-base">
-                    {busy===viewing.id?"Processing":" Approve Loan"}
-                  </button>
-                  <button onClick={()=>action(viewing.id,"REJECTED")} disabled={busy===viewing.id} className="btn-danger flex-1 py-3 text-base">
-                    {busy===viewing.id?"Processing":" Reject Loan"}
-                  </button>
-                  <button onClick={()=>setViewing(null)} className="btn-secondary px-6">Cancel</button>
+                <div className="space-y-3">
+                  <p className="text-xs font-semibold text-dark-400 uppercase tracking-widest text-center">Select Decision / Chagua Uamuzi</p>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={()=>action(viewing.id,"APPROVED")}
+                      disabled={busy===viewing.id}
+                      className="btn-success flex-1 py-4 flex flex-col items-center gap-1.5"
+                    >
+                      <CheckCircle className="w-7 h-7" />
+                      <span className="font-black text-sm">{busy===viewing.id?"Processing...":"APPROVE"}</span>
+                      <span className="text-xs opacity-75 font-normal">Mkopo Umekubaliwa</span>
+                    </button>
+                    <button
+                      onClick={()=>action(viewing.id,"REJECTED")}
+                      disabled={busy===viewing.id}
+                      className="btn-danger flex-1 py-4 flex flex-col items-center gap-1.5"
+                    >
+                      <XCircle className="w-7 h-7" />
+                      <span className="font-black text-sm">{busy===viewing.id?"Processing...":"REJECT"}</span>
+                      <span className="text-xs opacity-75 font-normal">Mkopo Umekataliwa</span>
+                    </button>
+                    <button onClick={()=>setViewing(null)} className="btn-secondary px-5 py-4 flex flex-col items-center gap-1.5">
+                      <X className="w-5 h-5" />
+                      <span className="text-xs">Cancel</span>
+                    </button>
+                  </div>
                 </div>
               ):(
                 <div className="flex items-center justify-between">
