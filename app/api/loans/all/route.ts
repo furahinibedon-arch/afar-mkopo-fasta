@@ -1,4 +1,4 @@
-
+﻿
 import jwt from 'jsonwebtoken';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/server-auth';
@@ -25,7 +25,7 @@ export async function OPTIONS() {
 export async function GET(request: NextRequest) {
   try {
     const { role } = await auth(request);
-    if (!['ADMIN', 'LOAN_OFFICER'].includes(role)) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    if (!['ADMIN', 'LOAN_OFFICER', 'DIRECTOR', 'CEO'].includes(role)) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     const loans = await prisma.loan.findMany({
       orderBy: { createdAt: 'desc' },
       select: {
@@ -82,3 +82,4 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to get loans' }, { status: e.status || 500 });
   }
 }
+

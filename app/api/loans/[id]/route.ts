@@ -1,4 +1,4 @@
-import jwt from 'jsonwebtoken';
+﻿import jwt from 'jsonwebtoken';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/server-auth';
 import { logError, logInfo } from '@/lib/logger';
@@ -20,7 +20,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     if (!token) return NextResponse.json({ error: 'No token' }, { status: 401 });
     const secret = process.env.JWT_SECRET || 'afar-mkopo-fasta-secret';
     const decoded = jwt.verify(token, secret) as { role: string; userId: string };
-    if (!['ADMIN', 'DIRECTOR'].includes(decoded.role)) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    if (!['ADMIN', 'DIRECTOR', 'CEO'].includes(decoded.role)) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     const { id } = params;
     
     const loan = await prisma.loan.findUnique({ where: { id } });
@@ -52,7 +52,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     if (!token) return NextResponse.json({ error: 'No token' }, { status: 401 });
     const secret = process.env.JWT_SECRET || 'afar-mkopo-fasta-secret';
     const decoded = jwt.verify(token, secret) as { role: string; userId: string };
-    if (!['ADMIN', 'LOAN_OFFICER'].includes(decoded.role)) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    if (!['ADMIN', 'LOAN_OFFICER', 'DIRECTOR', 'CEO'].includes(decoded.role)) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     const { id } = params;
     const { amount, interestRate, repaymentPeriod } = await request.json();
     
@@ -114,3 +114,4 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     return NextResponse.json({ error: 'Failed to update loan', details: (e as Error).message }, { status: 500 });
   }
 }
+
