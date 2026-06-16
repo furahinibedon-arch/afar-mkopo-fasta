@@ -140,7 +140,7 @@ export default function ReportsPage() {
               <SummaryCard label="Repaid" value={fmt(data.summary.totalRepaid)} color="border-sky-400"/>
             </div>
             <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
-              {Object.entries(data.summary.byStatus||{}).map(([s,c])=>(
+                {(Object.entries(data.summary.byStatus||{}) as [string,number][]).map(([s,c])=>(
                 <div key={s} className="bg-white rounded-xl p-3 text-center shadow-sm border border-dark-100">
                   <p className="text-xl font-black text-dark-800">{c}</p><Badge status={s}/>
                 </div>
