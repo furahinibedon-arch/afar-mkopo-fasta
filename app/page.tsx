@@ -1,4 +1,4 @@
-
+﻿
 "use client";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
@@ -126,8 +126,9 @@ function LF() {
       const r = await loginUser({ email, password });
       localStorage.setItem("token", r.token);
       localStorage.setItem("user", JSON.stringify(r.user));
-      if (r.user?.role === "ADMIN") router.push("/admin");
-      else if (r.user?.role === "LOAN_OFFICER") router.push("/staff");
+      const role = r.user?.role;
+      if (["ADMIN", "DIRECTOR", "CEO"].includes(role)) router.push("/admin");
+      else if (role === "LOAN_OFFICER") router.push("/staff");
       else router.push("/borrower");
     } catch (e: any) {
       setErr(e.message);
@@ -257,4 +258,5 @@ function Err({ msg }: { msg: string }) {
     </div>
   );
 }
+
 
