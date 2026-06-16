@@ -1,6 +1,7 @@
 ﻿import { NextResponse } from 'next/server';
 import { getCurrentUser, prisma } from '@/lib/server-auth';
-import bcrypt from 'bcrypt';
+
+const CAN_VIEW_USERS = new Set(['ADMIN', 'DIRECTOR', 'CEO']);
 
 export async function OPTIONS() {
   return new NextResponse(null, {
@@ -15,7 +16,7 @@ export async function OPTIONS() {
 export async function GET(request: Request) {
   const currentUser = await getCurrentUser(request);
   if (!currentUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  if (currentUser.role !== 'ADMIN' && currentUser.role !== 'CEO') {
+  if (!CAN_VIEW_USERS.has(currentUser.role)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
   const users = await prisma.user.findMany({

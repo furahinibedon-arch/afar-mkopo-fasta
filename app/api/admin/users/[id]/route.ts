@@ -4,6 +4,7 @@ import bcrypt from 'bcrypt';
 import { prisma } from '@/lib/server-auth';
 
 const VALID_ROLES = new Set(['BORROWER', 'LOAN_OFFICER', 'ADMIN', 'DIRECTOR', 'CEO']);
+const CAN_MANAGE_USERS = new Set(['ADMIN', 'DIRECTOR', 'CEO']);
 
 async function guardWrite(request: NextRequest) {
   const authHeader = request.headers.get('authorization');
@@ -12,13 +13,12 @@ async function guardWrite(request: NextRequest) {
   const secret = process.env.JWT_SECRET || 'afar-mkopo-fasta-secret';
   const payload = jwt.verify(token, secret) as { role: string; userId: string };
 
-  // Always re-fetch from DB so stale tokens don't bypass role changes
   const dbUser = await prisma.user.findUnique({
     where: { id: payload.userId },
     select: { id: true, role: true, isActive: true },
   });
   if (!dbUser || !dbUser.isActive) throw { status: 401, error: 'No token' };
-  if (dbUser.role !== 'ADMIN') throw { status: 403, error: 'Admins only' };
+  if (!CAN_MANAGE_USERS.has(dbUser.role)) throw { status: 403, error: 'Forbidden' };
   return dbUser;
 }
 
@@ -36,8 +36,12 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
       if (!VALID_ROLES.has(role)) {
         return NextResponse.json({ error: 'Invalid role' }, { status: 400 });
       }
-      // Prevent the last admin from demoting themselves
-      if (id === admin.id && role !== 'ADMIN') {
+      // Only ADMIN can assign ADMIN role
+      if (role === 'ADMIN' && admin.role !== 'ADMIN') {
+        return NextResponse.json({ error: 'Only admins can assign the ADMIN role' }, { status: 403 });
+      }
+      // Prevent last admin from demoting themselves
+      if (id === admin.id && role !== 'ADMIN' && admin.role === 'ADMIN') {
         const adminCount = await prisma.user.count({ where: { role: 'ADMIN' } });
         if (adminCount <= 1) {
           return NextResponse.json({ error: 'You must keep at least one admin account.' }, { status: 400 });
@@ -51,7 +55,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     const { password: _, ...safe } = user;
     return NextResponse.json(safe);
   } catch (e: any) {
-    console.error("PATCH /api/admin/users/[id] error:", e);
+    console.error('PATCH /api/admin/users/[id] error:', e);
     if (e.code === 'P2002') {
       return NextResponse.json({ error: 'Email or phone already exists' }, { status: 400 });
     }
@@ -66,7 +70,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     await prisma.user.delete({ where: { id } });
     return NextResponse.json({ message: 'User deleted' });
   } catch (e: any) {
-    console.error("DELETE /api/admin/users/[id] error:", e);
+    console.error('DELETE /api/admin/users/[id] error:', e);
     return NextResponse.json({ error: e.error || e.message || 'Invalid token' }, { status: e.status || 401 });
   }
 }

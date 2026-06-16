@@ -3,6 +3,8 @@ import { getCurrentUser, prisma } from '@/lib/server-auth';
 import bcrypt from 'bcrypt';
 
 const VALID_ROLES = new Set(['BORROWER', 'LOAN_OFFICER', 'ADMIN', 'DIRECTOR', 'CEO']);
+// Roles that are allowed to manage users
+const CAN_MANAGE_USERS = new Set(['ADMIN', 'DIRECTOR', 'CEO']);
 
 export async function OPTIONS() {
   return new NextResponse(null, {
@@ -18,12 +20,15 @@ export async function PATCH(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  // Always verify live role from DB, not from token
   const currentUser = await getCurrentUser(request);
   if (!currentUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  if (currentUser.role !== 'ADMIN') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  if (!CAN_MANAGE_USERS.has(currentUser.role)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
 
-  const { email, firstName, lastName, phone, role, isActive, password } = await request.json();
+  const body = await request.json();
+  const { email, firstName, lastName, phone, role, isActive, password } = body;
+
   const data: any = {};
   if (email) data.email = email;
   if (firstName) data.firstName = firstName;
@@ -33,8 +38,12 @@ export async function PATCH(
     if (!VALID_ROLES.has(role)) {
       return NextResponse.json({ error: 'Invalid role' }, { status: 400 });
     }
+    // Only ADMIN can assign ADMIN role
+    if (role === 'ADMIN' && currentUser.role !== 'ADMIN') {
+      return NextResponse.json({ error: 'Only admins can assign the ADMIN role' }, { status: 403 });
+    }
     // Prevent the last admin from demoting themselves
-    if (params.id === currentUser.id && role !== 'ADMIN') {
+    if (params.id === currentUser.id && role !== 'ADMIN' && currentUser.role === 'ADMIN') {
       const adminCount = await prisma.user.count({ where: { role: 'ADMIN' } });
       if (adminCount <= 1) {
         return NextResponse.json({ error: 'You must keep at least one admin account.' }, { status: 400 });
@@ -56,6 +65,7 @@ export async function PATCH(
     });
     return NextResponse.json(user);
   } catch (e: any) {
+    console.error('PATCH /api/users/[id] error:', e);
     if (e.code === 'P2002') {
       return NextResponse.json({ error: 'Email or phone already exists' }, { status: 400 });
     }
@@ -69,12 +79,15 @@ export async function DELETE(
 ) {
   const currentUser = await getCurrentUser(request);
   if (!currentUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  if (currentUser.role !== 'ADMIN') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  if (!CAN_MANAGE_USERS.has(currentUser.role)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
 
   try {
     await prisma.user.delete({ where: { id: params.id } });
     return NextResponse.json({ message: 'User deleted' });
   } catch (e: any) {
+    console.error('DELETE /api/users/[id] error:', e);
     return NextResponse.json({ error: e.message || 'Delete failed' }, { status: 500 });
   }
 }
