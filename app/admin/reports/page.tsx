@@ -11,7 +11,7 @@ const YEARS = Array.from({ length: 5 }, (_, i) => CY - i);
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 const QUARTERS = ["Q1 (Jan-Mar)","Q2 (Apr-Jun)","Q3 (Jul-Sep)","Q4 (Oct-Dec)"];
 function fmt(n) { return new Intl.NumberFormat("en-TZ",{style:"currency",currency:"TZS",minimumFractionDigits:0,notation:n>=1_000_000?"compact":"standard",compactDisplay:"short"}).format(n); }
-function SummaryCard({label,value,sub,color}) {
+function SummaryCard({label,value,sub,color}:{label:any;value:any;sub?:any;color:any}) {
   return (<div className={"bg-white rounded-xl border-l-4 "+color+" shadow-sm p-4"}><p className="text-xs font-semibold text-dark-400 uppercase tracking-wide">{label}</p><p className="text-2xl font-black text-dark-800 mt-1">{value}</p>{sub&&<p className="text-xs text-dark-400 mt-0.5">{sub}</p>}</div>);
 }
 function Badge({status}) {

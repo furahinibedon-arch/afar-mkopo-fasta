@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma, verifyToken } from "@/lib/server-auth";
+import { prisma, getCurrentUser } from "@/lib/server-auth";
 
 function getPeriodRange(period, year, month, quarter) {
   const y = parseInt(year || String(new Date().getFullYear()));
@@ -24,7 +24,7 @@ export async function GET(req) {
   try {
     const auth = req.headers.get("authorization");
     if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    verifyToken(auth.replace("Bearer ", ""));
+    const user = await getCurrentUser(req as any); if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     const { searchParams } = req.nextUrl;
     const type    = searchParams.get("type")    || "loans";
     const period  = searchParams.get("period")  || "yearly";
