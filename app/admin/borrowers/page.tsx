@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import Layout from "@/components/Layout";
 import { useLanguage } from "@/context/LanguageContext";
 import { getUsers, getBorrowerDocuments, uploadBorrowerDocument, AppUser, BorrowerDocument } from "@/lib/api";
-import { Upload, FileText } from "lucide-react";
+import { Upload, FileText, Users, UserCheck } from "lucide-react";
 
 const ROLES = ["BORROWER", "LOAN_OFFICER", "ADMIN", "DIRECTOR", "CEO"];
 const EMPTY = { id: "", email: "", firstName: "", lastName: "", phone: "", role: "BORROWER", password: "", isActive: true };
@@ -139,31 +139,54 @@ export default function AdminUsers() {
         {(currentUserRole !== "CEO" && currentUserRole !== "DIRECTOR") && <button onClick={openAdd} className="btn-primary">+ Add User</button>}
       </div>
       {msg && <div className={`mb-4 px-4 py-2.5 rounded-xl text-sm font-semibold ${msg.ok ? "bg-emerald-50 border border-emerald-200 text-emerald-700" : "bg-red-50 border border-red-200 text-red-700"}`}>{msg.text}</div>}
-      {loading ? <div className="flex justify-center py-20"><div className="w-8 h-8 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"/></div> :
-        <div className="card overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead><tr className="border-b border-dark-200">{["Name", "Email", "Phone", t.role, "Status", "Actions"].map(h => <th key={h} className="text-left py-3 px-3 text-xs font-semibold text-dark-500 uppercase">{h}</th>)}</tr></thead>
-            <tbody>
-              {users.length === 0 && <tr><td colSpan={6} className="text-center py-16 text-dark-400">No users yet.</td></tr>}
-              {users.map((u: any) => (
-                <tr key={u.id} className={`border-b border-dark-100 hover:bg-dark-50 ${!u.isActive ? "opacity-50" : ""}`}>
-                  <td className="py-3 px-3 font-semibold text-dark-800">{u.firstName} {u.lastName}</td>
-                  <td className="py-3 px-3 text-dark-500 text-xs">{u.email}</td>
-                  <td className="py-3 px-3 text-dark-500">{u.phone}</td>
-                  <td className="py-3 px-3"><span className={`badge-${u.role === "ADMIN" ? "disbursed" : u.role === "LOAN_OFFICER" ? "approved" : u.role === "DIRECTOR" ? "pending" : u.role === "CEO" ? "rejected" : "pending"}`}>{u.role}</span></td>
-                  <td className="py-3 px-3"><span className={u.isActive ? "badge-approved" : "badge-rejected"}>{u.isActive ? t.active_ : t.restricted}</span></td>
-                  <td className="py-3 px-3"><div className="flex gap-1 flex-wrap">
-                    {(currentUserRole !== "CEO" && currentUserRole !== "DIRECTOR") && <button onClick={() => openEdit(u)} className="btn-secondary text-xs py-1 px-2"> Edit</button>}
-                    {u.role === "BORROWER" && <button onClick={() => loadDocuments(u)} className="btn-secondary text-xs py-1 px-2"> Docs</button>}
-                    {(currentUserRole !== "CEO" && currentUserRole !== "DIRECTOR") && <button onClick={() => toggleRestrict(u)} className={`text-xs py-1 px-2 font-semibold rounded-lg transition-all ${u.isActive ? "bg-amber-100 text-amber-700 hover:bg-amber-200" : "bg-emerald-100 text-emerald-700 hover:bg-emerald-200"}`}>{u.isActive ? t.restrict : t.activate}</button>}
-                    {(currentUserRole !== "CEO" && currentUserRole !== "DIRECTOR") && <button onClick={() => setConfirm(u.id)} className="btn-danger text-xs py-1 px-2"> Delete</button>}
-                  </div></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      }
+      {loading ? <div className="flex justify-center py-20"><div className="w-8 h-8 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"/></div> : (() => {
+        const staffRoles = ["LOAN_OFFICER","ADMIN","DIRECTOR","CEO"];
+        const staffUsers = users.filter((u:any) => staffRoles.includes(u.role));
+        const borrowerUsers = users.filter((u:any) => u.role === "BORROWER");
+        const UserTable = ({ list, showDocs }: { list: any[]; showDocs: boolean }) => (
+          <div className="card overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead><tr className="border-b border-dark-200">{["Name","Email","Phone",t.role,"Status","Actions"].map(h=><th key={h} className="text-left py-3 px-3 text-xs font-semibold text-dark-500 uppercase">{h}</th>)}</tr></thead>
+              <tbody>
+                {list.length===0&&<tr><td colSpan={6} className="text-center py-12 text-dark-400">None found.</td></tr>}
+                {list.map((u:any)=>(
+                  <tr key={u.id} className={`border-b border-dark-100 hover:bg-dark-50 ${!u.isActive?"opacity-50":""}`}>
+                    <td className="py-3 px-3 font-semibold text-dark-800">{u.firstName} {u.lastName}</td>
+                    <td className="py-3 px-3 text-dark-500 text-xs">{u.email}</td>
+                    <td className="py-3 px-3 text-dark-500">{u.phone}</td>
+                    <td className="py-3 px-3"><span className={`badge-${u.role==="ADMIN"?"disbursed":u.role==="LOAN_OFFICER"?"approved":u.role==="DIRECTOR"?"pending":u.role==="CEO"?"rejected":"pending"}`}>{u.role.replace("_"," ")}</span></td>
+                    <td className="py-3 px-3"><span className={u.isActive?"badge-approved":"badge-rejected"}>{u.isActive?t.active_:t.restricted}</span></td>
+                    <td className="py-3 px-3"><div className="flex gap-1 flex-wrap">
+                      {(currentUserRole!=="CEO"&&currentUserRole!=="DIRECTOR")&&<button onClick={()=>openEdit(u)} className="btn-secondary text-xs py-1 px-2">Edit</button>}
+                      {showDocs&&<button onClick={()=>loadDocuments(u)} className="btn-secondary text-xs py-1 px-2">Docs</button>}
+                      {(currentUserRole!=="CEO"&&currentUserRole!=="DIRECTOR")&&<button onClick={()=>toggleRestrict(u)} className={`text-xs py-1 px-2 font-semibold rounded-lg transition-all ${u.isActive?"bg-amber-100 text-amber-700 hover:bg-amber-200":"bg-emerald-100 text-emerald-700 hover:bg-emerald-200"}`}>{u.isActive?t.restrict:t.activate}</button>}
+                      {(currentUserRole!=="CEO"&&currentUserRole!=="DIRECTOR")&&<button onClick={()=>setConfirm(u.id)} className="btn-danger text-xs py-1 px-2">Delete</button>}
+                    </div></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        );
+        return (
+          <div className="space-y-8">
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center"><UserCheck className="w-4 h-4 text-blue-600"/></div>
+                <h2 className="text-lg font-black text-dark-800">Staff Members <span className="text-dark-400 font-normal text-sm">({staffUsers.length})</span></h2>
+              </div>
+              <UserTable list={staffUsers} showDocs={false} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center"><Users className="w-4 h-4 text-emerald-600"/></div>
+                <h2 className="text-lg font-black text-dark-800">Borrowers / Clients <span className="text-dark-400 font-normal text-sm">({borrowerUsers.length})</span></h2>
+              </div>
+              <UserTable list={borrowerUsers} showDocs={true} />
+            </div>
+          </div>
+        );
+      })()}
       {/* Add/Edit Modal */}
       {modal && modal !== "documents" && <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 animate-slide-up">
