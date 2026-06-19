@@ -20,6 +20,16 @@ function getPeriodRange(period, year, month, quarter) {
   return { start, end };
 }
 
+
+// Parse purpose field stored as JSON {purpose: "...", __appData: {...}}
+function parseLoanPurpose(loan) {
+  try {
+    const parsed = JSON.parse(loan.purpose || "{}");
+    if (parsed.__appData) return { ...loan, purpose: parsed.purpose || "", applicationData: parsed.__appData };
+  } catch(_) {}
+  return loan;
+}
+
 export async function GET(req) {
   try {
     const auth = req.headers.get("authorization");
@@ -47,7 +57,8 @@ export async function GET(req) {
       const totalDisbursed = loans.filter(l => ["DISBURSED","REPAID"].includes(l.status)).reduce((s, l) => s + Number(l.amount), 0);
       const totalRepaid    = loans.filter(l => l.status === "REPAID").reduce((s, l) => s + Number(l.totalAmount), 0);
       const byStatus       = loans.reduce((acc, l) => { acc[l.status] = (acc[l.status]||0)+1; return acc; }, {});
-      return NextResponse.json({ type, period, year, month, quarter, start, end, loans, summary: { total: loans.length, totalAmount, totalDisbursed, totalRepaid, byStatus } });
+      const parsedLoans = loans.map(parseLoanPurpose);
+      return NextResponse.json({ type, period, year, month, quarter, start, end, loans: parsedLoans, summary: { total: loans.length, totalAmount, totalDisbursed, totalRepaid, byStatus } });
     }
 
     if (type === "client") {
@@ -70,7 +81,8 @@ export async function GET(req) {
       const totalRepaid   = loans.filter(l => l.status === "REPAID").reduce((s, l) => s + Number(l.totalAmount), 0);
       const outstanding   = loans.filter(l => !["REPAID","REJECTED"].includes(l.status)).reduce((s, l) => s + Number(l.totalAmount), 0);
       const byStatus      = loans.reduce((acc, l) => { acc[l.status] = (acc[l.status]||0)+1; return acc; }, {});
-      return NextResponse.json({ type, period, year, month, quarter, start, end, borrower, loans, summary: { total: loans.length, totalBorrowed, totalRepaid, outstanding, byStatus } });
+      const parsedClientLoans = loans.map(parseLoanPurpose);
+      return NextResponse.json({ type, period, year, month, quarter, start, end, borrower, loans: parsedClientLoans, summary: { total: loans.length, totalBorrowed, totalRepaid, outstanding, byStatus } });
     }
 
     if (type === "officer") {
