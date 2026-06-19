@@ -590,7 +590,7 @@ export function generateLoansReportPDF(data:LoanReportData){
   ];
   const maxN=Math.max(...statuses.map(s=>s.n),1);
   const barMax=pw-75;
-  statuses.forEach(({s,n,c2})=>{
+  statuses.forEach(({s,n,c})=>{
     const bw=n>0?Math.max((n/maxN)*barMax,3):0;
     doc.setFontSize(7.5);doc.setFont("helvetica","normal");doc.setTextColor(..._D);
     doc.text(s,14,y+4);
