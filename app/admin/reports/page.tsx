@@ -3,8 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Layout from "@/components/Layout";
 import { getUsers } from "@/lib/api";
-import { generateLoansReportPDF } from "@/lib/pdfGenerator";
-import { BarChart3, Users, UserCheck, Download, Search, Filter, FileText, Calendar, FileBarChart2 } from "lucide-react";
+import { BarChart3, Users, UserCheck, Download, Search, Filter, FileText, Calendar } from "lucide-react";
 
 const BASE = process.env.NEXT_PUBLIC_API_URL || "";
 const CY = new Date().getFullYear();
@@ -91,7 +90,7 @@ export default function ReportsPage() {
     <Layout portal="admin">
       <div className="mb-6 flex items-center justify-between print:hidden">
         <div><h1 className="text-3xl font-black text-dark-800">Reports</h1><p className="text-dark-500 mt-1">Generate detailed loan, client and officer reports</p></div>
-        {data&&tab==="loans"&&<button onClick={()=>generateLoansReportPDF({loans:data.loans||[],period:periodLabel(),generatedAt:new Date().toLocaleString(),companyBalance:0})} className="btn-primary flex items-center gap-2"><FileBarChart2 className="w-4 h-4"/>Download Full Report PDF</button>}{data&&<button onClick={()=>window.print()} className="btn-secondary flex items-center gap-2"><Download className="w-4 h-4"/>Print</button>}
+        {data&&<button onClick={()=>window.print()} className="btn-secondary flex items-center gap-2"><Download className="w-4 h-4"/>Print</button>}
       </div>
       <div className="flex gap-1 bg-dark-100 p-1 rounded-xl mb-6 print:hidden w-fit">
         {tabs.map(({id,label,icon:Icon})=>(
