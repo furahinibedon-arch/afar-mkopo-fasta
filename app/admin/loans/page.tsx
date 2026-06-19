@@ -2,11 +2,11 @@
 import{useEffect,useState}from"react";
 import{useRouter}from"next/navigation";
 import Layout from"@/components/Layout";
-import{getAllLoans,updateLoanStatus,updateLoan,deleteLoan}from"@/lib/api";
+import{getAllLoans,updateLoanStatus,updateLoan,deleteLoan,deleteAllLoans}from"@/lib/api";
 import{useLanguage}from"@/context/LanguageContext";
 import{generateLoanApplicationPDF}from"@/lib/pdfGenerator";
 import DocumentManagement from '@/components/DocumentManagement';
-import { Printer, FileText, X } from "lucide-react";
+import { Printer, FileText, X, Trash2, AlertTriangle } from "lucide-react";
 
 const STATUSES=["ALL","PENDING","APPROVED","REJECTED","DISBURSED","REPAID","DEFAULTED"];
 
@@ -18,6 +18,8 @@ export default function AdminLoans(){
   const[busy,setBusy]=useState<string|null>(null);
   const[viewing,setViewing]=useState<any|null>(null);
   const[showDocuments,setShowDocuments]=useState(false);
+  const[confirmDel,setConfirmDel]=useState("");
+  const[deleting,setDeleting]=useState(false);
   const[filter,setFilter]=useState("ALL");
   const[notes,setNotes]=useState<Record<string,string>>({});
   const[refreshKey,setRefreshKey]=useState(0);
@@ -110,7 +112,19 @@ export default function AdminLoans(){
     });
   };
 
-  const badge=(s:string)=><span className={`badge-${s.toLowerCase()}`}>{s}</span>;
+  const handleDeleteOne=async(id)=>{
+      setDeleting(true);
+      try{await deleteLoan(id);setViewing(null);load();}
+      catch(e){alert(e.message||"Failed to delete");}
+      finally{setDeleting(false);setConfirmDel("");}
+    };
+    const handleDeleteAll=async()=>{
+      setDeleting(true);
+      try{await deleteAllLoans();load();}
+      catch(e){alert(e.message||"Failed to clear history");}
+      finally{setDeleting(false);setConfirmDel("");}
+    };
+    const badge=(s:string)=><span className={`badge-${s.toLowerCase()}`}>{s}</span>;
 
   const counts=STATUSES.reduce((a:any,s)=>{a[s]=s==="ALL"?loans.length:loans.filter(l=>l.status===s).length;return a;},{});
   const filtered=filter==="ALL"?loans:loans.filter(l=>l.status===filter);
@@ -158,6 +172,7 @@ export default function AdminLoans(){
                   <button onClick={()=>setViewing(l)} className="btn-secondary text-xs py-1 px-2"> View</button>
                   <button onClick={()=>setShowDocuments(true)} className="btn-secondary text-xs py-1 px-2"> Docs</button>
                   <button onClick={()=>handlePrint(l)} className="btn-secondary text-xs py-1 px-2"> Print</button>
+                  <button onClick={(e)=>{e.stopPropagation();setConfirmDel(l.id);}} title="Delete" className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 transition-all"><Trash2 className="w-3.5 h-3.5"/></button>
                   {l.status==="PENDING"&&<><button onClick={()=>action(l.id,"APPROVED")} disabled={busy===l.id} className="btn-success text-xs py-1 px-2">{busy===l.id?"":""}</button><button onClick={()=>action(l.id,"REJECTED")} disabled={busy===l.id} className="btn-danger text-xs py-1 px-2">{busy===l.id?"":""}</button></>}
                   {l.status==="APPROVED"&&<button onClick={()=>action(l.id,"DISBURSED")} disabled={busy===l.id} className="btn-primary text-xs py-1 px-2">{busy===l.id?"":" Disburse"}</button>}
                   {l.status==="DISBURSED"&&<button onClick={()=>action(l.id,"REPAID")} disabled={busy===l.id} className="btn-secondary text-xs py-1 px-2">{busy===l.id?"":" Mark Repaid"}</button>}
@@ -333,6 +348,26 @@ export default function AdminLoans(){
         loanId={viewing.id}
         onClose={()=>setShowDocuments(false)}
       />
+    )}
+    {/* Delete confirmation modal */}
+    {confirmDel&&(
+      <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center shrink-0">
+              <AlertTriangle className="w-5 h-5 text-red-600"/>
+            </div>
+            <div>
+              <h3 className="text-lg font-black text-dark-800">{confirmDel==="all"?"Clear All Loan History":"Delete This Loan"}</h3>
+              <p className="text-sm text-dark-500 mt-0.5">{confirmDel==="all"?"This will permanently delete ALL "+loans.length+" loan records. This cannot be undone.":"This loan record will be permanently deleted. This cannot be undone."}</p>
+            </div>
+          </div>
+          <div className="flex gap-3 mt-6">
+            <button onClick={()=>confirmDel==="all"?handleDeleteAll():handleDeleteOne(confirmDel)} disabled={deleting} className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded-xl transition-all disabled:opacity-50">{deleting?"Deleting...":confirmDel==="all"?"Yes, Delete All":"Yes, Delete"}</button>
+            <button onClick={()=>setConfirmDel("")} disabled={deleting} className="flex-1 btn-secondary py-2.5">Cancel</button>
+          </div>
+        </div>
+      </div>
     )}
   </Layout>
   );

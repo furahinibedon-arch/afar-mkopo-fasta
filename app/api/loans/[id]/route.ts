@@ -26,16 +26,10 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     const loan = await prisma.loan.findUnique({ where: { id } });
     if (!loan) return NextResponse.json({ error: 'Loan not found' }, { status: 404 });
     
-    await prisma.auditLog.create({
-      data: {
-        action: 'LOAN_DELETED',
-        userId: decoded.userId,
-        loanId: id,
-        details: `Loan deleted by ${decoded.role}`,
-      }
-    });
-    
-    await prisma.loan.delete({ where: { id } });
+    await prisma.staffAction.deleteMany({ where: { loanId: id } });
+        await prisma.repayment.deleteMany({ where: { loanId: id } });
+        await prisma.borrowerDocument.deleteMany({ where: { loanId: id } });
+        await prisma.loan.delete({ where: { id } });
     
     logInfo('Loan deleted', { loanId: id, userId: decoded.userId });
     return NextResponse.json({ success: true });
