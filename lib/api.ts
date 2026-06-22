@@ -57,20 +57,18 @@ function ah():Record<string,string>{
 }
 
 async function ok(r:Response){
-  console.log("Response status:", r.status, r.statusText);
-  const d=await r.json().catch((e)=>{
-    console.error("Error parsing response:", e);
-    return {};
-  });
-  console.log("Response data:", d);
-  if(!r.ok) {
-    const errorMsg = [
-      d.error,
-      d.details,
-      d.stack,
-      `Error ${r.status}`
-    ].filter(Boolean).join("\n");
-    throw new Error(errorMsg);
+  const d=await r.json().catch(()=>({}));
+  if(!r.ok){
+    const msg=(d.error||"").toLowerCase();
+    if(r.status===401||r.status===403||msg.includes("jwt")||msg.includes("expired")||msg.includes("token")){
+      if(typeof window!=="undefined"){
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        window.location.href="/";
+      }
+      throw new Error("Session expired. Please log in again.");
+    }
+    throw new Error([d.error,d.details,"Error "+r.status].filter(Boolean).join(" - "));
   }
   return d;
 }
