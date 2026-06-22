@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /staff/
+Disallow: /borrower/
+Disallow: /api/
+
+Sitemap: https://afarmkopo.xyz/sitemap.xml
