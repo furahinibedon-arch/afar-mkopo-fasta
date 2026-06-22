@@ -51,6 +51,8 @@ export default function Layout({
   const [portalUser, setPortalUser] = useState<PortalUser | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  const isPublic = pathname === "/";
+
   useEffect(() => {
     // Auth guard  redirect to login if no token
     const token = localStorage.getItem("token");
@@ -85,7 +87,6 @@ export default function Layout({
     };
   }, [isPublic, router]);
 
-  const isPublic = pathname === "/";
   const logout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
