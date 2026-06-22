@@ -715,7 +715,6 @@ export function generateLoansReportPDF(data:LoanReportData){
     headStyles:{fillColor:_P,textColor:255,fontStyle:"bold"},
     columnStyles:{0:{fontStyle:"bold",cellWidth:100},1:{halign:"right",cellWidth:55},2:{cellWidth:25,halign:"center"}},
     alternateRowStyles:{fillColor:[245,250,255]},
-    didAddPage:()=>{phHdr(doc,pw,"SECTION 3 OF 6 (cont.)")},
   });
   y=(doc as any).lastAutoTable.finalY+12;
   if(y<ph_-80){
@@ -735,7 +734,6 @@ export function generateLoansReportPDF(data:LoanReportData){
       headStyles:{fillColor:_P,textColor:255,fontStyle:"bold"},
       columnStyles:{1:{halign:"center",cellWidth:30},2:{halign:"right"}},
       alternateRowStyles:{fillColor:[245,250,255]},
-      didAddPage:()=>{phHdr(doc,pw,"SECTION 3 OF 6 (cont.)")},
     });
     y=(doc as any).lastAutoTable.finalY+10;
   }
@@ -764,7 +762,6 @@ export function generateLoansReportPDF(data:LoanReportData){
       headStyles:{fillColor:_R,textColor:255,fontStyle:"bold",fontSize:7.5},
       alternateRowStyles:{fillColor:[255,241,241]},
       columnStyles:{0:{cellWidth:8,halign:"center"},3:{halign:"right"},4:{halign:"right"}},
-      didAddPage:()=>{phHdr(doc,pw,"SECTION 4 OF 6 (cont.)")},
     });
     y=(doc as any).lastAutoTable.finalY+10;
   } else {
@@ -791,7 +788,6 @@ export function generateLoansReportPDF(data:LoanReportData){
       headStyles:{fillColor:_S,textColor:255,fontStyle:"bold",fontSize:7.5},
       alternateRowStyles:{fillColor:[248,248,252]},
       columnStyles:{0:{cellWidth:8,halign:"center"},3:{halign:"right"}},
-      didAddPage:()=>{phHdr(doc,pw,"SECTION 4 OF 6 (cont.)")},
     });
     y=(doc as any).lastAutoTable.finalY+10;
   } else {
@@ -824,7 +820,6 @@ export function generateLoansReportPDF(data:LoanReportData){
     headStyles:{fillColor:_P,textColor:255,fontStyle:"bold",fontSize:7},
     alternateRowStyles:{fillColor:[245,249,255]},
     columnStyles:{0:{cellWidth:8,halign:"center"},3:{halign:"right"},4:{halign:"right"},5:{halign:"center"},6:{halign:"center"}},
-    didAddPage:()=>{phHdr(doc,pw,"SECTION 5 OF 6 (cont.)")},
   });
   phFtr(doc,pw,ph_,6,7,data.period);
 
