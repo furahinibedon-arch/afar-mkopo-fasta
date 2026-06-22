@@ -52,15 +52,38 @@ export default function Layout({
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
+    // Auth guard  redirect to login if no token
+    const token = localStorage.getItem("token");
     const stored = localStorage.getItem("user");
+    if (!isPublic && !token) { router.replace("/"); return; }
     if (stored) { try { setPortalUser(JSON.parse(stored)); } catch {} }
     const onStorage = () => {
       const u = localStorage.getItem("user");
       if (u) { try { setPortalUser(JSON.parse(u)); } catch {} }
     };
     window.addEventListener("storage", onStorage);
-    return () => window.removeEventListener("storage", onStorage);
-  }, []);
+
+    // Inactivity timeout  15 minutes
+    const TIMEOUT = 15 * 60 * 1000;
+    let timer: ReturnType<typeof setTimeout>;
+    const reset = () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        router.replace("/");
+      }, TIMEOUT);
+    };
+    const events = ["mousemove","keydown","click","touchstart","scroll"];
+    events.forEach(e => window.addEventListener(e, reset, { passive: true }));
+    reset(); // start timer on mount
+
+    return () => {
+      window.removeEventListener("storage", onStorage);
+      events.forEach(e => window.removeEventListener(e, reset));
+      clearTimeout(timer);
+    };
+  }, [isPublic, router]);
 
   const isPublic = pathname === "/";
   const logout = () => {
