@@ -1,5 +1,6 @@
 "use client";
 import{useEffect,useState}from"react";
+import { useInactivityTimeout } from "@/lib/useInactivityTimeout";
 import{useRouter}from"next/navigation";
 import Layout from"@/components/Layout";
 import{getAllLoans,updateLoanStatus}from"@/lib/api";
@@ -10,6 +11,7 @@ import { Printer, FileText, X, CheckCircle, XCircle } from 'lucide-react';
 
 export default function StaffPortal(){
   const router=useRouter();
+  useInactivityTimeout();
   const{t}=useLanguage();
   const[loans,setLoans]=useState<any[]>([]);
   const[loading,setLoading]=useState(true);
@@ -294,3 +296,4 @@ export default function StaffPortal(){
     </Layout>
   );
 }
+

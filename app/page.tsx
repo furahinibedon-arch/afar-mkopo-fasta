@@ -1,6 +1,6 @@
-﻿
+
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -26,6 +26,22 @@ type RD = z.infer<typeof RS>;
 export default function HomePage() {
   const [tab, setTab] = useState<"login" | "register">("login");
   const { language, setLanguage } = useLanguage();
+  const router = useRouter();
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    const userStr = localStorage.getItem("user");
+    if (token && userStr) {
+      try {
+        const role = JSON.parse(userStr).role;
+        if (["ADMIN", "DIRECTOR", "CEO"].includes(role)) router.push("/admin");
+        else if (role === "LOAN_OFFICER") router.push("/staff");
+        else router.push("/borrower");
+      } catch {
+        // invalid user data, stay on login
+      }
+    }
+  }, [router]);
   return (
     <div className="min-h-screen bg-gradient-to-br from-dark-900 via-primary-900 to-brand-800 flex flex-col">
       <div className="flex items-center justify-between px-6 py-4">
@@ -64,10 +80,10 @@ export default function HomePage() {
               Karibu!
             </h1>
             <p className="text-xl text-brand-300 font-semibold mb-2">
-              Mfalme Omba mkopo wako kwa urahisi na haraka mtandaoni.
+              Omba mkopo wako kwa urahisi na haraka mtandaoni.
             </p>
             <p className="text-dark-200">
-              Welcome! King Apply for your loan easily and quickly online.
+              Welcome! Apply for your loan easily and quickly online.
             </p>
           </div>
           
@@ -258,5 +274,7 @@ function Err({ msg }: { msg: string }) {
     </div>
   );
 }
+
+
 
 

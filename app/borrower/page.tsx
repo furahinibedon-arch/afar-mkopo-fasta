@@ -1,5 +1,6 @@
 "use client";
 import{useState,useEffect}from"react";
+import { useInactivityTimeout } from "@/lib/useInactivityTimeout";
 import{useForm,Controller}from"react-hook-form";
 import{z}from"zod";
 import{zodResolver}from"@hookform/resolvers/zod";
@@ -92,7 +93,9 @@ const S=z.object({
 type FD=z.infer<typeof S>;
 
 export default function BorrowerPortal(){
-  const router=useRouter(),{t}=useLanguage();
+  const router=useRouter()
+  useInactivityTimeout();
+  const{t}=useLanguage();
   const[user,setUser]=useState<any>(null);
   const[step,setStep]=useState(0);
   const[done,setDone]=useState(false);
@@ -410,3 +413,5 @@ function Fi({l,t="text",r,e,p}:{l:string;t?:string;r:any;e?:string;p?:string}){
 function Sel({l,r,e,opts}:{l:string;r:any;e?:string;opts:[string,string][]}){
   return<div><label className="label">{l}</label><select {...r} className="input-field"><option value="">Select</option>{opts.map(([v,lbl])=><option key={v} value={v}>{lbl}</option>)}</select>{e&&<p className="text-red-500 text-xs mt-1">{e}</p>}</div>;
 }
+
+

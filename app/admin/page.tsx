@@ -1,9 +1,10 @@
-﻿"use client";
+"use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Layout from "@/components/Layout";
 import { useLanguage } from "@/context/LanguageContext";
 import { getAnalytics } from "@/lib/api";
+import { useInactivityTimeout } from "@/lib/useInactivityTimeout";
 import {
   Building2, TrendingUp, TrendingDown, AlertCircle,
   FileText, Clock, CheckCircle, Activity, BarChart3,
@@ -45,6 +46,7 @@ function KpiCard({ label, value, sub, icon, iconBg, borderColor, valueColor = "t
 export default function AdminDashboard() {
   const { t } = useLanguage();
   const router = useRouter();
+  useInactivityTimeout();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
@@ -195,3 +197,4 @@ export default function AdminDashboard() {
     </Layout>
   );
 }
+
