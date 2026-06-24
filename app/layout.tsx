@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import "./globals.css";
 import { LanguageProvider } from "@/context/LanguageContext";
 
@@ -82,9 +82,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           }}
         />
       </head>
-      <body className="min-h-screen bg-zinc-100 antialiased">
+      <body className="min-h-screen antialiased">
         <LanguageProvider>{children}</LanguageProvider>
       </body>
     </html>
   );
 }
+

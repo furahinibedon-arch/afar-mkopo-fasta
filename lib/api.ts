@@ -145,3 +145,25 @@ export const updateLoanDocument=async(loanId:string, documentId:string, descript
 export const deleteLoanDocument=async(loanId:string, documentId:string):Promise<{success: boolean}>=>{
   return fetch(`${BASE}/api/loans/${loanId}/documents/${documentId}`,{method:"DELETE",headers:ah()}).then(ok);
 };
+
+//  Staff: Apply on behalf of a customer 
+export const lookupBorrowerByPhone = (phone: string) =>
+  fetch(`${BASE}/api/loans/staff-apply?phone=${encodeURIComponent(phone)}`, { headers: ah() }).then(ok);
+
+export const staffSubmitLoan = (d: Record<string, unknown>) =>
+  fetch(`${BASE}/api/loans/staff-apply`, {
+    method: "POST",
+    headers: { ...ah(), "Content-Type": "application/json" },
+    body: JSON.stringify(d),
+  }).then(ok);
+
+// Installment repayments
+export const getLoanRepayments = (loanId: string) =>
+  fetch(\/api/loans/\/repayments, { headers: ah() }).then(ok);
+
+export const recordRepayment = (loanId: string, amount: number, paidDate?: string, notes?: string) =>
+  fetch(\/api/loans/\/repayments, {
+    method: 'POST',
+    headers: { ...ah(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ amount, paidDate, notes }),
+  }).then(ok);

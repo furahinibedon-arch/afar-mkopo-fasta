@@ -425,454 +425,631 @@ export function generateLoanApplicationPDF(data: LoanApplicationData) {
 }
 
 
-// ============================================================
-// COMPREHENSIVE LOANS REPORT PDF  v2  Professional Layout
-// ============================================================
 
-export interface LoanReportData { loans: any[]; period: string; generatedAt: string; companyBalance?: number; }
+//  Report PDF helpers 
 
-const _P:[number,number,number]=[13,71,161];
-const _A:[number,number,number]=[245,158,11];
-const _W:[number,number,number]=[255,255,255];
-const _G:[number,number,number]=[22,163,74];
-const _R:[number,number,number]=[220,38,38];
-const _S:[number,number,number]=[100,116,139];
-const _L:[number,number,number]=[241,245,249];
-const _D:[number,number,number]=[30,41,59];
-
-function rN(n:number){return new Intl.NumberFormat("en-US",{minimumFractionDigits:0}).format(Math.round(n));}
-function rT(n:number){return "TZS "+rN(n);}
-
-function phHdr(doc:jsPDF,pw:number,right:string){
-  doc.setFillColor(..._P);doc.rect(0,0,pw,11,"F");
-  doc.setFillColor(..._A);doc.rect(0,11,pw,1.5,"F");
-  doc.setFontSize(7);doc.setFont("helvetica","bold");doc.setTextColor(..._W);
-  doc.text("AFAR MKOPO FASTA",14,7.5);
-  doc.text(right,pw-14,7.5,{align:"right"});
+function _rfmt(n) {
+  if (isNaN(n) || n == null) return "Tsh 0";
+  return new Intl.NumberFormat("en-TZ", {
+    style: "currency", currency: "TZS", minimumFractionDigits: 0,
+    notation: Math.abs(n) >= 1000000 ? "compact" : "standard", compactDisplay: "short"
+  }).format(n);
 }
 
-function phFtr(doc:jsPDF,pw:number,ph:number,pg:number,tot:number,pd:string){
-  doc.setFillColor(..._L);doc.rect(0,ph-10,pw,10,"F");
-  doc.setDrawColor(203,213,225);doc.line(0,ph-10,pw,ph-10);
-  doc.setFontSize(7);doc.setFont("helvetica","normal");doc.setTextColor(..._S);
-  doc.text("AFAR MKOPO FASTA  Mbeya, Tanzania  0741525547",14,ph-3.5);
-  doc.text(pd,pw/2,ph-3.5,{align:"center"});
-  doc.text("Page "+pg+" of "+tot,pw-14,ph-3.5,{align:"right"});
+function _bname(loan) {
+  const b = loan && loan.borrower;
+  if (!b) return "Unknown";
+  return ((b.firstName || "") + " " + (b.lastName || "")).trim() || "Unknown";
 }
 
-function secBnr(doc:jsPDF,y:number,pw:number,label:string):number{
-  doc.setFillColor(..._P);doc.roundedRect(14,y,pw-28,10,2,2,"F");
-  doc.setFillColor(..._A);doc.roundedRect(14,y,4,10,2,2,"F");doc.rect(16,y,2,10,"F");
-  doc.setFontSize(9);doc.setFont("helvetica","bold");doc.setTextColor(..._W);
-  doc.text(label,22,y+7);doc.setTextColor(0,0,0);
-  return y+16;
+function _hdr(doc, title, period, pageNum, totalPages, RP, RW, RL, RS) {
+  const W = doc.internal.pageSize.getWidth();
+  doc.setFillColor(RP[0], RP[1], RP[2]);
+  doc.rect(0, 0, W, 18, "F");
+  doc.setTextColor(RW[0], RW[1], RW[2]);
+  doc.setFontSize(11); doc.setFont("helvetica", "bold");
+  doc.text("AFAR MKOPO FASTA", 14, 11);
+  doc.setFontSize(8); doc.setFont("helvetica", "normal");
+  doc.text(title, W / 2, 11, { align: "center" });
+  doc.text("Page " + pageNum + " / " + totalPages, W - 14, 11, { align: "right" });
+  doc.setFillColor(RL[0], RL[1], RL[2]);
+  doc.rect(0, 18, W, 6, "F");
+  doc.setTextColor(RS[0], RS[1], RS[2]);
+  doc.setFontSize(7);
+  doc.text(period, 14, 22);
+  doc.text("Annual Company Report", W - 14, 22, { align: "right" });
+  doc.setTextColor(0, 0, 0);
 }
 
-function subHd(doc:jsPDF,y:number,pw:number,label:string):number{
-  doc.setFillColor(..._L);doc.rect(14,y,pw-28,8,"F");
-  doc.setDrawColor(148,163,184);doc.setLineWidth(0.3);doc.line(14,y+8,pw-14,y+8);
-  doc.setFontSize(8);doc.setFont("helvetica","bold");doc.setTextColor(..._D);
-  doc.text(label,18,y+5.5);doc.setTextColor(0,0,0);doc.setFont("helvetica","normal");
-  return y+14;
+function _ftr(doc, generatedAt, RS, RL) {
+  const W = doc.internal.pageSize.getWidth();
+  const H = doc.internal.pageSize.getHeight();
+  doc.setFillColor(RL[0], RL[1], RL[2]);
+  doc.rect(0, H - 10, W, 10, "F");
+  doc.setTextColor(RS[0], RS[1], RS[2]);
+  doc.setFontSize(7);
+  doc.text("AFAR MKOPO FASTA  CONFIDENTIAL", 14, H - 3.5);
+  doc.text("Generated: " + generatedAt, W - 14, H - 3.5, { align: "right" });
+  doc.setTextColor(0, 0, 0);
 }
 
-function chkPg(doc:jsPDF,y:number,ph:number,need:number):number{
-  if(y+need>ph-14){doc.addPage();return 24;}return y;
+function _banner(doc, text, y, RP, RW) {
+  const W = doc.internal.pageSize.getWidth();
+  doc.setFillColor(RP[0], RP[1], RP[2]);
+  doc.rect(14, y, W - 28, 7, "F");
+  doc.setTextColor(RW[0], RW[1], RW[2]);
+  doc.setFontSize(9); doc.setFont("helvetica", "bold");
+  doc.text(text, 17, y + 5);
+  doc.setTextColor(0, 0, 0); doc.setFont("helvetica", "normal");
+  return y + 10;
 }
 
-function kpiBox(doc:jsPDF,x:number,y:number,w2:number,h:number,lbl:string,val:string,bg:[number,number,number],ac:[number,number,number]):void{
-  doc.setFillColor(...bg);doc.roundedRect(x,y,w2,h,2,2,"F");
-  doc.setFillColor(...ac);doc.roundedRect(x,y,w2,2.5,2,0,"F");doc.rect(x+2,y,w2-4,2.5,"F");
-  const lb=doc.splitTextToSize(lbl.toUpperCase(),w2-5);
-  doc.setFontSize(6);doc.setFont("helvetica","bold");doc.setTextColor(..._S);
-  doc.text(lb,x+3,y+7);
-  doc.setFontSize(9.5);doc.setFont("helvetica","bold");doc.setTextColor(..._D);
-  doc.text(val,x+3,y+h-5);
+function _sub(doc, text, y, RD) {
+  doc.setTextColor(RD[0], RD[1], RD[2]);
+  doc.setFontSize(9); doc.setFont("helvetica", "bold");
+  doc.text(text, 14, y);
+  doc.setLineWidth(0.3);
+  doc.setDrawColor(200, 200, 200);
+  const W = doc.internal.pageSize.getWidth();
+  doc.line(14, y + 1.5, W - 14, y + 1.5);
+  doc.setTextColor(0, 0, 0); doc.setFont("helvetica", "normal");
+  return y + 6;
 }
-export function generateLoansReportPDF(data:LoanReportData){
-  const doc=new jsPDF({orientation:"portrait",unit:"mm",format:"a4"});
-  const pw=doc.internal.pageSize.width;   // 210
-  const ph_=doc.internal.pageSize.height; // 297
-  const loans:any[]=data.loans||[];
-  const active  =loans.filter(l=>l.status==="DISBURSED");
-  const pending =loans.filter(l=>["PENDING","APPROVED"].includes(l.status));
-  const repaid  =loans.filter(l=>l.status==="REPAID");
-  const rejected=loans.filter(l=>l.status==="REJECTED");
-  const defaulted=loans.filter(l=>l.status==="DEFAULTED");
 
-  const totPrincipal   =loans.reduce((s,l)=>s+Number(l.amount),0);
-  const totOutstanding =active.reduce((s,l)=>s+Number(l.totalAmount),0);
-  const totRepaid      =repaid.reduce((s,l)=>s+Number(l.totalAmount),0);
-  const totDisbursed   =loans.filter(l=>["DISBURSED","REPAID","DEFAULTED"].includes(l.status)).reduce((s,l)=>s+Number(l.amount),0);
-  const totInterest    =loans.reduce((s,l)=>s+(Number(l.totalAmount)-Number(l.amount)),0);
-  const avgRate        =loans.length?loans.reduce((s,l)=>s+Number(l.interestRate),0)/loans.length:0;
-  const colRate        =totDisbursed>0?Math.round((totRepaid/totDisbursed)*100):0;
+function _kpi(doc, x, y, w, h, label, value, sub, color, RW, RL) {
+  doc.setFillColor(RL[0], RL[1], RL[2]);
+  doc.roundedRect(x, y, w, h, 2, 2, "F");
+  doc.setFillColor(color[0], color[1], color[2]);
+  doc.rect(x, y, 2.5, h, "F");
+  doc.setTextColor(color[0], color[1], color[2]);
+  doc.setFontSize(7); doc.setFont("helvetica", "bold");
+  doc.text(label.toUpperCase(), x + 5, y + 5);
+  doc.setTextColor(30, 41, 59);
+  doc.setFontSize(11);
+  doc.text(value, x + 5, y + 12);
+  doc.setTextColor(100, 116, 139);
+  doc.setFontSize(7); doc.setFont("helvetica", "normal");
+  doc.text(sub, x + 5, y + 17);
+  doc.setTextColor(0, 0, 0);
+}
 
-  //  PAGE 1: COVER 
-  // Dark header band
-  doc.setFillColor(..._P);doc.rect(0,0,pw,80,"F");
-  doc.setFillColor(..._A);doc.rect(0,80,pw,2,"F");
-  // Company name
-  doc.setFontSize(22);doc.setFont("helvetica","bold");doc.setTextColor(..._W);
-  doc.text("AFAR MKOPO FASTA",pw/2,34,{align:"center"});
-  // Tag line
-  doc.setFontSize(11);doc.setFont("helvetica","normal");
-  doc.text("Comprehensive Loans & Financing Report",pw/2,44,{align:"center"});
-  // Divider line in accent
-  doc.setDrawColor(..._A);doc.setLineWidth(0.5);doc.line(40,50,pw-40,50);
-  // Period and date
-  doc.setFontSize(9);doc.setFont("helvetica","normal");doc.setTextColor(200,215,235);
-  doc.text("Period: "+data.period,pw/2,58,{align:"center"});
-  doc.text("Generated: "+data.generatedAt,pw/2,65,{align:"center"});
-  doc.text("Mbeya, Tanzania   0741525547",pw/2,72,{align:"center"});
 
-  // White section below header
-  doc.setFillColor(..._W);doc.rect(0,82,pw,ph_-82,"F");
+export interface LoanReportData {
+  loans: any[];
+  period: string;
+  generatedAt: string;
+  companyBalance?: number;
+}
 
-  // Table of contents box
-  const tocX=20,tocY=95,tocW=pw-40;
-  doc.setFillColor(..._L);doc.roundedRect(tocX,tocY,tocW,90,3,3,"F");
-  doc.setDrawColor(148,163,184);doc.setLineWidth(0.4);doc.roundedRect(tocX,tocY,tocW,90,3,3,"S");
-  doc.setFontSize(10);doc.setFont("helvetica","bold");doc.setTextColor(..._P);
-  doc.text("TABLE OF CONTENTS",tocX+tocW/2,tocY+10,{align:"center"});
-  doc.setDrawColor(148,163,184);doc.line(tocX+8,tocY+13,tocX+tocW-8,tocY+13);
+export function generateLoansReportPDF(data: LoanReportData) {
+  const RP: [number,number,number] = [13,71,161];
+  const RA: [number,number,number] = [245,158,11];
+  const RW: [number,number,number] = [255,255,255];
+  const RG: [number,number,number] = [22,163,74];
+  const RR: [number,number,number] = [220,38,38];
+  const RS: [number,number,number] = [100,116,139];
+  const RL: [number,number,number] = [241,245,249];
+  const RD: [number,number,number] = [30,41,59];
 
-  const toc=[
-    ["1","Executive Summary & KPIs","2"],
-    ["2","Active & Pending Loans Inventory","3"],
-    ["3","Overall Financing Statement","4"],
-    ["4","Financing Initiative Progress","5"],
-    ["5","Financial Performance & Risk Evaluation","6"],
-    ["6","Strategic Recommendations","7"],
+  const loans: any[] = data.loans || [];
+  const period = data.period || "Annual";
+  const generatedAt = data.generatedAt || new Date().toLocaleString();
+  const W = 210, H = 297;
+  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+  const TotalPages = 7;
+
+  //  computed metrics 
+  const totalLoans = loans.length;
+  const totalPrincipal = loans.reduce((s, l) => s + (Number(l.amount) || 0), 0);
+  const totalRepayable = loans.reduce((s, l) => s + (Number(l.totalAmount) || 0), 0);
+  const repaidLoans   = loans.filter(l => l.status === "REPAID");
+  const activeLoans   = loans.filter(l => l.status === "DISBURSED");
+  const pendingLoans  = loans.filter(l => l.status === "PENDING");
+  const approvedLoans = loans.filter(l => l.status === "APPROVED");
+  const defaultedLoans = loans.filter(l => l.status === "DEFAULTED");
+  const rejectedLoans  = loans.filter(l => l.status === "REJECTED");
+  const totalRepaid   = repaidLoans.reduce((s, l) => s + (Number(l.totalAmount) || 0), 0);
+  const outstanding   = activeLoans.reduce((s, l) => s + (Number(l.totalAmount) || 0), 0);
+  const collectionRate = totalRepayable > 0 ? (totalRepaid / totalRepayable) * 100 : 0;
+  const avgInterest    = totalLoans > 0
+    ? loans.reduce((s, l) => s + (Number(l.interestRate) || 0), 0) / totalLoans
+    : 0;
+
+  const byStatus: Record<string, number> = {};
+  loans.forEach(l => { byStatus[l.status] = (byStatus[l.status] || 0) + 1; });
+
+  // 
+  // PAGE 1  COVER
+  // 
+  doc.setFillColor(RP[0], RP[1], RP[2]);
+  doc.rect(0, 0, W, H, "F");
+
+  // diagonal accent
+  doc.setFillColor(RW[0], RW[1], RW[2]);
+  doc.setGState(new (doc as any).GState({ opacity: 0.06 }));
+  doc.triangle(0, H * 0.55, W, H * 0.25, W, H, "F");
+  doc.setGState(new (doc as any).GState({ opacity: 1 }));
+
+  // logo circle
+  doc.setFillColor(RW[0], RW[1], RW[2]);
+  doc.setGState(new (doc as any).GState({ opacity: 0.12 }));
+  doc.circle(W - 30, 35, 28, "F");
+  doc.setGState(new (doc as any).GState({ opacity: 1 }));
+
+  doc.setTextColor(RW[0], RW[1], RW[2]);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(32);
+  doc.text("AFAR", W / 2, 70, { align: "center" });
+  doc.setFontSize(16);
+  doc.text("MKOPO FASTA", W / 2, 82, { align: "center" });
+
+  doc.setFillColor(RA[0], RA[1], RA[2]);
+  doc.rect(40, 88, W - 80, 0.8, "F");
+
+  doc.setFontSize(12);
+  doc.setFont("helvetica", "bold");
+  doc.text("ANNUAL COMPANY REPORT", W / 2, 100, { align: "center" });
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  doc.text("LOANS PERFORMANCE ANALYSIS", W / 2, 110, { align: "center" });
+
+  doc.setFontSize(14);
+  doc.setFont("helvetica", "bold");
+  doc.text(period, W / 2, 130, { align: "center" });
+
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "normal");
+  doc.text("Generated: " + generatedAt, W / 2, 142, { align: "center" });
+
+  // stats strip
+  doc.setFillColor(RW[0], RW[1], RW[2]);
+  doc.setGState(new (doc as any).GState({ opacity: 0.1 }));
+  doc.rect(14, 155, W - 28, 28, "F");
+  doc.setGState(new (doc as any).GState({ opacity: 1 }));
+  const stats = [
+    { label: "Total Loans", value: String(totalLoans) },
+    { label: "Total Principal", value: _rfmt(totalPrincipal) },
+    { label: "Collection Rate", value: collectionRate.toFixed(1) + "%" },
   ];
-  let ty=tocY+20;
-  toc.forEach(([n,title,pg])=>{
-    doc.setFontSize(9);doc.setFont("helvetica","bold");doc.setTextColor(..._P);
-    doc.text(n+".",tocX+8,ty);
-    doc.setFont("helvetica","normal");doc.setTextColor(..._D);
-    doc.text(title,tocX+16,ty);
-    doc.setFont("helvetica","bold");doc.setTextColor(..._S);
-    doc.text("pg "+pg,tocX+tocW-10,ty,{align:"right"});
-    doc.setDrawColor(226,232,240);doc.setLineWidth(0.2);doc.line(tocX+8,ty+2,tocX+tocW-8,ty+2);
-    ty+=12;
+  stats.forEach((s, i) => {
+    const sx = 14 + (W - 28) / 3 * i + (W - 28) / 6;
+    doc.setTextColor(RA[0], RA[1], RA[2]);
+    doc.setFontSize(14); doc.setFont("helvetica", "bold");
+    doc.text(s.value, sx, 167, { align: "center" });
+    doc.setTextColor(RW[0], RW[1], RW[2]);
+    doc.setFontSize(7); doc.setFont("helvetica", "normal");
+    doc.text(s.label.toUpperCase(), sx, 174, { align: "center" });
   });
-  phFtr(doc,pw,ph_,1,7,data.period);
-  //  PAGE 2: EXECUTIVE SUMMARY 
-  doc.addPage();
-  let y=24;
-  phHdr(doc,pw,"SECTION 1 OF 6");
-  y=secBnr(doc,y,pw,"SECTION 1  EXECUTIVE SUMMARY & KEY PERFORMANCE INDICATORS");
 
-  // 6 KPI cards in 2 rows of 3
-  const KW=55,KH=22,KG=4,KY=y;
-  const kpis=[
-    {l:"Total Loans Issued",     v:String(loans.length),     bg:[219,234,254] as [number,number,number], ac:_P},
-    {l:"Total Principal",        v:rT(totPrincipal),          bg:[220,252,231] as [number,number,number], ac:_G},
-    {l:"Total Outstanding",      v:rT(totOutstanding),        bg:[254,243,199] as [number,number,number], ac:_A},
-    {l:"Total Repaid",           v:rT(totRepaid),             bg:[220,252,231] as [number,number,number], ac:_G},
-    {l:"Collection Rate",        v:colRate+"%",               bg:[219,234,254] as [number,number,number], ac:_P},
-    {l:"Avg Interest Rate",      v:avgRate.toFixed(1)+"%",    bg:[254,243,199] as [number,number,number], ac:_A},
+  // table of contents
+  doc.setFillColor(RW[0], RW[1], RW[2]);
+  doc.setGState(new (doc as any).GState({ opacity: 0.1 }));
+  doc.rect(14, 192, W - 28, 62, "F");
+  doc.setGState(new (doc as any).GState({ opacity: 1 }));
+  doc.setTextColor(RA[0], RA[1], RA[2]);
+  doc.setFontSize(9); doc.setFont("helvetica", "bold");
+  doc.text("TABLE OF CONTENTS", W / 2, 201, { align: "center" });
+  doc.setTextColor(RW[0], RW[1], RW[2]);
+  doc.setFontSize(8); doc.setFont("helvetica", "normal");
+  const toc = [
+    "Page 2 ......... Executive Summary",
+    "Page 3 ......... Active & Pending Loans",
+    "Page 4 ......... Overall Financing Statement",
+    "Page 5 ......... Defaulted & Rejected Loans",
+    "Page 6 ......... Full Loan Register",
+    "Page 7 ......... Performance Metrics & Recommendations",
   ];
-  kpis.forEach((k,i)=>{
-    const col=i%3, row=Math.floor(i/3);
-    kpiBox(doc, 14+col*(KW+KG), KY+row*(KH+KG), KW, KH, k.l, k.v, k.bg, k.ac);
-  });
-  y+=KH*2+KG+12;
+  toc.forEach((t, i) => doc.text(t, W / 2, 210 + i * 7, { align: "center" }));
 
-  // Status breakdown bar chart
-  y=subHd(doc,y,pw,"Portfolio Status Breakdown");
-  const statuses=[
-    {s:"Active (Disbursed)",  n:active.length,   c:_G},
-    {s:"Pending / Approved",  n:pending.length,  c:_A},
-    {s:"Fully Repaid",        n:repaid.length,   c:_P},
-    {s:"Rejected",            n:rejected.length, c:_R},
-    {s:"Defaulted",           n:defaulted.length,c:_S},
+  doc.setTextColor(RW[0], RW[1], RW[2]);
+  doc.setFontSize(7);
+  doc.text("CONFIDENTIAL  FOR INTERNAL USE ONLY", W / 2, H - 10, { align: "center" });
+  doc.setTextColor(0, 0, 0);
+
+  // 
+  // PAGE 2  EXECUTIVE SUMMARY
+  // 
+  doc.addPage();
+  _hdr(doc, "Executive Summary", period, 2, TotalPages, RP, RW, RL, RS);
+  _ftr(doc, generatedAt, RS, RL);
+
+  let y = 30;
+  y = _banner(doc, "KEY PERFORMANCE INDICATORS", y, RP, RW);
+
+  const kpiW = (W - 28 - 8) / 3;
+  const kpiH = 22;
+  _kpi(doc, 14,       y, kpiW, kpiH, "Total Loans",     String(totalLoans),          "All time count",             RP, RW, RL);
+  _kpi(doc, 14+kpiW+4, y, kpiW, kpiH, "Total Principal", _rfmt(totalPrincipal),      "Disbursed capital",          RA, RW, RL);
+  _kpi(doc, 14+kpiW*2+8, y, kpiW, kpiH, "Outstanding",   _rfmt(outstanding),         "Active portfolio",           [245,158,11] as [number,number,number], RW, RL);
+  y += kpiH + 4;
+  _kpi(doc, 14,       y, kpiW, kpiH, "Total Repaid",     _rfmt(totalRepaid),          "Collected revenue",          RG, RW, RL);
+  _kpi(doc, 14+kpiW+4, y, kpiW, kpiH, "Collection Rate", collectionRate.toFixed(1)+"%","% of repayable",            RG, RW, RL);
+  _kpi(doc, 14+kpiW*2+8, y, kpiW, kpiH, "Avg Interest",  avgInterest.toFixed(1)+"%", "Average rate",              RS, RW, RL);
+  y += kpiH + 8;
+
+  // status bar chart
+  y = _sub(doc, "Loan Status Distribution", y, RD);
+  const statuses = ["PENDING", "APPROVED", "DISBURSED", "REPAID", "DEFAULTED", "REJECTED"];
+  const statusColors: [number,number,number][] = [RA, RP, [14,165,233], RG, RR, RS];
+  const barW = (W - 28) / statuses.length - 3;
+  const maxCount = Math.max(1, ...statuses.map(s => byStatus[s] || 0));
+  const chartH = 28;
+  statuses.forEach((st, i) => {
+    const cnt = byStatus[st] || 0;
+    const bh = cnt > 0 ? (cnt / maxCount) * chartH : 1;
+    const bx = 14 + i * (barW + 3);
+    const col = statusColors[i];
+    doc.setFillColor(col[0], col[1], col[2]);
+    doc.rect(bx, y + chartH - bh, barW, bh, "F");
+    doc.setTextColor(col[0], col[1], col[2]);
+    doc.setFontSize(8); doc.setFont("helvetica", "bold");
+    doc.text(String(cnt), bx + barW / 2, y + chartH - bh - 1.5, { align: "center" });
+    doc.setFontSize(6); doc.setFont("helvetica", "normal");
+    doc.setTextColor(RS[0], RS[1], RS[2]);
+    doc.text(st, bx + barW / 2, y + chartH + 4, { align: "center" });
+  });
+  doc.setTextColor(0, 0, 0);
+  y += chartH + 10;
+
+  // narrative
+  y = _banner(doc, "EXECUTIVE NARRATIVE", y, RP, RW);
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(RD[0], RD[1], RD[2]);
+  const narrative = [
+    "During the period " + period + ", AFAR MKOPO FASTA processed a total of " + totalLoans + " loan applications",
+    "representing a combined principal of " + _rfmt(totalPrincipal) + ". The portfolio achieved a collection",
+    "rate of " + collectionRate.toFixed(1) + "%, with " + repaidLoans.length + " loans fully repaid and " + activeLoans.length + " currently active.",
+    "",
+    "Outstanding balance stands at " + _rfmt(outstanding) + ". A total of " + defaultedLoans.length + " loans have",
+    "been classified as defaulted, requiring immediate recovery action. " + pendingLoans.length + " applications",
+    "are pending review and " + approvedLoans.length + " have been approved awaiting disbursement.",
   ];
-  const maxN=Math.max(...statuses.map(s=>s.n),1);
-  const barMax=pw-75;
-  statuses.forEach(({s,n,c})=>{
-    const bw=n>0?Math.max((n/maxN)*barMax,3):0;
-    doc.setFontSize(7.5);doc.setFont("helvetica","normal");doc.setTextColor(..._D);
-    doc.text(s,14,y+4);
-    if(bw>0){doc.setFillColor(...(statuses.find(x=>x.s===s)!.c));doc.roundedRect(58,y,bw,5,1,1,"F");}
-    doc.setFontSize(7);doc.setTextColor(..._S);
-    doc.text(String(n),60+bw,y+4);
-    y+=9;
+  narrative.forEach((line, i) => { doc.text(line, 14, y + i * 5.5); });
+  doc.setTextColor(0, 0, 0);
+
+  // 
+  // PAGE 3  ACTIVE & PENDING LOANS
+  // 
+  doc.addPage();
+  _hdr(doc, "Active & Pending Loans", period, 3, TotalPages, RP, RW, RL, RS);
+  _ftr(doc, generatedAt, RS, RL);
+
+  let y3 = 30;
+  y3 = _banner(doc, "ACTIVE / DISBURSED LOANS (" + activeLoans.length + ")", y3, RP, RW);
+  autoTable(doc, {
+    startY: y3,
+    margin: { left: 14, right: 14 },
+    head: [["#","Client","Phone","Amount","Total Due","Rate","Period","Officer","Date"]],
+    body: activeLoans.length === 0
+      ? [["","No active loans in this period","","","","","","",""]]
+      : activeLoans.map((l, i) => {
+          const off = l.staffActions && l.staffActions[0] && l.staffActions[0].staff
+            ? l.staffActions[0].staff.firstName + " " + l.staffActions[0].staff.lastName
+            : "";
+          return [
+            i + 1,
+            _bname(l),
+            l.borrower && l.borrower.phone ? l.borrower.phone : "",
+            _rfmt(Number(l.amount)),
+            _rfmt(Number(l.totalAmount)),
+            Number(l.interestRate) + "%",
+            l.repaymentPeriod + "d",
+            off,
+            new Date(l.createdAt).toLocaleDateString(),
+          ];
+        }),
+    styles: { fontSize: 7, cellPadding: 2 },
+    headStyles: { fillColor: [RP[0], RP[1], RP[2]], textColor: 255, fontStyle: "bold" },
+    alternateRowStyles: { fillColor: [RL[0], RL[1], RL[2]] },
   });
-  y+=6;
 
-  // Narrative summary in a box
-  const narr=[
-    "This report covers the AFAR MKOPO FASTA loan portfolio for period: "+data.period+".",
-    loans.length+" loans totalling "+rT(totPrincipal)+" in principal have been issued.",
-    active.length+" loans are currently active with "+rT(totOutstanding)+" outstanding.",
-    "Collection efficiency: "+colRate+"%. Recovered: "+rT(totRepaid)+". Expected interest income: "+rT(totInterest)+".",
-    "Average portfolio interest rate: "+avgRate.toFixed(1)+"%. Default count: "+defaulted.length+".",
-  ];
-  const narrH=narr.length*9+10;
-  doc.setFillColor(..._L);doc.roundedRect(14,y,pw-28,narrH,2,2,"F");
-  doc.setDrawColor(148,163,184);doc.setLineWidth(0.3);doc.roundedRect(14,y,pw-28,narrH,2,2,"S");
-  let ny=y+8;
-  narr.forEach(line=>{
-    const wrapped=doc.splitTextToSize(line,pw-34);
-    doc.setFontSize(8);doc.setFont("helvetica","normal");doc.setTextColor(..._D);
-    doc.text(wrapped,18,ny);
-    ny+=wrapped.length*5.5;
+  const y3b = (doc as any).lastAutoTable.finalY + 8;
+  _banner(doc, "PENDING LOANS (" + pendingLoans.length + ")", y3b, RP, RW);
+  const y3c = y3b + 10;
+  autoTable(doc, {
+    startY: y3c,
+    margin: { left: 14, right: 14 },
+    head: [["#","Client","Phone","Requested","Total","Rate","Period","Date"]],
+    body: pendingLoans.length === 0
+      ? [["","No pending loans","","","","","",""]]
+      : pendingLoans.map((l, i) => [
+          i + 1,
+          _bname(l),
+          l.borrower && l.borrower.phone ? l.borrower.phone : "",
+          _rfmt(Number(l.amount)),
+          _rfmt(Number(l.totalAmount)),
+          Number(l.interestRate) + "%",
+          l.repaymentPeriod + "d",
+          new Date(l.createdAt).toLocaleDateString(),
+        ]),
+    styles: { fontSize: 7, cellPadding: 2 },
+    headStyles: { fillColor: [RA[0], RA[1], RA[2]], textColor: 255, fontStyle: "bold" },
+    alternateRowStyles: { fillColor: [RL[0], RL[1], RL[2]] },
   });
-  y+=narrH+4;
-  phFtr(doc,pw,ph_,2,7,data.period);
-  //  PAGE 3: ACTIVE & PENDING LOANS 
+
+  // 
+  // PAGE 4  OVERALL FINANCING STATEMENT
+  // 
   doc.addPage();
-  y=24;
-  phHdr(doc,pw,"SECTION 2 OF 6");
-  y=secBnr(doc,y,pw,"SECTION 2  ACTIVE & PENDING LOANS INVENTORY");
+  _hdr(doc, "Overall Financing Statement", period, 4, TotalPages, RP, RW, RL, RS);
+  _ftr(doc, generatedAt, RS, RL);
 
-  if(active.length>0){
-    y=subHd(doc,y,pw,"2.1  Active Loans  (Status: DISBURSED  Count: "+active.length+")");
-    autoTable(doc,{
-      startY:y,
-      margin:{left:14,right:14},
-      head:[["#","Borrower Name","Phone","Principal (TZS)","Rate","Days","Total Owed (TZS)","Issued"]],
-      body:active.map((l,i)=>[
-        i+1,
-        ((l.borrower?.firstName||"")+" "+(l.borrower?.lastName||"")).trim(),
-        l.borrower?.phone||"",
-        rT(Number(l.amount)),
-        Number(l.interestRate).toFixed(1)+"%",
-        l.repaymentPeriod,
-        rT(Number(l.totalAmount)),
-        new Date(l.createdAt).toLocaleDateString("en-GB"),
-      ]),
-      theme:"striped",
-      styles:{fontSize:7,cellPadding:2.5,overflow:"linebreak"},
-      headStyles:{fillColor:[13,71,161],textColor:255,fontStyle:"bold",fontSize:7.5},
-      alternateRowStyles:{fillColor:[245,249,255]},
-      columnStyles:{0:{cellWidth:6,halign:"center"},3:{halign:"right"},6:{halign:"right"}},
-    });
-    y=(doc as any).lastAutoTable.finalY+8;
-  } else {
-    doc.setFontSize(8.5);doc.setFont("helvetica","italic");doc.setTextColor(..._S);
-    doc.text("No active disbursed loans in this period.",18,y+6);
-    y+=14;
-  }
+  let y4 = 30;
+  y4 = _banner(doc, "FINANCIAL SUMMARY", y4, RP, RW);
 
-  y=chkPg(doc,y,ph_,60);
-  if(y===24){phHdr(doc,pw,"SECTION 2 OF 6 (cont.)");}
-
-  if(pending.length>0){
-    y=subHd(doc,y,pw,"2.2  Pending & Approved Loans  (Count: "+pending.length+")");
-    autoTable(doc,{
-      startY:y,
-      margin:{left:14,right:14},
-      head:[["#","Borrower Name","Phone","Amount (TZS)","Rate","Status","Purpose","Submitted"]],
-      body:pending.map((l,i)=>[
-        i+1,
-        ((l.borrower?.firstName||"")+" "+(l.borrower?.lastName||"")).trim(),
-        l.borrower?.phone||"",
-        rT(Number(l.amount)),
-        Number(l.interestRate).toFixed(1)+"%",
-        l.status,
-        l.purpose||"",
-        new Date(l.createdAt).toLocaleDateString("en-GB"),
-      ]),
-      theme:"striped",
-      styles:{fontSize:7,cellPadding:2.5,overflow:"linebreak"},
-      headStyles:{fillColor:[180,83,9],textColor:255,fontStyle:"bold",fontSize:7.5},
-      alternateRowStyles:{fillColor:[255,251,235]},
-      columnStyles:{0:{cellWidth:6,halign:"center"},3:{halign:"right"}},
-    });
-    y=(doc as any).lastAutoTable.finalY+8;
-  } else {
-    doc.setFontSize(8.5);doc.setFont("helvetica","italic");doc.setTextColor(..._S);
-    doc.text("No pending loans in this period.",18,y+6);
-    y+=14;
-  }
-  phFtr(doc,pw,ph_,3,7,data.period);
-  //  PAGE 4: FINANCING STATEMENT 
-  doc.addPage();
-  y=24;
-  phHdr(doc,pw,"SECTION 3 OF 6");
-  y=secBnr(doc,y,pw,"SECTION 3  OVERALL FINANCING STATEMENT");
-  y=subHd(doc,y,pw,"3.1  Portfolio Financial Summary");
-  const finRows=[
-    ["Total Loans Issued",String(loans.length),"count"],
-    ["Total Principal",rT(totPrincipal),"TZS"],
-    ["Total Interest",rT(totInterest),"TZS"],
-    ["Total Receivable",rT(totPrincipal+totInterest),"TZS"],
-    ["Total Recovered",rT(totRepaid),"TZS"],
-    ["Outstanding Balance",rT(totOutstanding),"TZS"],
-    ["Collection Rate",colRate+"%","%"],
-    ["Active Loans",String(active.length),"count"],
-    ["Defaulted Loans",String(defaulted.length),"count"],
-    ["Rejected Loans",String(rejected.length),"count"],
-  ];
-  autoTable(doc,{
-    startY:y,margin:{left:14,right:14},
-    head:[["Metric","Value","Unit"]],
-    body:finRows,
-    theme:"grid",
-    styles:{fontSize:9,cellPadding:3.5},
-    headStyles:{fillColor:_P,textColor:255,fontStyle:"bold"},
-    columnStyles:{0:{fontStyle:"bold",cellWidth:100},1:{halign:"right",cellWidth:55},2:{cellWidth:25,halign:"center"}},
-    alternateRowStyles:{fillColor:[245,250,255]},
-  });
-  y=(doc as any).lastAutoTable.finalY+12;
-  if(y<ph_-80){
-    y=subHd(doc,y,pw,"3.2  Status Distribution");
-    autoTable(doc,{
-      startY:y,margin:{left:14,right:14},
-      head:[["Status","Count","Total Principal"]],
-      body:[
-        ["Active (DISBURSED)",String(active.length),rT(active.reduce((s:number,l:any)=>s+Number(l.amount),0))],
-        ["Fully Repaid",String(repaid.length),rT(repaid.reduce((s:number,l:any)=>s+Number(l.amount),0))],
-        ["Pending / Approved",String(pending.length),rT(pending.reduce((s:number,l:any)=>s+Number(l.amount),0))],
-        ["Defaulted",String(defaulted.length),rT(defaulted.reduce((s:number,l:any)=>s+Number(l.amount),0))],
-        ["Rejected",String(rejected.length),rT(rejected.reduce((s:number,l:any)=>s+Number(l.amount),0))],
-      ],
-      theme:"striped",
-      styles:{fontSize:9,cellPadding:3},
-      headStyles:{fillColor:_P,textColor:255,fontStyle:"bold"},
-      columnStyles:{1:{halign:"center",cellWidth:30},2:{halign:"right"}},
-      alternateRowStyles:{fillColor:[245,250,255]},
-    });
-    y=(doc as any).lastAutoTable.finalY+10;
-  }
-  phFtr(doc,pw,ph_,4,7,data.period);
-
-  //  PAGE 5: DEFAULTED & REJECTED 
-  doc.addPage();
-  y=24;
-  phHdr(doc,pw,"SECTION 4 OF 6");
-  y=secBnr(doc,y,pw,"SECTION 4  DEFAULTED & REJECTED LOANS");
-  if(defaulted.length>0){
-    y=subHd(doc,y,pw,"4.1  Defaulted Loans ("+defaulted.length+")");
-    autoTable(doc,{
-      startY:y,margin:{left:14,right:14},
-      head:[["#","Borrower","Phone","Principal","Total Owed","Days","Issued"]],
-      body:defaulted.map((l:any,i:number)=>[
-        i+1,
-        ((l.borrower?.firstName||"")+" "+(l.borrower?.lastName||"")).trim(),
-        l.borrower?.phone||"",
-        rT(Number(l.amount)),
-        rT(Number(l.totalAmount)),
-        l.repaymentPeriod,
-        new Date(l.createdAt).toLocaleDateString("en-GB"),
-      ]),
-      theme:"striped",styles:{fontSize:7.5,cellPadding:2.5,overflow:"linebreak",minCellHeight:8},
-      headStyles:{fillColor:_R,textColor:255,fontStyle:"bold",fontSize:7.5},
-      alternateRowStyles:{fillColor:[255,241,241]},
-      columnStyles:{0:{cellWidth:8,halign:"center"},3:{halign:"right"},4:{halign:"right"}},
-    });
-    y=(doc as any).lastAutoTable.finalY+10;
-  } else {
-    doc.setFontSize(8.5);doc.setFont("helvetica","italic");doc.setTextColor(..._S);
-    doc.text("No defaulted loans in this period.",18,y+6);y+=16;
-  }
-  y=chkPg(doc,y,ph_,60);
-  if(y===24){phHdr(doc,pw,"SECTION 4 OF 6 (cont.)");}
-  if(rejected.length>0){
-    y=subHd(doc,y,pw,"4.2  Rejected Loans ("+rejected.length+")");
-    autoTable(doc,{
-      startY:y,margin:{left:14,right:14},
-      head:[["#","Borrower","Phone","Amount","Rate","Purpose","Date"]],
-      body:rejected.map((l:any,i:number)=>[
-        i+1,
-        ((l.borrower?.firstName||"")+" "+(l.borrower?.lastName||"")).trim(),
-        l.borrower?.phone||"",
-        rT(Number(l.amount)),
-        Number(l.interestRate).toFixed(1)+"%",
-        l.purpose||"",
-        new Date(l.createdAt).toLocaleDateString("en-GB"),
-      ]),
-      theme:"striped",styles:{fontSize:7.5,cellPadding:2.5,overflow:"linebreak",minCellHeight:8},
-      headStyles:{fillColor:_S,textColor:255,fontStyle:"bold",fontSize:7.5},
-      alternateRowStyles:{fillColor:[248,248,252]},
-      columnStyles:{0:{cellWidth:8,halign:"center"},3:{halign:"right"}},
-    });
-    y=(doc as any).lastAutoTable.finalY+10;
-  } else {
-    doc.setFontSize(8.5);doc.setFont("helvetica","italic");doc.setTextColor(..._S);
-    doc.text("No rejected loans in this period.",18,y+6);y+=16;
-  }
-  phFtr(doc,pw,ph_,5,7,data.period);
-
-  //  PAGE 6: FULL LOAN REGISTER 
-  doc.addPage();
-  y=24;
-  phHdr(doc,pw,"SECTION 5 OF 6");
-  y=secBnr(doc,y,pw,"SECTION 5  FULL LOAN REGISTER ("+loans.length+" loans)");
-  y=subHd(doc,y,pw,"Complete listing of all loans in this period");
-  autoTable(doc,{
-    startY:y,margin:{left:14,right:14},
-    head:[["#","Borrower","Phone","Principal","Total","Rate","Days","Status","Date"]],
-    body:loans.map((l:any,i:number)=>[
-      i+1,
-      ((l.borrower?.firstName||"")+" "+(l.borrower?.lastName||"")).trim(),
-      l.borrower?.phone||"",
-      rT(Number(l.amount)),
-      rT(Number(l.totalAmount)),
-      Number(l.interestRate).toFixed(1)+"%",
-      l.repaymentPeriod,
-      l.status,
-      new Date(l.createdAt).toLocaleDateString("en-GB"),
-    ]),
-    theme:"striped",styles:{fontSize:6.5,cellPadding:2,overflow:"linebreak",minCellHeight:7},
-    headStyles:{fillColor:_P,textColor:255,fontStyle:"bold",fontSize:7},
-    alternateRowStyles:{fillColor:[245,249,255]},
-    columnStyles:{0:{cellWidth:8,halign:"center"},3:{halign:"right"},4:{halign:"right"},5:{halign:"center"},6:{halign:"center"}},
-  });
-  phFtr(doc,pw,ph_,6,7,data.period);
-
-  //  PAGE 7: RECOMMENDATIONS 
-  doc.addPage();
-  y=24;
-  phHdr(doc,pw,"SECTION 6 OF 6");
-  y=secBnr(doc,y,pw,"SECTION 6  FINANCIAL PERFORMANCE & STRATEGIC RECOMMENDATIONS");
-  y=subHd(doc,y,pw,"6.1  Key Performance Metrics");
-  autoTable(doc,{
-    startY:y,margin:{left:14,right:14},
-    head:[["Metric","Value","Notes"]],
-    body:[
-      ["Disbursement Rate",(totDisbursed>0?Math.round((totDisbursed/totPrincipal)*100):0)+"%","% of principal disbursed"],
-      ["Collection Efficiency",colRate+"%","recovered vs disbursed"],
-      ["Default Rate",(loans.length>0?((defaulted.length/loans.length)*100).toFixed(1):0)+"%","defaulted vs total"],
-      ["Approval Rate",(loans.length>0?(((loans.length-rejected.length)/loans.length)*100).toFixed(1):0)+"%","approved vs applied"],
-      ["Average Loan Size",rT(loans.length>0?totPrincipal/loans.length:0),"per loan"],
-      ["Expected Interest Income",rT(totInterest),"total"],
+  const interest = totalRepayable - totalPrincipal;
+  const unrealizedInterest = totalRepayable - totalPrincipal - (totalRepaid - repaidLoans.reduce((s, l) => s + (Number(l.amount) || 0), 0));
+  autoTable(doc, {
+    startY: y4,
+    margin: { left: 14, right: 14 },
+    head: [["Description", "Amount (TZS)"]],
+    body: [
+      ["Total Principal Disbursed", _rfmt(totalPrincipal)],
+      ["Total Interest Charged", _rfmt(interest)],
+      ["Total Repayable (Principal + Interest)", _rfmt(totalRepayable)],
+      ["Total Amount Collected", _rfmt(totalRepaid)],
+      ["Outstanding Balance (Active Loans)", _rfmt(outstanding)],
+      ["Defaulted Amount", _rfmt(defaultedLoans.reduce((s, l) => s + (Number(l.totalAmount) || 0), 0))],
+      ["Collection Rate", collectionRate.toFixed(2) + "%"],
     ],
-    theme:"grid",styles:{fontSize:9,cellPadding:3.5},
-    headStyles:{fillColor:_P,textColor:255,fontStyle:"bold"},
-    columnStyles:{0:{fontStyle:"bold",cellWidth:80},1:{halign:"right",cellWidth:45}},
-    alternateRowStyles:{fillColor:[245,250,255]},
+    styles: { fontSize: 9, cellPadding: 3 },
+    headStyles: { fillColor: [RP[0], RP[1], RP[2]], textColor: 255, fontStyle: "bold" },
+    alternateRowStyles: { fillColor: [RL[0], RL[1], RL[2]] },
+    columnStyles: { 1: { halign: "right", fontStyle: "bold" } },
   });
-  y=(doc as any).lastAutoTable.finalY+12;
-  y=subHd(doc,y,pw,"6.2  Strategic Recommendations");
-  const recs=[
-    {n:"1",t:"Improve Collections",d:"Follow up actively on the "+active.length+" active loans. Target weekly collection reviews to maintain above 80% collection rate."},
-    {n:"2",t:"Risk Management",d:"With "+defaulted.length+" default(s), implement early-warning triggers on missed payments and escalation protocols."},
-    {n:"3",t:"Portfolio Growth",d:"Current portfolio: "+loans.length+" loans / "+rT(totPrincipal)+". Target new verified borrowers to grow the book."},
-    {n:"4",t:"Officer Accountability",d:"Track officer disbursement targets and recovery rates monthly and tie to performance reviews."},
-    {n:"5",t:"Digital Records",d:"Ensure all loan agreements and guarantor documents are scanned and stored in the system."},
-  ];
-  recs.forEach(({n,t,d}:{n:string,t:string,d:string})=>{
-    if(y>ph_-30){doc.addPage();y=24;phHdr(doc,pw,"SECTION 6 OF 6 (cont.)");}
-    doc.setFillColor(..._L);doc.roundedRect(14,y,pw-28,18,2,2,"F");
-    doc.setFillColor(..._P);doc.roundedRect(14,y,6,18,2,2,"F");doc.rect(18,y,2,18,"F");
-    doc.setFontSize(8);doc.setFont("helvetica","bold");doc.setTextColor(..._P);
-    doc.text(n+". "+t,24,y+7);
-    const dw=doc.splitTextToSize(d,pw-36);
-    doc.setFontSize(7.5);doc.setFont("helvetica","normal");doc.setTextColor(..._D);
-    doc.text(dw,24,y+13);
-    y+=20+Math.max(0,(dw.length-1)*4);
-  });
-  y+=8;
-  if(y>ph_-50){doc.addPage();y=24;phHdr(doc,pw,"SECTION 6 OF 6 (cont.)");}
-  doc.setDrawColor(180,190,200);doc.setLineWidth(0.4);
-  doc.line(14,y+20,80,y+20);doc.line(110,y+20,pw-14,y+20);
-  doc.setFontSize(8);doc.setFont("helvetica","normal");doc.setTextColor(..._S);
-  doc.text("Authorized Signature",14,y+26);doc.text("Date: _______________",110,y+26);
-  doc.text("AFAR MKOPO FASTA  |  Mbeya, Tanzania  |  0741525547",pw/2,y+36,{align:"center"});
-  phFtr(doc,pw,ph_,7,7,data.period);
 
-  doc.save("AFAR_Loans_Report_"+data.period.replace(/\s+/g,"_")+".pdf");
+  const y4b = (doc as any).lastAutoTable.finalY + 10;
+  _banner(doc, "STATUS DISTRIBUTION SUMMARY", y4b, RP, RW);
+  const y4c = y4b + 10;
+  const statusRows = Object.entries(byStatus).map(([st, cnt]) => {
+    const stLoans = loans.filter(l => l.status === st);
+    const stAmt = stLoans.reduce((s, l) => s + (Number(l.totalAmount) || 0), 0);
+    const pct = totalLoans > 0 ? ((cnt as number) / totalLoans * 100).toFixed(1) + "%" : "0%";
+    return [st, cnt, _rfmt(stAmt), pct];
+  });
+  autoTable(doc, {
+    startY: y4c,
+    margin: { left: 14, right: 14 },
+    head: [["Status", "Count", "Total Amount", "% of Portfolio"]],
+    body: statusRows.length === 0 ? [["No data", "", "", ""]] : statusRows,
+    styles: { fontSize: 9, cellPadding: 3 },
+    headStyles: { fillColor: [RP[0], RP[1], RP[2]], textColor: 255, fontStyle: "bold" },
+    alternateRowStyles: { fillColor: [RL[0], RL[1], RL[2]] },
+    columnStyles: { 1: { halign: "center" }, 2: { halign: "right" }, 3: { halign: "center" } },
+  });
+
+  // visual status breakdown bars
+  const y4d = (doc as any).lastAutoTable.finalY + 10;
+  doc.setFontSize(8); doc.setFont("helvetica", "bold");
+  doc.setTextColor(RD[0], RD[1], RD[2]);
+  doc.text("PORTFOLIO ALLOCATION", 14, y4d);
+  doc.setFont("helvetica", "normal"); doc.setTextColor(0,0,0);
+  const barTotalW = W - 28;
+  const barColors2: Record<string,[number,number,number]> = {
+    PENDING: RA, APPROVED: RP, DISBURSED: [14,165,233], REPAID: RG, DEFAULTED: RR, REJECTED: RS
+  };
+  let bx2 = 14;
+  const by2 = y4d + 4;
+  Object.entries(byStatus).forEach(([st, cnt]) => {
+    const frac = (cnt as number) / Math.max(1, totalLoans);
+    const bw2 = frac * barTotalW;
+    const col2 = barColors2[st] || RS;
+    doc.setFillColor(col2[0], col2[1], col2[2]);
+    doc.rect(bx2, by2, bw2, 8, "F");
+    if (bw2 > 12) {
+      doc.setTextColor(255, 255, 255); doc.setFontSize(6);
+      doc.text(st.substring(0,3), bx2 + bw2 / 2, by2 + 5, { align: "center" });
+    }
+    bx2 += bw2;
+  });
+  doc.setTextColor(0,0,0);
+
+  // 
+  // PAGE 5  DEFAULTED & REJECTED LOANS
+  // 
+  doc.addPage();
+  _hdr(doc, "Defaulted & Rejected Loans", period, 5, TotalPages, RP, RW, RL, RS);
+  _ftr(doc, generatedAt, RS, RL);
+
+  let y5 = 30;
+  y5 = _banner(doc, "DEFAULTED LOANS (" + defaultedLoans.length + ")", y5, RP, RW);
+  autoTable(doc, {
+    startY: y5,
+    margin: { left: 14, right: 14 },
+    head: [["#","Client","Phone","Principal","Total Due","Rate","Period","Date","Days Ago"]],
+    body: defaultedLoans.length === 0
+      ? [["","No defaulted loans","","","","","","",""]]
+      : defaultedLoans.map((l, i) => {
+          const daysAgo = Math.floor((Date.now() - new Date(l.createdAt).getTime()) / 86400000);
+          return [
+            i + 1,
+            _bname(l),
+            l.borrower && l.borrower.phone ? l.borrower.phone : "",
+            _rfmt(Number(l.amount)),
+            _rfmt(Number(l.totalAmount)),
+            Number(l.interestRate) + "%",
+            l.repaymentPeriod + "d",
+            new Date(l.createdAt).toLocaleDateString(),
+            daysAgo + "d",
+          ];
+        }),
+    styles: { fontSize: 7, cellPadding: 2 },
+    headStyles: { fillColor: [RR[0], RR[1], RR[2]], textColor: 255, fontStyle: "bold" },
+    alternateRowStyles: { fillColor: [RL[0], RL[1], RL[2]] },
+  });
+
+  const y5b = (doc as any).lastAutoTable.finalY + 8;
+  _banner(doc, "REJECTED LOANS (" + rejectedLoans.length + ")", y5b, RP, RW);
+  const y5c = y5b + 10;
+  autoTable(doc, {
+    startY: y5c,
+    margin: { left: 14, right: 14 },
+    head: [["#","Client","Phone","Requested","Total","Rate","Period","Officer","Date"]],
+    body: rejectedLoans.length === 0
+      ? [["","No rejected loans","","","","","","",""]]
+      : rejectedLoans.map((l, i) => {
+          const off = l.staffActions && l.staffActions[0] && l.staffActions[0].staff
+            ? l.staffActions[0].staff.firstName + " " + l.staffActions[0].staff.lastName
+            : "";
+          return [
+            i + 1,
+            _bname(l),
+            l.borrower && l.borrower.phone ? l.borrower.phone : "",
+            _rfmt(Number(l.amount)),
+            _rfmt(Number(l.totalAmount)),
+            Number(l.interestRate) + "%",
+            l.repaymentPeriod + "d",
+            off,
+            new Date(l.createdAt).toLocaleDateString(),
+          ];
+        }),
+    styles: { fontSize: 7, cellPadding: 2 },
+    headStyles: { fillColor: [RS[0], RS[1], RS[2]], textColor: 255, fontStyle: "bold" },
+    alternateRowStyles: { fillColor: [RL[0], RL[1], RL[2]] },
+  });
+
+  // ══════════════════════════════════════════
+  // PAGE 6  FULL LOAN REGISTER
+  // 
+  doc.addPage();
+  _hdr(doc, "Full Loan Register", period, 6, TotalPages, RP, RW, RL, RS);
+  _ftr(doc, generatedAt, RS, RL);
+
+  let y6 = 30;
+  y6 = _banner(doc, "COMPLETE LOAN REGISTER (" + totalLoans + " LOANS)", y6, RP, RW);
+  autoTable(doc, {
+    startY: y6,
+    margin: { left: 14, right: 14 },
+    head: [["#","Client","Phone","Principal","Total","Rate","Period","Status","Officer","Date"]],
+    body: loans.length === 0
+      ? [["","No loans found","","","","","","","",""]]
+      : loans.map((l, i) => {
+          const off = l.staffActions && l.staffActions[0] && l.staffActions[0].staff
+            ? l.staffActions[0].staff.firstName + " " + l.staffActions[0].staff.lastName
+            : "";
+          return [
+            i + 1,
+            _bname(l),
+            l.borrower && l.borrower.phone ? l.borrower.phone : "",
+            _rfmt(Number(l.amount)),
+            _rfmt(Number(l.totalAmount)),
+            Number(l.interestRate) + "%",
+            l.repaymentPeriod + "d",
+            l.status,
+            off,
+            new Date(l.createdAt).toLocaleDateString(),
+          ];
+        }),
+    styles: { fontSize: 6.5, cellPadding: 1.8 },
+    headStyles: { fillColor: [RP[0], RP[1], RP[2]], textColor: 255, fontStyle: "bold" },
+    alternateRowStyles: { fillColor: [RL[0], RL[1], RL[2]] },
+    columnStyles: {
+      7: {
+        fontStyle: "bold",
+        textColor: [50, 50, 50],
+      },
+    },
+  });
+
+  // ═════════════════════════════════
+  // PAGE 7 — PERFORMANCE METRICS + RECOMMENDATIONS + SIGNATURE
+  // 
+  doc.addPage();
+  _hdr(doc, "Performance Metrics & Recommendations", period, 7, TotalPages, RP, RW, RL, RS);
+  _ftr(doc, generatedAt, RS, RL);
+
+  let y7 = 30;
+  y7 = _banner(doc, "PERFORMANCE METRICS", y7, RP, RW);
+  autoTable(doc, {
+    startY: y7,
+    margin: { left: 14, right: 14 },
+    head: [["Metric", "Value", "Benchmark", "Status"]],
+    body: [
+      ["Loan Approval Rate",
+        (totalLoans > 0 ? ((approvedLoans.length + activeLoans.length + repaidLoans.length) / totalLoans * 100).toFixed(1) : "0") + "%",
+        "> 70%",
+        (totalLoans > 0 && (approvedLoans.length + activeLoans.length + repaidLoans.length) / totalLoans >= 0.7) ? "GOOD" : "NEEDS IMPROVEMENT"],
+      ["Collection Rate", collectionRate.toFixed(1) + "%", "> 85%",
+        collectionRate >= 85 ? "GOOD" : collectionRate >= 60 ? "FAIR" : "POOR"],
+      ["Default Rate",
+        (totalLoans > 0 ? (defaultedLoans.length / totalLoans * 100).toFixed(1) : "0") + "%",
+        "< 5%",
+        (totalLoans > 0 && defaultedLoans.length / totalLoans < 0.05) ? "GOOD" : "HIGH RISK"],
+      ["Average Loan Duration",
+        (totalLoans > 0 ? (loans.reduce((s, l) => s + (Number(l.repaymentPeriod) || 0), 0) / totalLoans).toFixed(0) : "0") + " days",
+        "30-90 days", "INFO"],
+      ["Average Interest Rate", avgInterest.toFixed(2) + "%", "Market Rate", "INFO"],
+      ["Portfolio at Risk",
+        _rfmt(defaultedLoans.reduce((s, l) => s + (Number(l.totalAmount) || 0), 0)),
+        "Minimize", defaultedLoans.length === 0 ? "GOOD" : "MONITOR"],
+    ],
+    styles: { fontSize: 8, cellPadding: 3 },
+    headStyles: { fillColor: [RP[0], RP[1], RP[2]], textColor: 255, fontStyle: "bold" },
+    alternateRowStyles: { fillColor: [RL[0], RL[1], RL[2]] },
+    columnStyles: {
+      2: { textColor: [RS[0], RS[1], RS[2]] },
+      3: { fontStyle: "bold", halign: "center" },
+    },
+  });
+
+  const y7b = (doc as any).lastAutoTable.finalY + 8;
+  _banner(doc, "STRATEGIC RECOMMENDATIONS", y7b, RP, RW);
+  let y7c = y7b + 14;
+  const recs = [
+    defaultedLoans.length > 0
+      ? "1. IMMEDIATE ACTION: " + defaultedLoans.length + " defaulted loan(s) require urgent recovery. Engage borrowers and explore restructuring."
+      : "1. Default portfolio is clean. Maintain rigorous credit scoring to preserve this performance.",
+    collectionRate < 80
+      ? "2. Collection rate of " + collectionRate.toFixed(1) + "% is below target. Implement automated reminders and field collection drives."
+      : "2. Collection rate of " + collectionRate.toFixed(1) + "% is healthy. Continue current collection strategies.",
+    pendingLoans.length > 5
+      ? "3. " + pendingLoans.length + " loans pending review. Reduce turnaround time to improve client satisfaction."
+      : "3. Loan processing pipeline is efficient with " + pendingLoans.length + " pending applications.",
+    "4. Maintain adequate liquidity reserves to meet disbursement commitments for approved loans.",
+    "5. Conduct quarterly portfolio reviews to identify early warning signs of potential defaults.",
+    "6. Consider digital repayment channels (mobile money) to improve collection rates.",
+  ];
+  doc.setFontSize(8.5);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(RD[0], RD[1], RD[2]);
+  recs.forEach((rec, i) => {
+    const lines = doc.splitTextToSize(rec, W - 30);
+    doc.text(lines, 14, y7c + i * 12);
+  });
+  doc.setTextColor(0, 0, 0);
+
+  // signature block
+  const y7s = y7c + recs.length * 12 + 10;
+  doc.setFillColor(RL[0], RL[1], RL[2]);
+  doc.rect(14, y7s, W - 28, 32, "F");
+  doc.setFillColor(RP[0], RP[1], RP[2]);
+  doc.rect(14, y7s, W - 28, 0.8, "F");
+  doc.setTextColor(RD[0], RD[1], RD[2]);
+  doc.setFontSize(8); doc.setFont("helvetica", "bold");
+  doc.text("AUTHORIZED SIGNATURES", W / 2, y7s + 6, { align: "center" });
+
+  const sigPositions = [
+    { x: 28, label: "Chief Executive Officer" },
+    { x: W / 2, label: "Finance Director" },
+    { x: W - 28, label: "Loan Manager" },
+  ];
+  sigPositions.forEach(sig => {
+    doc.setDrawColor(RS[0], RS[1], RS[2]);
+    doc.setLineWidth(0.4);
+    doc.line(sig.x - 22, y7s + 22, sig.x + 22, y7s + 22);
+    doc.setFontSize(7); doc.setFont("helvetica", "normal");
+    doc.setTextColor(RS[0], RS[1], RS[2]);
+    doc.text(sig.label, sig.x, y7s + 27, { align: "center" });
+  });
+
+  doc.setTextColor(RS[0], RS[1], RS[2]);
+  doc.setFontSize(6.5);
+  doc.text(
+    "This report is computer-generated and confidential. Period: " + period + " | Generated: " + generatedAt,
+    W / 2, y7s + 31, { align: "center" }
+  );
+  doc.setTextColor(0, 0, 0);
+
+  doc.save("AFAR_MKOPO_FASTA_Annual_Report_" + period.replace(/\s+/g, "_") + ".pdf");
 }

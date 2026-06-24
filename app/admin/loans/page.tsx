@@ -1,12 +1,12 @@
-"use client";
+﻿"use client";
 import{useEffect,useState}from"react";
 import{useRouter}from"next/navigation";
 import Layout from"@/components/Layout";
-import{getAllLoans,updateLoanStatus,updateLoan,deleteLoan,deleteAllLoans}from"@/lib/api";
+import{getAllLoans,updateLoanStatus,updateLoan,deleteLoan,deleteAllLoans,getLoanRepayments,recordRepayment}from"@/lib/api";
 import{useLanguage}from"@/context/LanguageContext";
 import{generateLoanApplicationPDF}from"@/lib/pdfGenerator";
 import DocumentManagement from '@/components/DocumentManagement';
-import { Printer, FileText, X, Trash2, AlertTriangle } from "lucide-react";
+import { Printer, FileText, X, Trash2, AlertTriangle, CreditCard, CheckCircle } from "lucide-react";
 
 const STATUSES=["ALL","PENDING","APPROVED","REJECTED","DISBURSED","REPAID","DEFAULTED"];
 
@@ -27,6 +27,12 @@ export default function AdminLoans(){
   const[adjustmentType,setAdjustmentType]=useState<"fixed"|"percentage">("fixed");
   const[adjustmentValue,setAdjustmentValue]=useState<string>("");
   const[adjustmentDirection,setAdjustmentDirection]=useState<"increase"|"decrease">("increase");
+  const[repayModal,setRepayModal]=useState<any|null>(null);
+  const[repayAmount,setRepayAmount]=useState("");
+  const[repayDate,setRepayDate]=useState(new Date().toISOString().split('T')[0]);
+  const[repayNotes,setRepayNotes]=useState("");
+  const[repayments,setRepayments]=useState<any[]>([]);
+  const[repayBusy,setRepayBusy]=useState(false);
   const[adjustedAmount,setAdjustedAmount]=useState<number>(0);
 
   useEffect(()=>{const u=localStorage.getItem("user");if(!u){router.push("/");return;}const role=JSON.parse(u).role;if(!["ADMIN", "DIRECTOR", "CEO"].includes(role)){router.push(role==="LOAN_OFFICER"?"/staff":"/borrower");return;}load();},[router, refreshKey]);
@@ -369,6 +375,85 @@ export default function AdminLoans(){
         </div>
       </div>
     )}
+    {/* INSTALLMENT REPAYMENT MODAL */}
+    {repayModal && (
+      <div className="fixed inset-0 bg-black/60 z-50 flex items-start justify-center p-4 overflow-y-auto">
+        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg my-8 animate-slide-up">
+          <div className="flex items-center justify-between p-5 border-b border-zinc-200">
+            <div>
+              <h2 className="text-lg font-bold text-zinc-900">Record Repayment</h2>
+              <p className="text-zinc-500 text-sm">{repayModal.borrower?.firstName} {repayModal.borrower?.lastName} &mdash; Tsh {Number(repayModal.totalAmount).toLocaleString()} total</p>
+            </div>
+            <button onClick={() => setRepayModal(null)} className="w-8 h-8 rounded-full bg-zinc-100 flex items-center justify-center"><X className="w-4 h-4"/></button>
+          </div>
+          <div className="p-5 space-y-4">
+            {/* Summary */}
+            {(() => {
+              const totalPaid = repayments.reduce((s: number, r: any) => s + Number(r.amount), 0);
+              const remaining = Math.max(0, Number(repayModal.totalAmount) - totalPaid);
+              return (
+                <div className="grid grid-cols-3 gap-3 mb-2">
+                  <div className="bg-sky-50 border border-sky-100 rounded-xl p-3 text-center">
+                    <p className="text-[10px] font-semibold text-sky-600 uppercase tracking-wider">Total Due</p>
+                    <p className="text-sm font-bold text-sky-800 mt-0.5">Tsh {Number(repayModal.totalAmount).toLocaleString()}</p>
+                  </div>
+                  <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-3 text-center">
+                    <p className="text-[10px] font-semibold text-emerald-600 uppercase tracking-wider">Paid</p>
+                    <p className="text-sm font-bold text-emerald-800 mt-0.5">Tsh {totalPaid.toLocaleString()}</p>
+                  </div>
+                  <div className="bg-amber-50 border border-amber-100 rounded-xl p-3 text-center">
+                    <p className="text-[10px] font-semibold text-amber-600 uppercase tracking-wider">Remaining</p>
+                    <p className="text-sm font-bold text-amber-800 mt-0.5">Tsh {remaining.toLocaleString()}</p>
+                  </div>
+                </div>
+              );
+            })()}
+            {/* Repayment history */}
+            {repayments.length > 0 && (
+              <div className="bg-zinc-50 rounded-xl p-3">
+                <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">Payment History</p>
+                <div className="space-y-1.5">
+                  {repayments.map((r: any) => (
+                    <div key={r.id} className="flex items-center justify-between text-sm">
+                      <span className="flex items-center gap-1.5"><CheckCircle className="w-3.5 h-3.5 text-emerald-500"/><span className="text-zinc-600">{new Date(r.paidDate || r.createdAt).toLocaleDateString()}</span></span>
+                      <span className="font-semibold text-emerald-700">+Tsh {Number(r.amount).toLocaleString()}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {/* New payment form */}
+            <div className="space-y-3 pt-1">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="label">Amount (Tsh)</label>
+                  <input type="number" value={repayAmount} onChange={e => setRepayAmount(e.target.value)} className="input-field" placeholder="e.g. 50000" min={1}/>
+                </div>
+                <div>
+                  <label className="label">Date Paid</label>
+                  <input type="date" value={repayDate} onChange={e => setRepayDate(e.target.value)} className="input-field"/>
+                </div>
+              </div>
+              <div>
+                <label className="label">Notes (optional)</label>
+                <input value={repayNotes} onChange={e => setRepayNotes(e.target.value)} className="input-field" placeholder="e.g. M-Pesa ref 12345"/>
+              </div>
+            </div>
+          </div>
+          <div className="p-5 border-t border-zinc-200 flex gap-3">
+            <button onClick={submitRepayment} disabled={repayBusy || !repayAmount} className="btn-primary flex-1 py-2.5">
+              {repayBusy ? "Saving..." : "Record Payment"}
+            </button>
+            <button onClick={() => setRepayModal(null)} className="btn-secondary px-6">Close</button>
+          </div>
+        </div>
+      </div>
+    )}
+
   </Layout>
   );
 }
+
+
+
+

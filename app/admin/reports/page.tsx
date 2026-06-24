@@ -3,7 +3,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Layout from "@/components/Layout";
 import { getUsers } from "@/lib/api";
-import { BarChart3, Users, UserCheck, Download, Search, Filter, FileText, Calendar } from "lucide-react";
+import { BarChart3, Users, UserCheck, Download, Search, Filter, FileText, Calendar, FileBarChart2 } from "lucide-react";
+import { generateLoansReportPDF } from "@/lib/pdfGenerator";
 
 const BASE = process.env.NEXT_PUBLIC_API_URL || "";
 const CY = new Date().getFullYear();
