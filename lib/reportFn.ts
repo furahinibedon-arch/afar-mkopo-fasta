@@ -86,3 +86,192 @@ export function generateLoansReportPDF(data: LoanReportData) {
   const avgRate        = loans.length ? loans.reduce((s: number, l: any) => s + Number(l.interestRate), 0) / loans.length : 0;
   const colRate        = totDisbursed > 0 ? Math.round((totRepaid / totDisbursed) * 100) : 0;
   const PAGES          = 7;
+  //  PAGE 1: Cover 
+  let y = 0;
+  hdr(doc, pw, data.period);
+  y = 22;
+  doc.setFillColor(...RP);
+  doc.rect(0, y, pw, 58, 'F');
+  doc.setFillColor(...RA);
+  doc.rect(0, y + 58, pw, 3, 'F');
+  doc.setFontSize(22); doc.setFont('helvetica', 'bold'); doc.setTextColor(...RW);
+  doc.text('LOAN PORTFOLIO', pw / 2, y + 20, { align: 'center' });
+  doc.text('REPORT', pw / 2, y + 35, { align: 'center' });
+  doc.setFontSize(10); doc.setFont('helvetica', 'normal');
+  doc.text(data.period, pw / 2, y + 48, { align: 'center' });
+  doc.setFontSize(8); doc.setTextColor(...RS);
+  doc.text('Generated: ' + data.generatedAt, pw / 2, y + 57, { align: 'center' });
+
+  y = 95;
+  const kw = (pw - 28 - 9) / 4;
+  const kh = 22;
+  [
+    ['Total Loans',       String(loans.length),        RL, RP],
+    ['Total Principal',   rfmt(totPrincipal),          RL, RP],
+    ['Total Repaid',      rfmt(totRepaid),             RL, RG],
+    ['Outstanding',       rfmt(totOutstanding),        RL, RA],
+    ['Active Loans',      String(active.length),       RL, RG],
+    ['Pending',           String(pending.length),      RL, RA],
+    ['Defaulted',         String(defaulted.length),    RL, RR],
+    ['Collection Rate',   colRate + '%',               RL, RG],
+  ].forEach((item, i) => {
+    const col = i % 4;
+    const row = Math.floor(i / 4);
+    kpi(doc, 14 + col * (kw + 3), y + row * (kh + 3), kw, kh,
+        item[0] as string, item[1] as string,
+        item[2] as [number,number,number], item[3] as [number,number,number]);
+  });
+
+  ftr(doc, pw, ph, 1, PAGES, data.period);
+
+  //  PAGE 2: Summary Stats 
+  doc.addPage();
+  hdr(doc, pw, data.period);
+  y = banner(doc, 20, pw, 'FINANCIAL SUMMARY');
+
+  const summaryRows = [
+    ['Total Loans Recorded',         String(loans.length),       ''],
+    ['Active (Disbursed)',            String(active.length),      rfmt(totOutstanding)],
+    ['Pending / Approved',           String(pending.length),     ''],
+    ['Fully Repaid',                 String(repaid.length),      rfmt(totRepaid)],
+    ['Rejected',                     String(rejected.length),    ''],
+    ['Defaulted',                    String(defaulted.length),   ''],
+    ['Total Principal Disbursed',    '',                          rfmt(totPrincipal)],
+    ['Total Interest Expected',      '',                          rfmt(totInterest)],
+    ['Average Interest Rate',        '',                          avgRate.toFixed(1) + '%'],
+    ['Collection Rate',              '',                          colRate + '%'],
+    ['Company Balance',              '',                          rfmt(data.companyBalance || 0)],
+  ];
+
+  autoTable(doc, {
+    startY: y,
+    head: [['Metric', 'Count', 'Amount']],
+    body: summaryRows,
+    margin: { left: 14, right: 14 },
+    styles: { fontSize: 8, cellPadding: 3 },
+    headStyles: { fillColor: RP, textColor: RW, fontStyle: 'bold' },
+    alternateRowStyles: { fillColor: RL },
+  });
+
+  ftr(doc, pw, ph, 2, PAGES, data.period);
+
+  //  PAGE 3: All Loans Table 
+  doc.addPage();
+  hdr(doc, pw, data.period);
+  y = banner(doc, 20, pw, 'ALL LOANS');
+
+  autoTable(doc, {
+    startY: y,
+    head: [['#', 'Borrower', 'Phone', 'Amount', 'Rate', 'Period', 'Total', 'Status', 'Date']],
+    body: loans.slice(0, 50).map((l: any, i: number) => [
+      i + 1,
+      bname(l),
+      l.borrower?.phone || '',
+      rfmt(Number(l.amount)),
+      Number(l.interestRate) + '%',
+      l.repaymentPeriod + 'd',
+      rfmt(Number(l.totalAmount)),
+      l.status,
+      new Date(l.createdAt).toLocaleDateString(),
+    ]),
+    margin: { left: 14, right: 14 },
+    styles: { fontSize: 7, cellPadding: 2 },
+    headStyles: { fillColor: RP, textColor: RW, fontStyle: 'bold' },
+    alternateRowStyles: { fillColor: RL },
+    columnStyles: { 0: { cellWidth: 8 }, 7: { fontStyle: 'bold' } },
+  });
+
+  ftr(doc, pw, ph, 3, PAGES, data.period);
+
+  //  PAGE 4: Active Loans 
+  doc.addPage();
+  hdr(doc, pw, data.period);
+  y = banner(doc, 20, pw, 'ACTIVE LOANS (DISBURSED)');
+
+  autoTable(doc, {
+    startY: y,
+    head: [['#', 'Borrower', 'Phone', 'Principal', 'Total Due', 'Disbursed Date']],
+    body: active.map((l: any, i: number) => [
+      i + 1, bname(l), l.borrower?.phone || '',
+      rfmt(Number(l.amount)), rfmt(Number(l.totalAmount)),
+      l.disbursedAt ? new Date(l.disbursedAt).toLocaleDateString() : '-',
+    ]),
+    margin: { left: 14, right: 14 },
+    styles: { fontSize: 8, cellPadding: 3 },
+    headStyles: { fillColor: RG, textColor: RW, fontStyle: 'bold' },
+    alternateRowStyles: { fillColor: RL },
+  });
+
+  ftr(doc, pw, ph, 4, PAGES, data.period);
+
+  //  PAGE 5: Pending Loans 
+  doc.addPage();
+  hdr(doc, pw, data.period);
+  y = banner(doc, 20, pw, 'PENDING / AWAITING APPROVAL');
+
+  autoTable(doc, {
+    startY: y,
+    head: [['#', 'Borrower', 'Phone', 'Amount', 'Purpose', 'Applied']],
+    body: pending.map((l: any, i: number) => [
+      i + 1, bname(l), l.borrower?.phone || '',
+      rfmt(Number(l.amount)),
+      (l.purpose || '').slice(0, 40),
+      new Date(l.createdAt).toLocaleDateString(),
+    ]),
+    margin: { left: 14, right: 14 },
+    styles: { fontSize: 8, cellPadding: 3 },
+    headStyles: { fillColor: RA, textColor: RW, fontStyle: 'bold' },
+    alternateRowStyles: { fillColor: RL },
+  });
+
+  ftr(doc, pw, ph, 5, PAGES, data.period);
+
+  //  PAGE 6: Repaid Loans 
+  doc.addPage();
+  hdr(doc, pw, data.period);
+  y = banner(doc, 20, pw, 'REPAID LOANS');
+
+  autoTable(doc, {
+    startY: y,
+    head: [['#', 'Borrower', 'Phone', 'Principal', 'Total Repaid', 'Date']],
+    body: repaid.map((l: any, i: number) => [
+      i + 1, bname(l), l.borrower?.phone || '',
+      rfmt(Number(l.amount)), rfmt(Number(l.totalAmount)),
+      new Date(l.updatedAt || l.createdAt).toLocaleDateString(),
+    ]),
+    margin: { left: 14, right: 14 },
+    styles: { fontSize: 8, cellPadding: 3 },
+    headStyles: { fillColor: RG, textColor: RW, fontStyle: 'bold' },
+    alternateRowStyles: { fillColor: RL },
+  });
+
+  ftr(doc, pw, ph, 6, PAGES, data.period);
+
+  //  PAGE 7: Defaulted 
+  doc.addPage();
+  hdr(doc, pw, data.period);
+  y = banner(doc, 20, pw, 'DEFAULTED LOANS');
+
+  if (defaulted.length === 0) {
+    doc.setFontSize(10); doc.setTextColor(...RS);
+    doc.text('No defaulted loans in this period.', pw / 2, 60, { align: 'center' });
+  } else {
+    autoTable(doc, {
+      startY: y,
+      head: [['#', 'Borrower', 'Phone', 'Amount', 'Total Due', 'Date']],
+      body: defaulted.map((l: any, i: number) => [
+        i + 1, bname(l), l.borrower?.phone || '',
+        rfmt(Number(l.amount)), rfmt(Number(l.totalAmount)),
+        new Date(l.createdAt).toLocaleDateString(),
+      ]),
+      margin: { left: 14, right: 14 },
+      styles: { fontSize: 8, cellPadding: 3 },
+      headStyles: { fillColor: RR, textColor: RW, fontStyle: 'bold' },
+      alternateRowStyles: { fillColor: RL },
+    });
+  }
+
+  ftr(doc, pw, ph, 7, PAGES, data.period);
+
+  doc.save(`AFAR_Mkopo_Report_${data.period.replace(/\s+/g,'_')}.pdf`);
+}
