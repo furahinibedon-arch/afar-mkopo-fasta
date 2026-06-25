@@ -159,11 +159,11 @@ export const staffSubmitLoan = (d: Record<string, unknown>) =>
 
 // Installment repayments
 export const getLoanRepayments = (loanId: string) =>
-  fetch(\/api/loans/\/repayments, { headers: ah() }).then(ok);
+  fetch(`${BASE}/api/loans/${loanId}/repayments`, { headers: ah() }).then(ok);
 
 export const recordRepayment = (loanId: string, amount: number, paidDate?: string, notes?: string) =>
-  fetch(\/api/loans/\/repayments, {
-    method: 'POST',
-    headers: { ...ah(), 'Content-Type': 'application/json' },
+  fetch(`${BASE}/api/loans/${loanId}/repayments`, {
+    method: "POST",
+    headers: { ...ah(), "Content-Type": "application/json" },
     body: JSON.stringify({ amount, paidDate, notes }),
   }).then(ok);

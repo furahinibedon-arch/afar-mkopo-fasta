@@ -37,6 +37,7 @@ const BORROWER_NAV = [
 
 const STAFF_NAV = [
   { href: "/staff", label: "Loan Queue", icon: ClipboardList, exact: true },
+  { href: "/staff/apply", label: "Apply Loan", icon: FileText },
 ];
 
 export default function Layout({
@@ -276,8 +277,7 @@ export default function Layout({
     return (
       <div className="min-h-screen page-shell">
         <TopBar />
-        <main className="pt-12">
-        <main className="pt-12">$5{children}</main>
+        <main className="pt-12">{children}</main>
       </div>
     );
   }
@@ -287,7 +287,6 @@ export default function Layout({
       <div className="min-h-screen page-shell">
         <TopBar />
         <Sidebar />
-        <Sidebar />$5
         <main className="lg:pl-56 pt-12">
           <div className="max-w-7xl mx-auto px-5 py-6">{children}</div>
         </main>
@@ -304,7 +303,6 @@ export default function Layout({
     <div className="min-h-screen page-shell">
       <TopBar />
       <main className="pt-12">
-      <main className="pt-12">$5
         <div className="max-w-5xl mx-auto px-4 py-6">{children}</div>
       </main>
       <footer className="border-t border-zinc-200 bg-white py-3">
