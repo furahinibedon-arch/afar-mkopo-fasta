@@ -27,6 +27,7 @@ const ADMIN_NAV = [
   { href: "/admin/borrowers", label: "Users",     icon: Users },
   { href: "/admin/balance",   label: "Balance",   icon: Wallet },
   { href: "/admin/reports",   label: "Reports",   icon: BarChart3 },
+  { href: "/admin/apply",    label: "Apply Loan", icon: ClipboardList },
 ];
 
 const BORROWER_NAV = [

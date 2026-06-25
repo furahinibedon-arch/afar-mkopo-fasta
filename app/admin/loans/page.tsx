@@ -6,7 +6,7 @@ import{getAllLoans,updateLoanStatus,updateLoan,deleteLoan,deleteAllLoans,getLoan
 import{useLanguage}from"@/context/LanguageContext";
 import{generateLoanApplicationPDF}from"@/lib/pdfGenerator";
 import DocumentManagement from '@/components/DocumentManagement';
-import { Printer, FileText, X, Trash2, AlertTriangle, CreditCard, CheckCircle } from "lucide-react";
+import { Printer, FileText, X, Trash2, AlertTriangle, CreditCard, CheckCircle, PlusCircle } from "lucide-react";
 
 const STATUSES=["ALL","PENDING","APPROVED","REJECTED","DISBURSED","REPAID","DEFAULTED"];
 
@@ -165,8 +165,9 @@ export default function AdminLoans(){
   );
 
   return(<Layout portal="admin">
-    <div className="mb-6">
+    <div className="flex items-center justify-between mb-6">
       <h1 className="text-3xl font-black text-dark-800">{t.loanManagement}</h1>
+      <a href="/admin/apply" className="btn-primary flex items-center gap-2"><PlusCircle className="w-4 h-4"/> Apply on Behalf</a>
     </div>
 
     {/* Status filter tabs */}
@@ -203,7 +204,7 @@ export default function AdminLoans(){
                   <button onClick={(e)=>{e.stopPropagation();setConfirmDel(l.id);}} title="Delete" className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 transition-all"><Trash2 className="w-3.5 h-3.5"/></button>
                   {l.status==="PENDING"&&<><button onClick={()=>action(l.id,"APPROVED")} disabled={busy===l.id} className="btn-success text-xs py-1 px-2">{busy===l.id?"":""}</button><button onClick={()=>action(l.id,"REJECTED")} disabled={busy===l.id} className="btn-danger text-xs py-1 px-2">{busy===l.id?"":""}</button></>}
                   {l.status==="APPROVED"&&<button onClick={()=>action(l.id,"DISBURSED")} disabled={busy===l.id} className="btn-primary text-xs py-1 px-2">{busy===l.id?"":" Disburse"}</button>}
-                  {l.status==="DISBURSED"&&<button onClick={()=>action(l.id,"REPAID")} disabled={busy===l.id} className="btn-secondary text-xs py-1 px-2">{busy===l.id?"":" Mark Repaid"}</button>}
+                  {l.status==="DISBURSED"&&<><button onClick={()=>openRepayModal(l)} className="btn-success text-xs py-1 px-2 flex items-center gap-1"><CreditCard className="w-3 h-3"/>Pay</button><button onClick={()=>action(l.id,"REPAID")} disabled={busy===l.id} className="btn-secondary text-xs py-1 px-2">{busy===l.id?"":" Full Repaid"}</button></> }
                 </div>
               </td>
             </tr>
