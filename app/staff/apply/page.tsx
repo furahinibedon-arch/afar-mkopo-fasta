@@ -13,7 +13,7 @@ const RATES: Record<string,number> = { DAILY: 20, WEEKLY: 47, MONTHLY: 28 };
 const STEPS = ["Find Customer","Personal Info","Business & Loan","Guarantors"];
 
 const Schema = z.object({
-  borrowerPhone: z.string().min(10,"Valid phone required"),
+  borrowerPhone: z.string().optional(),
   firstName: z.string().min(2,"Required"), lastName: z.string().min(2,"Required"),
   nin: z.string().min(3,"NIN required"),
   dateOfBirth: z.string().min(1,"Required"), gender: z.string().min(1,"Required"),
@@ -95,7 +95,7 @@ export default function StaffApplyPage() {
   useEffect(() => { if (amt > 0) setValue("loanAmountWords", toWords(amt)); }, [amt, setValue]);
 
   const stepFields: string[][] = [
-    ["borrowerPhone","firstName","lastName","nin","dateOfBirth","gender","maritalStatus","country","region","district","address","houseNumber"],
+    ["firstName","lastName","nin","dateOfBirth","gender","maritalStatus","country","region","district","address","houseNumber"],
     ["businessName","businessLocation","businessSince","loanPurpose","collateral"],
     ["repaymentType","loanAmount","loanAmountWords"],
     ["guarantor1Name","guarantor1Address","guarantor1HouseNumber","guarantor1Business","guarantor1Relationship","guarantor1Phone","guarantor1Collateral",
@@ -138,7 +138,7 @@ export default function StaffApplyPage() {
     setBusy(true); setErr(null);
     try {
       const rp = data.repaymentType === "DAILY" ? 30 : data.repaymentType === "WEEKLY" ? 14 : 1;
-      const result = await staffSubmitLoan({ ...data, interestRate: rate, repaymentPeriod: rp, payment, repaymentType: data.repaymentType });
+      const result = await staffSubmitLoan({ ...data, borrowerPhone: data.borrowerPhone || ("walkin_" + Date.now()), interestRate: rate, repaymentPeriod: rp, payment, repaymentType: data.repaymentType });
       setDone(result);
     } catch(e:any) { setErr(e.message); }
     finally { setBusy(false); }
@@ -191,7 +191,7 @@ export default function StaffApplyPage() {
       {step === 0 && (
         <div className="card max-w-lg mx-auto">
           <h2 className="text-lg font-bold text-zinc-900 mb-4">Find or Register Customer</h2>
-          <p className="text-sm text-zinc-500 mb-4">Enter the customer's phone number. If they have an account, their details will be pre-filled. If not, a new account will be created.</p>
+          <p className="text-sm text-zinc-500 mb-4">Enter phone number to look up existing customer. If customer has no phone, click <strong>Continue without phone</strong>.</p>
           <div className="flex gap-3">
             <input
               type="tel" value={lookupPhone} onChange={e => setLookupPhone(e.target.value)}
@@ -203,6 +203,7 @@ export default function StaffApplyPage() {
               {looking ? "" : " Search"}
             </button>
           </div>
+          <button type="button" onClick={() => { setIsNew(true); setValue("borrowerPhone", ""); setStep(1); }} className="btn-secondary w-full mt-3 text-sm">Continue without phone (Walk-in)</button>
         </div>
       )}
 
