@@ -15,12 +15,12 @@ const STEPS = ["Find Customer","Personal Info","Business & Loan","Guarantors"];
 const Schema = z.object({
   borrowerPhone: z.string().optional(),
   firstName: z.string().min(2,"Required"), lastName: z.string().min(2,"Required"),
-  nin: z.string().min(3,"NIN required"),
-  dateOfBirth: z.string().min(1,"Required"), gender: z.string().min(1,"Required"),
-  maritalStatus: z.string().min(1,"Required"),
+  nin: z.string().optional(),
+  dateOfBirth: z.string().optional(), gender: z.string().optional(),
+  maritalStatus: z.string().optional(),
   country: z.string().default("Tanzania"),
-  region: z.string().min(1,"Region required"), district: z.string().min(1,"District required"),
-  address: z.string().min(2,"Required"), houseNumber: z.string().min(1,"Required"),
+  region: z.string().optional(), district: z.string().optional(),
+  address: z.string().optional(), houseNumber: z.string().optional(),
   spouseName: z.string().optional(),
   businessName: z.string().min(2,"Required"), businessLocation: z.string().min(2,"Required"),
   businessSince: z.string().min(2,"Required"),
@@ -96,7 +96,7 @@ export default function StaffApplyPage() {
   useEffect(() => { if (amt > 0) setValue("loanAmountWords", toWords(amt)); }, [amt, setValue]);
 
   const stepFields: string[][] = [
-    ["firstName","lastName","nin","dateOfBirth","gender","maritalStatus","country","region","district","address","houseNumber"],
+    ["firstName","lastName"],
     ["businessName","businessLocation","businessSince","loanPurpose","collateral"],
     ["repaymentType","loanAmount","loanAmountWords"],
     ["guarantor1Name","guarantor1Address","guarantor1HouseNumber","guarantor1Business","guarantor1Relationship","guarantor1Phone","guarantor1Collateral",
@@ -131,8 +131,11 @@ export default function StaffApplyPage() {
   };
 
   const next = async () => {
-    const ok = await trigger(stepFields[step] as any);
-    if (ok) setStep(s => s + 1);
+    // Validate only required fields per step
+    const fieldsToValidate = stepFields[step - 1] || [];
+    const ok = fieldsToValidate.length === 0 || await trigger(fieldsToValidate as any);
+    if (ok) { setErr(null); setStep(s => s + 1); }
+    else { setErr("Please fill in all required fields marked in red."); }
   };
 
   const submit = async (data: FD) => {
