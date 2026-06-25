@@ -45,6 +45,28 @@ export default function AdminLoans(){
 
   const load=()=>{getAllLoans().then(setLoans).catch(console.error).finally(()=>setLoading(false));};
   const action=async(id:string,status:string)=>{setBusy(id);try{await updateLoanStatus(id,status,notes[id]);setViewing(null);load();}catch(e:any){alert(e.message||"Failed to update loan status");}finally{setBusy(null);}};
+  const openRepayModal = async (loan: any) => {
+    setRepayModal(loan);
+    setRepayAmount("");
+    setRepayNotes("");
+    setRepayDate(new Date().toISOString().split("T")[0]);
+    try { const r = await getLoanRepayments(loan.id); setRepayments(r); } catch(_) { setRepayments([]); }
+  };
+
+  const submitRepayment = async () => {
+    if (!repayModal || !repayAmount) return;
+    setRepayBusy(true);
+    try {
+      await recordRepayment(repayModal.id, Number(repayAmount), repayDate, repayNotes);
+      const r = await getLoanRepayments(repayModal.id);
+      setRepayments(r);
+      setRepayAmount("");
+      setRepayNotes("");
+      load();
+    } catch(e: any) { alert(e.message || "Failed to record repayment"); }
+    finally { setRepayBusy(false); }
+  };
+
   // Effect to calculate adjusted amount in real-time
   useEffect(()=>{
     if(viewing){
