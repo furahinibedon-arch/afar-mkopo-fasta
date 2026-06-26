@@ -33,7 +33,6 @@ export async function POST(request: NextRequest) {
         type,
         amount: parseFloat(amount),
         description: description || '',
-        // Use provided reference (CAPITAL, REPAYMENT_IN, DEBIT) or default to MANUAL
         reference: reference || 'MANUAL',
       },
     });
@@ -43,11 +42,25 @@ export async function POST(request: NextRequest) {
   }
 }
 
+/** DELETE /api/admin/balance  clear all financial logs (admin/CEO/director only) */
+export async function DELETE(request: NextRequest) {
+  try {
+    const user = await guard(request);
+    if (!['ADMIN','CEO','DIRECTOR'].includes(user.role)) {
+      return NextResponse.json({ error: 'Only ADMIN, CEO or DIRECTOR can clear balance' }, { status: 403 });
+    }
+    const { count } = await prisma.financialLog.deleteMany({});
+    return NextResponse.json({ success: true, deleted: count });
+  } catch (e: any) {
+    return NextResponse.json({ error: e.error || e.message || 'Failed' }, { status: e.status || 500 });
+  }
+}
+
 export async function OPTIONS() {
   return new NextResponse(null, {
     status: 200,
     headers: {
-      'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
+      'Access-Control-Allow-Methods': 'GET,POST,DELETE,OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type,Authorization',
     },
   });

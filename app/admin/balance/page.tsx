@@ -3,7 +3,7 @@ import{useEffect,useState}from"react";
 import{useRouter}from"next/navigation";
 import Layout from"@/components/Layout";
 import{useLanguage}from"@/context/LanguageContext";
-import{ TrendingUp, TrendingDown, Wallet, Landmark, BarChart3, PiggyBank } from "lucide-react";
+import{ TrendingUp, TrendingDown, Wallet, Landmark, BarChart3, PiggyBank, Trash2, AlertTriangle } from "lucide-react";
 
 const BASE=process.env.NEXT_PUBLIC_API_URL||"";
 function ah(){const t=typeof window!=="undefined"?localStorage.getItem("token"):null;return{"Content-Type":"application/json",...(t?{Authorization:`Bearer ${t}`}:{})}}
@@ -18,6 +18,8 @@ export default function CompanyBalance(){
   const[form,setForm]=useState({type:"CAPITAL",amount:"",description:""});
   const[msg,setMsg]=useState("");
   const[refreshKey,setRefreshKey]=useState(0);
+  const[confirmClear,setConfirmClear]=useState(false);
+  const[clearing,setClearing]=useState(false);
 
   useEffect(()=>{
     const u=localStorage.getItem("user");
@@ -58,6 +60,18 @@ export default function CompanyBalance(){
       load();
     }catch(ex:any){setMsg(ex.message);}
     finally{setBusy(false);}
+  };
+
+  const clearAll = async () => {
+    setClearing(true);
+    try {
+      const r = await fetch(`${BASE}/api/admin/balance`, { method: "DELETE", headers: ah() });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error);
+      setConfirmClear(false);
+      setEntries([]);
+    } catch(ex: any) { alert(ex.message || "Failed to clear"); }
+    finally { setClearing(false); }
   };
 
   //  Compute breakdown 
@@ -113,7 +127,8 @@ export default function CompanyBalance(){
 
   return(
     <Layout portal="admin">
-      <div className="mb-6">
+      <div className="flex items-start justify-between mb-6">
+      <div>
         <h1 className="page-title">Company Balance</h1>
         <p className="page-subtitle">Full financial breakdown  capital, repayments, interest and disbursements.</p>
       </div>
@@ -233,6 +248,28 @@ export default function CompanyBalance(){
           </tbody>
         </table>}
       </div>
+    {/*  Confirm Clear Modal  */}
+    {confirmClear && (
+      <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 animate-slide-up">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center shrink-0">
+              <AlertTriangle className="w-6 h-6 text-red-600"/>
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-zinc-900">Clear All Balance Records?</h3>
+              <p className="text-sm text-zinc-500 mt-0.5">This will permanently delete all {entries.length} financial log entries. This cannot be undone.</p>
+            </div>
+          </div>
+          <div className="flex gap-3 mt-5">
+            <button onClick={clearAll} disabled={clearing} className="btn-danger flex-1 py-2.5">
+              {clearing ? "Clearing..." : "Yes, Clear All"}
+            </button>
+            <button onClick={()=>setConfirmClear(false)} disabled={clearing} className="btn-secondary flex-1 py-2.5">Cancel</button>
+          </div>
+        </div>
+      </div>
+    )}
     </Layout>
   );
 }
