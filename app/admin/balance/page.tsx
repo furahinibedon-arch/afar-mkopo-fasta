@@ -3,65 +3,236 @@ import{useEffect,useState}from"react";
 import{useRouter}from"next/navigation";
 import Layout from"@/components/Layout";
 import{useLanguage}from"@/context/LanguageContext";
+import{ TrendingUp, TrendingDown, Wallet, Landmark, BarChart3, PiggyBank } from "lucide-react";
+
 const BASE=process.env.NEXT_PUBLIC_API_URL||"";
-function ah(){const t=typeof window!=="undefined"?localStorage.getItem("token"):null;return{"Content-Type":"application/json",...(t?{Authorization:`Bearer ${t}`}:{})};}
-function fmt(n:number){return"Tsh "+n.toLocaleString();}
+function ah(){const t=typeof window!=="undefined"?localStorage.getItem("token"):null;return{"Content-Type":"application/json",...(t?{Authorization:`Bearer ${t}`}:{})}}
+function fmt(n:number){return"Tsh "+Math.abs(n).toLocaleString();}
+
 export default function CompanyBalance(){
   const{t}=useLanguage();
   const router=useRouter();
   const[entries,setEntries]=useState<any[]>([]);
   const[loading,setLoading]=useState(true);
   const[busy,setBusy]=useState(false);
-  const[form,setForm]=useState({type:"CREDIT",amount:"",description:""});
+  const[form,setForm]=useState({type:"CAPITAL",amount:"",description:""});
   const[msg,setMsg]=useState("");
   const[refreshKey,setRefreshKey]=useState(0);
-  useEffect(()=>{const u=localStorage.getItem("user");if(!u){router.push("/");return;}const role=JSON.parse(u).role;if(role==="BORROWER"){router.push("/borrower");return;}load();},[router, refreshKey]);
 
-  useEffect(() => {
-    const handleFocus = () => setRefreshKey(k => k + 1);
-    window.addEventListener('focus', handleFocus);
-    return () => window.removeEventListener('focus', handleFocus);
-  }, []);
+  useEffect(()=>{
+    const u=localStorage.getItem("user");
+    if(!u){router.push("/");return;}
+    const role=JSON.parse(u).role;
+    if(role==="BORROWER"){router.push("/borrower");return;}
+    load();
+  },[router,refreshKey]);
 
-  const load=()=>{setLoading(true);fetch(`${BASE}/api/admin/balance`,{headers:ah()}).then(r=>r.json()).then(d=>{if(Array.isArray(d))setEntries(d);}).catch(console.error).finally(()=>setLoading(false));};
-  const submit=async(e:React.FormEvent)=>{e.preventDefault();if(!form.amount)return;setBusy(true);setMsg("");try{const r=await fetch(`${BASE}/api/admin/balance`,{method:"POST",headers:ah(),body:JSON.stringify({type:form.type,amount:parseFloat(form.amount),description:form.description})});const d=await r.json();if(!r.ok)throw new Error(d.error);setMsg("Saved!");setForm({type:"CREDIT",amount:"",description:""});load();}catch(ex:any){setMsg(ex.message);}finally{setBusy(false);}};
-  const credits=entries.filter(e=>e.type==="CREDIT").reduce((s,e)=>s+Number(e.amount),0);
-  const debits=entries.filter(e=>e.type==="DEBIT").reduce((s,e)=>s+Number(e.amount),0);
-  const balance=credits-debits;
-  return(<Layout portal="admin">
-    <div className="mb-8"><h1 className="text-3xl font-black text-dark-800">Company Balance</h1><p className="text-dark-500 mt-1">Track money in and out of the business.</p></div>
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-      <div className={`card border-l-4 ${balance>=0?"border-emerald-400":"border-red-400"}`}><p className="label">Current Balance</p><p className={`text-3xl font-black mt-1 ${balance>=0?"text-emerald-600":"text-red-600"}`}>{fmt(balance)}</p><p className="text-xs text-dark-400 mt-1">{balance>=0?" Positive":" Negative"}</p></div>
-      <div className="card border-l-4 border-primary-400"><p className="label">Total In</p><p className="text-3xl font-black text-primary-600 mt-1">{fmt(credits)}</p></div>
-      <div className="card border-l-4 border-rose-400"><p className="label">Total Out</p><p className="text-3xl font-black text-rose-600 mt-1">{fmt(debits)}</p></div>
-    </div>
-    <div className="card mb-8">
-      <h2 className="text-lg font-black text-dark-800 mb-4">Add Entry</h2>
-      {msg&&<div className="mb-3 bg-emerald-50 border border-emerald-200 text-emerald-700 px-3 py-2 rounded-xl text-sm">{msg}</div>}
-      <form onSubmit={submit} className="grid grid-cols-1 sm:grid-cols-4 gap-3 items-end">
-        <div><label className="label">Type</label><select value={form.type} onChange={e=>setForm(f=>({...f,type:e.target.value}))} className="input-field"><option value="CREDIT"> Money In</option><option value="DEBIT"> Money Out</option></select></div>
-        <div><label className="label">Amount (Tsh)</label><input type="number" required min={1} value={form.amount} onChange={e=>setForm(f=>({...f,amount:e.target.value}))} className="input-field" placeholder="e.g. 500000"/></div>
-        <div><label className="label">Description</label><input value={form.description} onChange={e=>setForm(f=>({...f,description:e.target.value}))} className="input-field" placeholder="e.g. Loan disbursement"/></div>
-        <button type="submit" disabled={busy} className="btn-primary">{busy?t.saving:t.saveEntry}</button>
-      </form>
-    </div>
-    <div className="card overflow-x-auto">
-      <h2 className="text-lg font-black text-dark-800 mb-4">Ledger ({entries.length} entries)</h2>
-      {loading?<div className="flex justify-center py-10"><div className="w-6 h-6 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"/></div>:
-      <table className="w-full text-sm">
-        <thead><tr className="border-b border-dark-200">{["Date",t.type,"Amount",t.description,"Balance"].map(h=><th key={h} className="text-left py-3 px-3 text-xs font-semibold text-dark-500 uppercase">{h}</th>)}</tr></thead>
-        <tbody>{entries.length===0&&<tr><td colSpan={5} className="text-center py-10 text-dark-400">No entries yet. Add one above.</td></tr>}
-        {entries.map((e:any,i:number)=>{
-          const run=entries.slice(0,i+1).reduce((s:number,x:any)=>x.type==="CREDIT"?s+Number(x.amount):s-Number(x.amount),0);
-          return(<tr key={e.id} className="border-b border-dark-100 hover:bg-dark-50">
-            <td className="py-3 px-3 text-dark-400 text-xs">{new Date(e.createdAt).toLocaleDateString()}</td>
-            <td className="py-3 px-3"><span className={e.type==="CREDIT"?"badge-approved":"badge-rejected"}>{e.type==="CREDIT"?" IN":" OUT"}</span></td>
-            <td className={`py-3 px-3 font-bold ${e.type==="CREDIT"?"text-emerald-600":"text-red-600"}`}>{e.type==="CREDIT"?"+":"-"}{fmt(Number(e.amount))}</td>
-            <td className="py-3 px-3 text-dark-500">{e.description||""}</td>
-            <td className={`py-3 px-3 font-bold ${run>=0?"text-dark-800":"text-red-600"}`}>{fmt(run)}</td>
-          </tr>);
-        })}</tbody>
-      </table>}
-    </div>
-  </Layout>);
+  useEffect(()=>{
+    const h=()=>setRefreshKey(k=>k+1);
+    window.addEventListener("focus",h);
+    return()=>window.removeEventListener("focus",h);
+  },[]);
+
+  const load=()=>{
+    setLoading(true);
+    fetch(`${BASE}/api/admin/balance`,{headers:ah()})
+      .then(r=>r.json()).then(d=>{if(Array.isArray(d))setEntries(d);})
+      .catch(console.error).finally(()=>setLoading(false));
+  };
+
+  const submit=async(e:React.FormEvent)=>{
+    e.preventDefault();
+    if(!form.amount) return;
+    setBusy(true); setMsg("");
+    try{
+      // CAPITAL and REPAYMENT_IN map to CREDIT; DEBIT stays DEBIT
+      const apiType = form.type==="DEBIT" ? "DEBIT" : "CREDIT";
+      const r=await fetch(`${BASE}/api/admin/balance`,{
+        method:"POST",headers:ah(),
+        body:JSON.stringify({type:apiType,amount:parseFloat(form.amount),description:form.description,reference:form.type})
+      });
+      const d=await r.json();
+      if(!r.ok) throw new Error(d.error);
+      setMsg("Saved!");
+      setForm({type:"CAPITAL",amount:"",description:""});
+      load();
+    }catch(ex:any){setMsg(ex.message);}
+    finally{setBusy(false);}
+  };
+
+  //  Compute breakdown 
+  // Capital = manual entries with reference=CAPITAL or MANUAL (old entries)
+  const capital = entries.filter(e=>
+    e.type==="CREDIT" && (e.reference==="CAPITAL" || e.reference==="MANUAL")
+  ).reduce((s,e)=>s+Number(e.amount),0);
+
+  // Customer repayments = REPAY_INSTALLMENT_* + LOAN_REPAY_*
+  const repaidIn = entries.filter(e=>
+    e.type==="CREDIT" && (
+      String(e.reference||"").startsWith("REPAY_INSTALLMENT_") ||
+      String(e.reference||"").startsWith("LOAN_REPAY_")
+    )
+  ).reduce((s,e)=>s+Number(e.amount),0);
+
+  // Total disbursed (money out for loans)
+  const disbursedOut = entries.filter(e=>
+    e.type==="DEBIT" && String(e.reference||"").startsWith("LOAN_DISBURSE_")
+  ).reduce((s,e)=>s+Number(e.amount),0);
+
+  // Other manual debits
+  const otherOut = entries.filter(e=>
+    e.type==="DEBIT" && !String(e.reference||"").startsWith("LOAN_DISBURSE_")
+  ).reduce((s,e)=>s+Number(e.amount),0);
+
+  const totalIn = entries.filter(e=>e.type==="CREDIT").reduce((s,e)=>s+Number(e.amount),0);
+  const totalOut = entries.filter(e=>e.type==="DEBIT").reduce((s,e)=>s+Number(e.amount),0);
+  const balance = totalIn - totalOut;
+
+  // Interest = repayments collected minus principal disbursed (simplified)
+  // More precise: total repaid - total disbursed principal
+  const interestEarned = Math.max(0, repaidIn - disbursedOut);
+
+  const typeLabel:Record<string,string> = {
+    CAPITAL:" Capital",
+    REPAYMENT_IN:" Repayment",
+    DEBIT:" Expense",
+    LOAN_REPAY:" Full Repay",
+    REPAY_INSTALLMENT:" Installment",
+    LOAN_DISBURSE:" Disbursement",
+    MANUAL:" Manual",
+  };
+  function entryLabel(e:any){
+    const ref = String(e.reference||"");
+    if(ref.startsWith("REPAY_INSTALLMENT_")) return " Installment";
+    if(ref.startsWith("LOAN_REPAY_")) return " Full Repayment";
+    if(ref.startsWith("LOAN_DISBURSE_")) return " Disbursement";
+    if(ref==="CAPITAL") return " Capital";
+    if(ref==="DEBIT") return " Expense";
+    return " Manual";
+  }
+
+  return(
+    <Layout portal="admin">
+      <div className="mb-6">
+        <h1 className="page-title">Company Balance</h1>
+        <p className="page-subtitle">Full financial breakdown  capital, repayments, interest and disbursements.</p>
+      </div>
+
+      {/*  Top KPIs  */}
+      <div className="grid grid-cols-2 xl:grid-cols-3 gap-3 mb-3">
+        <div className="kpi-card col-span-2 xl:col-span-1" style={{borderLeftColor: balance>=0?"#10b981":"#ef4444"}}>
+          <div className="kpi-icon bg-emerald-100"><Wallet className="w-5 h-5 text-emerald-600"/></div>
+          <div>
+            <p className="kpi-label">Current Balance</p>
+            <p className={`kpi-value ${balance>=0?"text-emerald-700":"text-red-600"}`}>{balance>=0?"+":"-"}{fmt(balance)}</p>
+            <p className="kpi-sub">{balance>=0?"Positive":"Negative"}</p>
+          </div>
+        </div>
+        <div className="kpi-card" style={{borderLeftColor:"#0284c7"}}>
+          <div className="kpi-icon bg-sky-100"><Landmark className="w-5 h-5 text-sky-600"/></div>
+          <div>
+            <p className="kpi-label">Capital Invested</p>
+            <p className="kpi-value text-sky-700">+{fmt(capital)}</p>
+            <p className="kpi-sub">Funds entered as capital</p>
+          </div>
+        </div>
+        <div className="kpi-card" style={{borderLeftColor:"#7c3aed"}}>
+          <div className="kpi-icon bg-violet-100"><TrendingDown className="w-5 h-5 text-violet-600"/></div>
+          <div>
+            <p className="kpi-label">Total Disbursed</p>
+            <p className="kpi-value text-violet-700">-{fmt(disbursedOut)}</p>
+            <p className="kpi-sub">Loans given out</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 xl:grid-cols-3 gap-3 mb-6">
+        <div className="kpi-card" style={{borderLeftColor:"#059669"}}>
+          <div className="kpi-icon bg-emerald-100"><TrendingUp className="w-5 h-5 text-emerald-600"/></div>
+          <div>
+            <p className="kpi-label">Customer Repayments</p>
+            <p className="kpi-value text-emerald-700">+{fmt(repaidIn)}</p>
+            <p className="kpi-sub">Cash received from borrowers</p>
+          </div>
+        </div>
+        <div className="kpi-card" style={{borderLeftColor:"#d97706"}}>
+          <div className="kpi-icon bg-amber-100"><BarChart3 className="w-5 h-5 text-amber-600"/></div>
+          <div>
+            <p className="kpi-label">Interest Earned</p>
+            <p className="kpi-value text-amber-700">+{fmt(interestEarned)}</p>
+            <p className="kpi-sub">Repaid minus principal</p>
+          </div>
+        </div>
+        <div className="kpi-card" style={{borderLeftColor:"#dc2626"}}>
+          <div className="kpi-icon bg-red-100"><PiggyBank className="w-5 h-5 text-red-600"/></div>
+          <div>
+            <p className="kpi-label">Other Expenses</p>
+            <p className="kpi-value text-red-600">-{fmt(otherOut)}</p>
+            <p className="kpi-sub">Non-loan outflows</p>
+          </div>
+        </div>
+      </div>
+
+      {/*  Add Entry Form  */}
+      <div className="card mb-6">
+        <h2 className="text-base font-bold text-zinc-800 mb-4">Add Entry</h2>
+        {msg&&<div className={`mb-3 px-3 py-2 rounded-xl text-sm ${msg==="Saved!"?"alert-success":"alert-error"}`}>{msg}</div>}
+        <form onSubmit={submit} className="grid grid-cols-1 sm:grid-cols-4 gap-3 items-end">
+          <div>
+            <label className="label">Entry Type</label>
+            <select value={form.type} onChange={e=>setForm(f=>({...f,type:e.target.value}))} className="input-field">
+              <option value="CAPITAL"> Capital (Money Invested)</option>
+              <option value="REPAYMENT_IN"> Repayment Received</option>
+              <option value="DEBIT"> Expense / Money Out</option>
+            </select>
+          </div>
+          <div>
+            <label className="label">Amount (Tsh)</label>
+            <input type="number" required min={1} value={form.amount} onChange={e=>setForm(f=>({...f,amount:e.target.value}))} className="input-field" placeholder="e.g. 500000"/>
+          </div>
+          <div>
+            <label className="label">Description</label>
+            <input value={form.description} onChange={e=>setForm(f=>({...f,description:e.target.value}))} className="input-field" placeholder="e.g. Initial capital from director"/>
+          </div>
+          <button type="submit" disabled={busy} className="btn-primary">{busy?"Saving...":"Save Entry"}</button>
+        </form>
+      </div>
+
+      {/*  Ledger Table  */}
+      <div className="card overflow-x-auto">
+        <h2 className="text-base font-bold text-zinc-800 mb-4">Full Ledger ({entries.length} entries)</h2>
+        {loading?<div className="flex justify-center py-10"><div className="w-6 h-6 rounded-full border-4 border-sky-500 border-t-transparent animate-spin"/></div>:
+        <table className="data-table">
+          <thead><tr>
+            {["Date & Time","Category","Amount","Description","Running Balance"].map(h=>(
+              <th key={h}>{h}</th>
+            ))}
+          </tr></thead>
+          <tbody>
+            {entries.length===0&&(
+              <tr><td colSpan={5} className="text-center py-10 text-zinc-400">No entries yet.</td></tr>
+            )}
+            {entries.map((e:any,i:number)=>{
+              const run=entries.slice(0,i+1).reduce((s:number,x:any)=>x.type==="CREDIT"?s+Number(x.amount):s-Number(x.amount),0);
+              return(
+                <tr key={e.id}>
+                  <td className="text-zinc-400 text-xs">{new Date(e.createdAt).toLocaleString()}</td>
+                  <td>
+                    <span className={`badge ${e.type==="CREDIT"?"bg-emerald-50 text-emerald-700 border border-emerald-200":"bg-red-50 text-red-700 border border-red-200"}`}>
+                      {entryLabel(e)}
+                    </span>
+                  </td>
+                  <td className={`font-bold ${e.type==="CREDIT"?"text-emerald-600":"text-red-600"}`}>
+                    {e.type==="CREDIT"?"+":"-"}{fmt(Number(e.amount))}
+                  </td>
+                  <td className="text-zinc-500 text-xs max-w-[200px] truncate">{e.description||""}</td>
+                  <td className={`font-bold tabular-nums ${run>=0?"text-zinc-800":"text-red-600"}`}>{run>=0?"+":"-"}{fmt(run)}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>}
+      </div>
+    </Layout>
+  );
 }
