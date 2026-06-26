@@ -215,7 +215,14 @@ export default function CompanyBalance(){
 
       {/*  Ledger Table  */}
       <div className="card overflow-x-auto">
-        <h2 className="text-base font-bold text-zinc-800 mb-4">Full Ledger ({entries.length} entries)</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-base font-bold text-zinc-800">Full Ledger ({entries.length} entries)</h2>
+          {entries.length > 0 && (
+            <button onClick={()=>setConfirmClear(true)} className="btn-danger text-xs py-1.5 px-3 flex items-center gap-1.5">
+              <Trash2 className="w-3.5 h-3.5"/> Clear Ledger
+            </button>
+          )}
+        </div>
         {loading?<div className="flex justify-center py-10"><div className="w-6 h-6 rounded-full border-4 border-sky-500 border-t-transparent animate-spin"/></div>:
         <table className="data-table">
           <thead><tr>
