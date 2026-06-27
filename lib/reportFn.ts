@@ -273,5 +273,64 @@ export function generateLoansReportPDF(data: LoanReportData) {
 
   ftr(doc, pw, ph, 7, PAGES, data.period);
 
-  doc.save(`AFAR_Mkopo_Report_${data.period.replace(/\s+/g,'_')}.pdf`);
+  const _b=doc.output('blob');const _u=URL.createObjectURL(_b);window.open(_u,'_blank');
+}
+
+export interface CompanyReportData { loans: any[]; financialLogs: any[]; period: string; generatedAt: string; companyBalance: number; }
+
+export function generateCompanyReportPDF(data: CompanyReportData) {
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const pw = doc.internal.pageSize.width;
+  const ph = doc.internal.pageSize.height;
+  const loans: any[] = data.loans || [];
+  const logs: any[] = data.financialLogs || [];
+  const capital = logs.filter(l=>l.type==='CREDIT'&&(l.reference==='CAPITAL'||l.reference==='MANUAL')).reduce((s,l)=>s+Number(l.amount),0);
+  const repaidIn = logs.filter(l=>l.type==='CREDIT'&&(String(l.reference||'').startsWith('REPAY_')||String(l.reference||'').startsWith('LOAN_REPAY_'))).reduce((s,l)=>s+Number(l.amount),0);
+  const disbursed = logs.filter(l=>l.type==='DEBIT'&&String(l.reference||'').startsWith('LOAN_DISBURSE_')).reduce((s,l)=>s+Number(l.amount),0);
+  const expenses = logs.filter(l=>l.type==='DEBIT'&&!String(l.reference||'').startsWith('LOAN_DISBURSE_')).reduce((s,l)=>s+Number(l.amount),0);
+  const totalIn = logs.filter(l=>l.type==='CREDIT').reduce((s,l)=>s+Number(l.amount),0);
+  const totalOut = logs.filter(l=>l.type==='DEBIT').reduce((s,l)=>s+Number(l.amount),0);
+  const interest = Math.max(0,repaidIn-disbursed);
+  const active = loans.filter(l=>l.status==='DISBURSED').length;
+  const repaid = loans.filter(l=>l.status==='REPAID').length;
+  const defaulted = loans.filter(l=>l.status==='DEFAULTED').length;
+  hdr(doc,pw,data.period);
+  let y=22;
+  doc.setFillColor(...RP);doc.rect(0,y,pw,60,'F');
+  doc.setFillColor(...RA);doc.rect(0,y+60,pw,3,'F');
+  doc.setFontSize(20);doc.setFont('helvetica','bold');doc.setTextColor(...RW);
+  doc.text('COMPANY FINANCIAL',pw/2,y+18,{align:'center'});
+  doc.text('REPORT',pw/2,y+32,{align:'center'});
+  doc.setFontSize(10);doc.setFont('helvetica','normal');
+  doc.text(data.period,pw/2,y+46,{align:'center'});
+  doc.setFontSize(8);doc.setTextColor(...RS);
+  doc.text('Generated: '+data.generatedAt,pw/2,y+57,{align:'center'});
+  y=96;
+  const kw=(pw-28-9)/4;const kh=22;
+  [['Capital Invested',rfmt(capital),RL,RP],['Total Disbursed',rfmt(disbursed),RL,[124,58,237]],['Repayments In',rfmt(repaidIn),RL,RG],['Interest Earned',rfmt(interest),RL,RA],['Other Expenses',rfmt(expenses),RL,RR],['Net Balance',rfmt(data.companyBalance),RL,RP],['Active Loans',String(active),RL,RG],['Repaid Loans',String(repaid),RL,RP]].forEach((item,i)=>{
+    const col=i%4;const row=Math.floor(i/4);
+    kpi(doc,14+col*(kw+3),y+row*(kh+3),kw,kh,item[0] as string,item[1] as string,item[2] as [number,number,number],item[3] as [number,number,number]);
+  });
+  ftr(doc,pw,ph,1,3,data.period);
+  doc.addPage();
+  hdr(doc,pw,data.period);
+  y=banner(doc,20,pw,'PROFIT & LOSS SUMMARY');
+  const plRows=[
+    ['Capital Invested (IN)','+',rfmt(capital),'Funds added as capital'],
+    ['Customer Repayments (IN)','+',rfmt(repaidIn),'Cash received from borrowers'],
+    ['Total Credited','+',rfmt(totalIn),'All money in'],
+    ['Loans Disbursed (OUT)','-',rfmt(disbursed),'Money given to borrowers'],
+    ['Other Expenses (OUT)','-',rfmt(expenses),'Operating expenses'],
+    ['Total Debited','-',rfmt(totalOut),'All money out'],
+    ['Interest Earned','+',rfmt(interest),'Repayments minus principal'],
+    ['Current Balance','=',rfmt(data.companyBalance),'Available cash'],
+  ];
+  autoTable(doc,{startY:y,head:[['Item','+/-','Amount (TZS)','Notes']],body:plRows,margin:{left:14,right:14},styles:{fontSize:9,cellPadding:3},headStyles:{fillColor:RP,textColor:RW,fontStyle:'bold'},alternateRowStyles:{fillColor:RL},columnStyles:{1:{halign:'center',fontStyle:'bold'},2:{halign:'right',fontStyle:'bold'}}});
+  ftr(doc,pw,ph,2,3,data.period);
+  doc.addPage();
+  hdr(doc,pw,data.period);
+  y=banner(doc,20,pw,'LOAN PORTFOLIO');
+  autoTable(doc,{startY:y,head:[['#','Borrower','Principal','Total Due','Rate','Status','Date']],body:loans.slice(0,60).map((l: any,i: number)=>[i+1,bname(l),rfmt(Number(l.amount)),rfmt(Number(l.totalAmount)),Number(l.interestRate)+'%',l.status,new Date(l.createdAt).toLocaleDateString()]),margin:{left:14,right:14},styles:{fontSize:7,cellPadding:2},headStyles:{fillColor:RP,textColor:RW,fontStyle:'bold'},alternateRowStyles:{fillColor:RL},columnStyles:{0:{cellWidth:8},5:{fontStyle:'bold'}}});
+  ftr(doc,pw,ph,3,3,data.period);
+  const _b=doc.output('blob');const _u=URL.createObjectURL(_b);window.open(_u,'_blank');
 }

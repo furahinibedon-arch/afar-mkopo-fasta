@@ -5,6 +5,7 @@ import Layout from "@/components/Layout";
 import { getUsers } from "@/lib/api";
 import { BarChart3, Users, UserCheck, Download, Search, Filter, FileText, Calendar, FileBarChart2 } from "lucide-react";
 import { generateLoansReportPDF } from "@/lib/pdfGenerator";
+import { generateCompanyReportPDF } from "@/lib/reportFn";
 
 const BASE = process.env.NEXT_PUBLIC_API_URL || "";
 const CY = new Date().getFullYear();
@@ -86,12 +87,12 @@ export default function ReportsPage() {
     const q=search.toLowerCase();
     return (l.borrower?.firstName+" "+l.borrower?.lastName).toLowerCase().includes(q)||l.status.toLowerCase().includes(q)||String(l.amount).includes(q);
   });
-  const tabs=[{id:"loans",label:"Loans Report",icon:BarChart3},{id:"client",label:"Client Report",icon:Users},{id:"officer",label:"Officer Report",icon:UserCheck}];
+  const tabs=[{id:"loans",label:"Loans Report",icon:BarChart3},{id:"client",label:"Client Report",icon:Users},{id:"officer",label:"Officer Report",icon:UserCheck},{id:"company",label:"Company Report",icon:FileBarChart2}];
   return (
     <Layout portal="admin">
       <div className="mb-6 flex items-center justify-between print:hidden">
         <div><h1 className="text-3xl font-black text-dark-800">Reports</h1><p className="text-dark-500 mt-1">Generate detailed loan, client and officer reports</p></div>
-        {data&&<button onClick={()=>window.print()} className="btn-secondary flex items-center gap-2"><Download className="w-4 h-4"/>Print</button>}
+        {data&&<button onClick={()=>exportPDF()} className="btn-primary flex items-center gap-2"><Download className="w-4 h-4"/>Download PDF</button>}
       </div>
       <div className="flex gap-1 bg-dark-100 p-1 rounded-xl mb-6 print:hidden w-fit">
         {tabs.map(({id,label,icon:Icon})=>(
@@ -165,6 +166,19 @@ export default function ReportsPage() {
               <SummaryCard label="Total Borrowed" value={fmt(data.summary.totalBorrowed)} color="border-violet-400"/>
               <SummaryCard label="Total Repaid" value={fmt(data.summary.totalRepaid)} color="border-emerald-400"/>
               <SummaryCard label="Outstanding" value={fmt(data.summary.outstanding)} color="border-red-400"/>
+            </div>
+          </>}
+
+          {tab==="company"&&<>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <SummaryCard label="Total Loans" value={data.summary?.total||0} color="border-primary-400"/>
+              <SummaryCard label="Total Disbursed" value={fmt(data.summary?.totalDisbursed||0)} color="border-violet-400"/>
+              <SummaryCard label="Total Repaid" value={fmt(data.summary?.totalRepaid||0)} color="border-emerald-400"/>
+              <SummaryCard label="Active" value={data.summary?.byStatus?.DISBURSED||0} color="border-sky-400"/>
+            </div>
+            <div className="card p-4 text-center text-dark-500">
+              <p className="font-semibold">Click <strong>Download PDF</strong> above to get the full Company Financial Report</p>
+              <p className="text-sm mt-1">Includes: P&amp;L summary, capital vs disbursements, interest earned, full loan portfolio</p>
             </div>
           </>}
           {tab==="officer"&&data.officer&&<>

@@ -103,6 +103,22 @@ export async function GET(req) {
       return NextResponse.json({ type, period, year, month, quarter, start, end, officer, actions, loans, summary: { totalActions: actions.length, totalLoans: loans.length, approved, rejected, totalValue } });
     }
 
+
+    if (type === "company") {
+      const loans = await prisma.loan.findMany({
+        where: { createdAt: { gte: start, lte: end } },
+        include: {
+          borrower: { select: { firstName: true, lastName: true, phone: true } },
+          staffActions: { include: { staff: { select: { firstName: true, lastName: true } } }, orderBy: { createdAt: "desc" }, take: 1 },
+        },
+        orderBy: { createdAt: "desc" },
+      });
+      const totalAmount    = loans.reduce((s, l) => s + Number(l.amount), 0);
+      const totalDisbursed = loans.filter(l => ["DISBURSED","REPAID"].includes(l.status)).reduce((s, l) => s + Number(l.amount), 0);
+      const totalRepaid    = loans.filter(l => l.status === "REPAID").reduce((s, l) => s + Number(l.totalAmount), 0);
+      const byStatus       = loans.reduce((acc, l) => { acc[l.status] = (acc[l.status]||0)+1; return acc; }, {});
+      return NextResponse.json({ type, period, year, month, quarter, start, end, loans: loans.map(parseLoanPurpose), summary: { total: loans.length, totalAmount, totalDisbursed, totalRepaid, byStatus } });
+    }
     return NextResponse.json({ error: "Invalid type" }, { status: 400 });
   } catch (e) {
     return NextResponse.json({ error: e.message }, { status: 500 });
