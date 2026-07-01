@@ -334,3 +334,155 @@ export function generateCompanyReportPDF(data: CompanyReportData) {
   ftr(doc,pw,ph,3,3,data.period);
   const _b=doc.output('blob');const _u=URL.createObjectURL(_b);window.open(_u,'_blank');
 }
+
+export interface ClientReportData {
+  borrower: any;
+  loans: any[];
+  summary: any;
+  period: string;
+  generatedAt: string;
+}
+
+export function generateClientReportPDF(data: ClientReportData) {
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const pw = doc.internal.pageSize.width;
+  const ph = doc.internal.pageSize.height;
+  const loans: any[] = data.loans || [];
+  const bp = data.borrower?.borrowerProfile || {};
+
+  hdr(doc, pw, data.period);
+  let y = banner(doc, 20, pw, 'CLIENT REPORT');
+
+  // Borrower details table
+  autoTable(doc, {
+    startY: y,
+    head: [['Field', 'Details']],
+    body: [
+      ['Full Name', (data.borrower?.firstName || '') + ' ' + (data.borrower?.lastName || '')],
+      ['Phone', data.borrower?.phone || '-'],
+      ['Email', data.borrower?.email || '-'],
+      ['NIN', bp.nin || '-'],
+      ['Region', bp.region || '-'],
+      ['District', bp.district || '-'],
+      ['Address', bp.address || '-'],
+      ['Business', bp.businessName || '-'],
+      ['Business Location', bp.businessLocation || '-'],
+    ],
+    margin: { left: 14, right: 14 },
+    styles: { fontSize: 9, cellPadding: 3 },
+    headStyles: { fillColor: RP, textColor: RW, fontStyle: 'bold' },
+    alternateRowStyles: { fillColor: RL },
+    columnStyles: { 0: { fontStyle: 'bold', cellWidth: 50 } },
+  });
+
+  y = (doc as any).lastAutoTable.finalY + 10;
+  y = sub(doc, y, pw, 'LOAN SUMMARY');
+
+  // KPI row
+  const kw = (pw - 28 - 9) / 4;
+  const kh = 22;
+  kpi(doc, 14,            y, kw, kh, 'Total Loans',   String(data.summary?.total || 0),                  RL, RP);
+  kpi(doc, 14 + kw + 3,  y, kw, kh, 'Total Borrowed', rfmt(data.summary?.totalBorrowed || 0),            RL, RP);
+  kpi(doc, 14 + (kw+3)*2,y, kw, kh, 'Total Repaid',   rfmt(data.summary?.totalRepaid || 0),              RL, RG);
+  kpi(doc, 14 + (kw+3)*3,y, kw, kh, 'Outstanding',    rfmt(data.summary?.outstanding || 0),              RL, RA);
+  y += kh + 10;
+
+  // Loan history table
+  autoTable(doc, {
+    startY: y,
+    head: [['#', 'Amount', 'Total Due', 'Rate', 'Period', 'Status', 'Date']],
+    body: loans.map((l: any, i: number) => [
+      i + 1,
+      rfmt(Number(l.amount)),
+      rfmt(Number(l.totalAmount)),
+      Number(l.interestRate) + '%',
+      l.repaymentPeriod + 'd',
+      l.status,
+      new Date(l.createdAt).toLocaleDateString(),
+    ]),
+    margin: { left: 14, right: 14 },
+    styles: { fontSize: 8, cellPadding: 2.5 },
+    headStyles: { fillColor: RP, textColor: RW, fontStyle: 'bold' },
+    alternateRowStyles: { fillColor: RL },
+    columnStyles: { 5: { fontStyle: 'bold' } },
+  });
+
+  ftr(doc, pw, ph, 1, 1, data.period);
+  const _b = doc.output('blob');
+  const _u = URL.createObjectURL(_b);
+  window.open(_u, '_blank');
+}
+
+export interface OfficerReportData {
+  officer: any;
+  loans: any[];
+  actions: any[];
+  summary: any;
+  period: string;
+  generatedAt: string;
+}
+
+export function generateOfficerReportPDF(data: OfficerReportData) {
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const pw = doc.internal.pageSize.width;
+  const ph = doc.internal.pageSize.height;
+  const loans: any[] = data.loans || [];
+
+  hdr(doc, pw, data.period);
+  let y = banner(doc, 20, pw, 'OFFICER PERFORMANCE REPORT');
+
+  // Officer info
+  autoTable(doc, {
+    startY: y,
+    head: [['Field', 'Details']],
+    body: [
+      ['Name', (data.officer?.firstName || '') + ' ' + (data.officer?.lastName || '')],
+      ['Phone', data.officer?.phone || '-'],
+      ['Role', (data.officer?.role || '').replace('_', ' ')],
+    ],
+    margin: { left: 14, right: 14 },
+    styles: { fontSize: 9, cellPadding: 3 },
+    headStyles: { fillColor: RP, textColor: RW, fontStyle: 'bold' },
+    alternateRowStyles: { fillColor: RL },
+    columnStyles: { 0: { fontStyle: 'bold', cellWidth: 50 } },
+  });
+
+  y = (doc as any).lastAutoTable.finalY + 10;
+
+  // KPI row
+  const kw = (pw - 28 - 9) / 4;
+  const kh = 22;
+  kpi(doc, 14,             y, kw, kh, 'Loans Handled', String(data.summary?.totalLoans || 0), RL, RP);
+  kpi(doc, 14 + kw + 3,   y, kw, kh, 'Total Value',   rfmt(data.summary?.totalValue || 0),  RL, RP);
+  kpi(doc, 14 + (kw+3)*2, y, kw, kh, 'Approved',      String(data.summary?.approved || 0),  RL, RG);
+  kpi(doc, 14 + (kw+3)*3, y, kw, kh, 'Rejected',      String(data.summary?.rejected || 0),  RL, RR);
+  y += kh + 10;
+
+  // Loans table
+  autoTable(doc, {
+    startY: y,
+    head: [['#', 'Client', 'Phone', 'Amount', 'Status', 'Decision', 'Date']],
+    body: loans.map((l: any, i: number) => {
+      const action = data.actions?.find((a: any) => a.loanId === l.id);
+      return [
+        i + 1,
+        (l.borrower?.firstName || '') + ' ' + (l.borrower?.lastName || ''),
+        l.borrower?.phone || '',
+        rfmt(Number(l.amount)),
+        l.status,
+        action?.action || '-',
+        action ? new Date(action.createdAt).toLocaleDateString() : '-',
+      ];
+    }),
+    margin: { left: 14, right: 14 },
+    styles: { fontSize: 8, cellPadding: 2.5 },
+    headStyles: { fillColor: RP, textColor: RW, fontStyle: 'bold' },
+    alternateRowStyles: { fillColor: RL },
+    columnStyles: { 4: { fontStyle: 'bold' } },
+  });
+
+  ftr(doc, pw, ph, 1, 1, data.period);
+  const _b = doc.output('blob');
+  const _u = URL.createObjectURL(_b);
+  window.open(_u, '_blank');
+}

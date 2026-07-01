@@ -5,7 +5,7 @@ import Layout from "@/components/Layout";
 import { getUsers } from "@/lib/api";
 import { BarChart3, Users, UserCheck, Download, Search, Filter, FileText, Calendar, FileBarChart2 } from "lucide-react";
 import { generateLoansReportPDF } from "@/lib/pdfGenerator";
-import { generateCompanyReportPDF } from "@/lib/reportFn";
+import { generateCompanyReportPDF, generateClientReportPDF, generateOfficerReportPDF } from "@/lib/reportFn";
 
 const BASE = process.env.NEXT_PUBLIC_API_URL || "";
 const CY = new Date().getFullYear();
@@ -102,6 +102,8 @@ export default function ReportsPage() {
   function exportPDF(){
     if(!data) return;
     const token=localStorage.getItem("token");
+    const period=periodLabel();
+    const generatedAt=new Date().toLocaleString();
     if(tab==="company"){
       fetch(BASE+"/api/admin/balance",{headers:{Authorization:"Bearer "+token}})
         .then(r=>r.json())
@@ -109,20 +111,14 @@ export default function ReportsPage() {
           const arr=Array.isArray(logs)?logs:[];
           const bal=arr.filter((l:any)=>l.type==="CREDIT").reduce((s:number,l:any)=>s+Number(l.amount),0)
                    -arr.filter((l:any)=>l.type==="DEBIT").reduce((s:number,l:any)=>s+Number(l.amount),0);
-          generateCompanyReportPDF({
-            loans:data.loans||[],
-            financialLogs:arr,
-            period:periodLabel(),
-            generatedAt:new Date().toLocaleString(),
-            companyBalance:bal
-          });
+          generateCompanyReportPDF({loans:data.loans||[],financialLogs:arr,period,generatedAt,companyBalance:bal});
         });
+    } else if(tab==="client"){
+      generateClientReportPDF({borrower:data.borrower,loans:data.loans||[],summary:data.summary,period,generatedAt});
+    } else if(tab==="officer"){
+      generateOfficerReportPDF({officer:data.officer,loans:data.loans||[],actions:data.actions||[],summary:data.summary,period,generatedAt});
     } else {
-      generateLoansReportPDF({
-        loans:filteredLoans,
-        period:periodLabel(),
-        generatedAt:new Date().toLocaleString()
-      });
+      generateLoansReportPDF({loans:filteredLoans,period,generatedAt});
     }
   }
 
