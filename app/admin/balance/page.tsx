@@ -27,13 +27,13 @@ export default function CompanyBalance(){
   const[busy,setBusy]=useState(false);
   const[form,setForm]=useState({type:"CAPITAL",amount:"",description:""});
   const[msg,setMsg]=useState("");
-  useAutoRefresh(load, 3000);
   const load=()=>{
     setLoading(true);
     fetch(`${BASE}/api/admin/balance`,{headers:ah()})
       .then(r=>r.json()).then(d=>{if(Array.isArray(d))setEntries(d);})
       .catch(console.error).finally(()=>setLoading(false));
   };
+  useAutoRefresh(load, 3000);
   const submit=async(e:React.FormEvent)=>{
     e.preventDefault();if(!form.amount)return;
     setBusy(true);setMsg("");
