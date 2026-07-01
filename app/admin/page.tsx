@@ -5,6 +5,7 @@ import Layout from "@/components/Layout";
 import { useLanguage } from "@/context/LanguageContext";
 import { getAnalytics } from "@/lib/api";
 import { useInactivityTimeout } from "@/lib/useInactivityTimeout";
+import { useAutoRefresh } from "@/lib/useAutoRefresh";
 import {
   Building2, TrendingUp, TrendingDown, AlertCircle,
   FileText, Clock, CheckCircle, Activity, BarChart3,
@@ -175,7 +176,7 @@ export default function AdminDashboard() {
           <TrendingUp className="w-4 h-4 text-zinc-400" />
           <span className="text-sm font-semibold text-zinc-800">Profit &amp; Loss</span>
         </div>
-        <div className="grid grid-cols-3 divide-x divide-zinc-100">
+        <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-zinc-100">
           <div className="px-4 py-4">
             <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-widest mb-1.5">Expected Interest</p>
             <p className="text-lg font-bold text-emerald-700 tabular-nums">{fmt(interest)}</p>

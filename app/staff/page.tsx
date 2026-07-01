@@ -1,6 +1,7 @@
 "use client";
 import{useEffect,useState}from"react";
 import { useInactivityTimeout } from "@/lib/useInactivityTimeout";
+import { useAutoRefresh } from "@/lib/useAutoRefresh";
 import{useRouter}from"next/navigation";
 import Layout from"@/components/Layout";
 import{getAllLoans,updateLoanStatus,getLoanRepayments,recordRepayment}from"@/lib/api";
@@ -116,7 +117,7 @@ export default function StaffPortal(){
       {loading?<div className="flex justify-center py-20"><div className="w-8 h-8 rounded-full border-4 border-sky-500 border-t-transparent animate-spin"/></div>:<>
 
         {/* Stats */}
-        <div className="grid grid-cols-4 gap-3 mb-6">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
           {[
             {l:"Pending Review",v:pending.length,c:"border-amber-400",vc:"text-amber-600"},
             {l:"Active (Disbursed)",v:disbursed.length,c:"border-sky-400",vc:"text-sky-700"},

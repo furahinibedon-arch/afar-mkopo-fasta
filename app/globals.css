@@ -289,3 +289,23 @@
   border: 1px solid rgba(14,165,233,0.20);
   text-decoration: none;
 }
+
+/* ---- MOBILE RESPONSIVE UTILITIES ---- */
+
+/* Make all cards have smaller padding on mobile */
+@media (max-width: 640px) {
+  .card { padding: 12px !important; }
+  .kpi-card { padding: 10px !important; }
+  .page-title { font-size: 1.25rem !important; }
+  .data-table thead th { padding: 8px 6px !important; font-size: 9px !important; }
+  .data-table tbody td { padding: 8px 6px !important; font-size: 12px !important; }
+}
+
+/* Ensure all table wrappers scroll horizontally */
+.table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+/* Mobile nav fix - topbar text wrapping */
+@media (max-width: 480px) {
+  .topnav-link { padding: 4px 8px !important; font-size: 12px !important; }
+  .topnav-link-active { padding: 4px 8px !important; font-size: 12px !important; }
+}

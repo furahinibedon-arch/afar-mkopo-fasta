@@ -197,7 +197,7 @@ export default function AdminLoans(){
               <td className="py-3 px-3">{badge(l.status)}</td>
               <td className="py-3 px-3 text-dark-400 text-xs">{new Date(l.createdAt).toLocaleDateString()}</td>
               <td className="py-3 px-3">
-                <div className="flex gap-1">
+                <div className="flex flex-wrap gap-1">
                   <button onClick={()=>setViewing(l)} className="btn-secondary text-xs py-1 px-2"> View</button>
                   <button onClick={()=>setShowDocuments(true)} className="btn-secondary text-xs py-1 px-2"> Docs</button>
                   <button onClick={()=>handlePrint(l)} className="btn-secondary text-xs py-1 px-2"> Print</button>

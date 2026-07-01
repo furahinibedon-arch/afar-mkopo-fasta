@@ -318,7 +318,7 @@ export default function BorrowerPortal(){
 
             <div className="mb-6">
               <label className="label">Aina ya Malipo (Repayment Type)</label>
-              <div className="grid grid-cols-3 gap-3 mt-2">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-2">
                 {([["DAILY","Kila Siku","Daily","20%"],["WEEKLY","Kila Wiki","Weekly","47%"],["MONTHLY","Kila Mwezi","Monthly","28%"]] as [string,string,string,string][]).map(([val,sw,en,r])=>(
                   <label key={val} className={`cursor-pointer border-2 rounded-xl p-4 text-center transition-all ${repaymentType===val?"border-primary-500 bg-primary-50":"border-dark-200 hover:border-dark-300"}`}>
                     <input type="radio" {...register("repaymentType")} value={val} className="hidden"/>

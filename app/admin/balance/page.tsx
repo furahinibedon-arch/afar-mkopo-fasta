@@ -1,4 +1,5 @@
 "use client";
+import { useAutoRefresh } from "@/lib/useAutoRefresh";
 import{useEffect,useState}from"react";
 import{useRouter}from"next/navigation";
 import Layout from"@/components/Layout";
@@ -26,21 +27,7 @@ export default function CompanyBalance(){
   const[busy,setBusy]=useState(false);
   const[form,setForm]=useState({type:"CAPITAL",amount:"",description:""});
   const[msg,setMsg]=useState("");
-  const[refreshKey,setRefreshKey]=useState(0);
-  const[confirmClear,setConfirmClear]=useState(false);
-  const[clearing,setClearing]=useState(false);
-  useEffect(()=>{
-    const u=localStorage.getItem("user");
-    if(!u){router.push("/");return;}
-    const role=JSON.parse(u).role;
-    if(role==="BORROWER"){router.push("/borrower");return;}
-    load();
-  },[router,refreshKey]);
-  useEffect(()=>{
-    const h=()=>setRefreshKey(k=>k+1);
-    window.addEventListener("focus",h);
-    return()=>window.removeEventListener("focus",h);
-  },[]);
+  useAutoRefresh(load, 15000);
   const load=()=>{
     setLoading(true);
     fetch(`${BASE}/api/admin/balance`,{headers:ah()})
