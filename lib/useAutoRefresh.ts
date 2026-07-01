@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react';
  * Polls a callback every `intervalMs` ms AND on window focus.
  * Works with Next.js + Vercel — no WebSockets needed.
  */
-export function useAutoRefresh(callback: () => void, intervalMs = 15000) {
+export function useAutoRefresh(callback: () => void, intervalMs = 3000) {
   const cbRef = useRef(callback);
   cbRef.current = callback;
 
