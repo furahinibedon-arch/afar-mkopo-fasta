@@ -55,94 +55,90 @@ export function generateLoanApplicationPDF(data: LoanApplicationData) {
   let yPosition = 20;
 
   // ===========================================
-  // HEADER WITH COMPANY LOGO
-  // ===========================================
-  
-  // Header background - light gray
-  doc.setFillColor(248, 250, 252);
-  doc.rect(0, 0, pageWidth, 70, 'F');
+  // =============================================
+  // HEADER — PREMIUM DESIGN
+  // =============================================
 
-  // Company Logo - small, fits perfectly
-  const logoX = 15;
-  const logoY = 10;
-  const logoSize = 50;
+  // Dark navy main band
+  doc.setFillColor(13, 27, 62);
+  doc.rect(0, 0, pageWidth, 40, 'F');
 
-  // Try to add logo
+  // Gold accent stripe
+  doc.setFillColor(245, 158, 11);
+  doc.rect(0, 40, pageWidth, 4, 'F');
+
+  // Light info band
+  doc.setFillColor(241, 245, 249);
+  doc.rect(0, 44, pageWidth, 20, 'F');
+
+  // Logo — top-left inside navy band
+  const logoX = 14;
+  const logoY = 6;
+  const logoSize = 28;
   try {
     doc.addImage('/logo.png', 'PNG', logoX, logoY, logoSize, logoSize);
   } catch (e) {
-    // Simple fallback circle
-    doc.setFillColor(30, 58, 95);
-    doc.circle(logoX + logoSize/2, logoY + logoSize/2, logoSize/2, 'F');
-    doc.setFontSize(24);
+    doc.setFillColor(255, 255, 255);
+    doc.circle(logoX + logoSize / 2, logoY + logoSize / 2, logoSize / 2, 'F');
+    doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(245, 158, 11);
-    doc.text('AF', logoX + logoSize/2, logoY + logoSize/2 + 8, { align: 'center' });
+    doc.setTextColor(13, 27, 62);
+    doc.text('AF', logoX + logoSize / 2, logoY + logoSize / 2 + 4, { align: 'center' });
   }
 
-  // Content to the right of logo
-  const contentX = logoX + logoSize + 12;
-  let currentY = 18;
-
-  // Company Name - big, bold
-  doc.setFontSize(18);
+  // Company name — white, bold
+  const textX = logoX + logoSize + 8;
+  doc.setFontSize(20);
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(30, 58, 95);
-  doc.text(COMPANY_DETAILS.tradingName.toUpperCase(), contentX, currentY);
-  
-  currentY += 10;
-  
-  // Parent company - small
-  doc.setFontSize(9);
+  doc.setTextColor(255, 255, 255);
+  doc.text(COMPANY_DETAILS.tradingName.toUpperCase(), textX, 17);
+
+  // Subtitle: parent company
+  doc.setFontSize(8);
   doc.setFont('helvetica', 'normal');
-  doc.setTextColor(107, 114, 128);
-  doc.text(`A division of ${COMPANY_DETAILS.parentCompany}`, contentX, currentY);
-  
-  currentY += 10;
-  
-  // Location and contact on same line
+  doc.setTextColor(186, 206, 230);
+  doc.text('A division of ' + COMPANY_DETAILS.parentCompany, textX, 25);
+
+  // Motto — gold, right-aligned
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(245, 158, 11);
+  doc.text(COMPANY_DETAILS.motto, pageWidth - 14, 33, { align: 'right' });
+
+  // Info band: address | phone | date
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(51, 65, 85);
+  doc.text('Addr: ' + COMPANY_DETAILS.address, 14, 53);
+  doc.text('Tel: ' + COMPANY_DETAILS.phone, pageWidth / 2, 53, { align: 'center' });
+  doc.text('Date: ' + new Date().toLocaleDateString('en-TZ'), pageWidth - 14, 53, { align: 'right' });
+
+  // Separator line
+  doc.setDrawColor(203, 213, 225);
+  doc.setLineWidth(0.3);
+  doc.line(0, 64, pageWidth, 64);
+
+  // Title banner
+  yPosition = 72;
+  doc.setFillColor(13, 27, 62);
+  doc.roundedRect(14, yPosition - 6, pageWidth - 28, 18, 2, 2, 'F');
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(255, 255, 255);
+  doc.text('LOAN APPLICATION FORM', pageWidth / 2, yPosition + 5, { align: 'center' });
+
+  yPosition += 20;
   doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(55, 65, 81);
-  doc.text('Location:', contentX, currentY);
-  doc.setFont('helvetica', 'normal');
-  doc.text(COMPANY_DETAILS.address, contentX + 28, currentY);
-  
-  doc.setFont('helvetica', 'bold');
-  doc.text('Contact:', contentX + 90, currentY);
-  doc.setFont('helvetica', 'normal');
-  doc.text(COMPANY_DETAILS.phone, contentX + 118, currentY);
-  
-  currentY += 10;
-  
-  // Motto
-  doc.setFontSize(11);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(30, 58, 95);
-  doc.text(COMPANY_DETAILS.motto, contentX, currentY);
-  
-  yPosition = 75;
-  
-  // Add a decorative line
-  yPosition += 15;
-  doc.setDrawColor(200, 200, 200);
-  doc.line(20, yPosition, pageWidth - 20, yPosition);
-  
-  yPosition += 15;
-  doc.setTextColor(0, 0, 0);
-
-  // Document Title
-  doc.setFontSize(16);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(30, 58, 95);
-  doc.text('LOAN APPLICATION FORM', pageWidth / 2, yPosition, { align: 'center' });
-  
-  yPosition += 6;
-  doc.setFontSize(13);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(80, 80, 80);
+  doc.setTextColor(245, 158, 11);
   doc.text('FOMU YA MAOMBI YA MKOPO', pageWidth / 2, yPosition, { align: 'center' });
-  
+
+  yPosition += 10;
+  doc.setDrawColor(203, 213, 225);
+  doc.setLineWidth(0.4);
+  doc.line(14, yPosition, pageWidth - 14, yPosition);
+  yPosition += 8;
+  doc.setTextColor(0, 0, 0);
   yPosition += 15;
   doc.setTextColor(0, 0, 0);
 
