@@ -54,18 +54,41 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     }
 
     if (status === 'REPAID') {
+      // Calculate how much has already been credited via instalments
+      const instalmentLogs = await prisma.financialLog.findMany({
+        where: { reference: { startsWith: 'REPAY_INSTALLMENT_' }, },
+      });
+      // Sum instalment credits that belong to this loan by checking repayment IDs
+      const loanRepayments = await prisma.repayment.findMany({ where: { loanId: id } });
+      const loanRepaymentIds = new Set(loanRepayments.map((r: any) => r.id));
+      const alreadyCreditedViaInstalments = instalmentLogs
+        .filter((l: any) => {
+          const repaymentId = l.reference?.replace('REPAY_INSTALLMENT_', '');
+          return loanRepaymentIds.has(repaymentId);
+        })
+        .reduce((s: number, l: any) => s + Number(l.amount), 0);
+
+      const totalDue = Number(loan.totalAmount);
+      const remainingToCredit = Math.max(0, totalDue - alreadyCreditedViaInstalments);
+
+      // Only write a LOAN_REPAY entry for the uncredited remainder (avoid double-credit)
       const alreadyLogged = await prisma.financialLog.findFirst({ where: { reference: `LOAN_REPAY_${id}` } });
-      if (!alreadyLogged) {
+      if (!alreadyLogged && remainingToCredit > 0) {
         await prisma.financialLog.create({
           data: {
             type: 'CREDIT',
-            amount: loan.totalAmount,
-            description: `Full loan repayment received [ID: ${id}]`,
+            amount: remainingToCredit,
+            description: `Loan repayment balance [ID: ${id}]`,
             reference: `LOAN_REPAY_${id}`,
           },
         });
       }
-      await prisma.transaction.create({ data: { loanId: id, type: 'REPAYMENT', amount: loan.totalAmount, description: 'Full repayment' } });
+      // Write a Transaction only for the uncredited remainder to keep analytics accurate
+      if (remainingToCredit > 0) {
+        await prisma.transaction.create({
+          data: { loanId: id, type: 'REPAYMENT', amount: remainingToCredit, description: 'Repayment balance (manual close)' },
+        });
+      }
     }
 
     logInfo('Loan status updated', { loanId: id, status });
