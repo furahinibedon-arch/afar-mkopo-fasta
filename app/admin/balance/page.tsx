@@ -1,6 +1,6 @@
 "use client";
-import { useAutoRefresh } from "@/lib/useAutoRefresh";
 import{useEffect,useState}from"react";
+
 import{useRouter}from"next/navigation";
 import Layout from"@/components/Layout";
 import{useLanguage}from"@/context/LanguageContext";
@@ -29,13 +29,22 @@ export default function CompanyBalance(){
   const[msg,setMsg]=useState("");
   const[confirmClear,setConfirmClear]=useState(false);
   const[clearing,setClearing]=useState(false);
-  const load=()=>{
-    setLoading(true);
+  // Initial load shows spinner; background refresh is silent (no flicker)
+  const fetchEntries=(silent=false)=>{
+    if(!silent)setLoading(true);
     fetch(`${BASE}/api/admin/balance`,{headers:ah()})
       .then(r=>r.json()).then(d=>{if(Array.isArray(d))setEntries(d);})
-      .catch(console.error).finally(()=>setLoading(false));
+      .catch(console.error).finally(()=>{if(!silent)setLoading(false);});
   };
-  useAutoRefresh(load, 3000);
+  const load=()=>fetchEntries(false);
+  useEffect(()=>{
+    fetchEntries(false);
+    // Silent background refresh every 30 seconds - no spinner, no flicker
+    const id=setInterval(()=>fetchEntries(true),30000);
+    const onFocus=()=>fetchEntries(true);
+    window.addEventListener("focus",onFocus);
+    return()=>{clearInterval(id);window.removeEventListener("focus",onFocus);};
+  },[]);
   const submit=async(e:React.FormEvent)=>{
     e.preventDefault();if(!form.amount)return;
     setBusy(true);setMsg("");
