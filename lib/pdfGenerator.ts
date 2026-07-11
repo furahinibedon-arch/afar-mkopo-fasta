@@ -54,9 +54,8 @@ export function generateLoanApplicationPDF(data: LoanApplicationData) {
   const pageHeight = doc.internal.pageSize.height;
   let yPosition = 20;
 
-  // ===========================================
   // =============================================
-  // HEADER — PREMIUM DESIGN
+  // HEADER - PREMIUM DESIGN
   // =============================================
 
   // Dark navy main band
@@ -71,7 +70,7 @@ export function generateLoanApplicationPDF(data: LoanApplicationData) {
   doc.setFillColor(241, 245, 249);
   doc.rect(0, 44, pageWidth, 20, 'F');
 
-  // Logo — top-left inside navy band
+  // Logo - top-left inside navy band
   const logoX = 14;
   const logoY = 6;
   const logoSize = 28;
@@ -86,7 +85,7 @@ export function generateLoanApplicationPDF(data: LoanApplicationData) {
     doc.text('AF', logoX + logoSize / 2, logoY + logoSize / 2 + 4, { align: 'center' });
   }
 
-  // Company name — white, bold
+  // Company name - white, bold
   const textX = logoX + logoSize + 8;
   doc.setFontSize(20);
   doc.setFont('helvetica', 'bold');
@@ -99,7 +98,7 @@ export function generateLoanApplicationPDF(data: LoanApplicationData) {
   doc.setTextColor(186, 206, 230);
   doc.text('A division of ' + COMPANY_DETAILS.parentCompany, textX, 25);
 
-  // Motto — gold, right-aligned
+  // Motto - gold, right-aligned
   doc.setFontSize(8);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(245, 158, 11);
