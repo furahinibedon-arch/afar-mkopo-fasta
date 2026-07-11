@@ -220,8 +220,8 @@ export default function ReportsPage() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <SummaryCard label="Total Loans"   value={data.summary.total}               color="border-sky-400"/>
               <SummaryCard label="Total Borrowed" value={fmt(data.summary.totalBorrowed)} color="border-violet-400"/>
-              <SummaryCard label="Total Repaid"  value={fmt(data.summary.totalRepaid)}    color="border-emerald-400"/>
-              <SummaryCard label="Outstanding"   value={fmt(data.summary.outstanding)}    color="border-red-400"/>
+              <SummaryCard label="Total Repaid (Instalments)" value={fmt(data.summary.totalRepaid)}    color="border-emerald-400" sub="From actual payments recorded"/>
+              <SummaryCard label="Balance Remaining"         value={fmt(data.summary.outstanding)}    color="border-red-400"     sub="After deducting instalments"/>
             </div>
           </>}
 
@@ -271,17 +271,18 @@ export default function ReportsPage() {
               <thead><tr>
                 <th>#</th>
                 {tab==="loans"&&<th>Client</th>}
-                <th>Amount</th><th>Total</th><th>Rate</th><th>Period</th><th>Status</th><th>Officer</th><th>Date</th>
+                <th>Amount</th><th>Total</th><th>Paid</th><th>Remaining</th><th>Rate</th><th>Period</th><th>Status</th><th>Officer</th><th>Date</th>
               </tr></thead>
               <tbody>
-                {filteredLoans.length===0&&<tr><td colSpan={9} className="text-center py-12 text-zinc-400">No loans found for this period.</td></tr>}
+                {filteredLoans.length===0&&<tr><td colSpan={11} className="text-center py-12 text-zinc-400">No loans found for this period.</td></tr>}
                 {filteredLoans.map((l:any,i:number)=>(
                   <tr key={l.id}>
                     <td className="text-zinc-400 text-xs">{i+1}</td>
                     {tab==="loans"&&<td className="font-semibold text-zinc-800">{l.borrower?.firstName} {l.borrower?.lastName}<br/><span className="text-xs text-zinc-400 font-normal">{l.borrower?.phone}</span></td>}
                     <td className="font-semibold tabular-nums">Tsh {Number(l.amount).toLocaleString()}</td>
+                    <td className="font-semibold tabular-nums">Tsh {Number(l.amount).toLocaleString()}</td>
                     <td className="text-sky-700 font-semibold tabular-nums">Tsh {Number(l.totalAmount).toLocaleString()}</td>
-                    <td className="text-zinc-500">{Number(l.interestRate)}%</td>
+                    {(()=>{const paid=(l.repayments||[]).reduce((s:number,r:any)=>s+Number(r.amount),0);const rem=Math.max(0,Number(l.totalAmount)-paid);return(<><td className="text-emerald-600 font-semibold tabular-nums">Tsh {paid.toLocaleString()}</td><td className={`font-semibold tabular-nums ${rem>0?"text-amber-600":"text-zinc-400"}`}>Tsh {rem.toLocaleString()}</td></>);})()} 
                     <td className="text-zinc-500">{l.repaymentPeriod}d</td>
                     <td><Badge status={l.status}/></td>
                     <td className="text-zinc-500 text-xs">{l.staffActions?.[0]?.staff?l.staffActions[0].staff.firstName+" "+l.staffActions[0].staff.lastName:""}</td>

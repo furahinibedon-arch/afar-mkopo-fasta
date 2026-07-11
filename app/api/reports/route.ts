@@ -78,8 +78,8 @@ export async function GET(req) {
         orderBy: { createdAt: "desc" },
       });
       const totalBorrowed = loans.reduce((s, l) => s + Number(l.amount), 0);
-      const totalRepaid   = loans.filter(l => l.status === "REPAID").reduce((s, l) => s + Number(l.totalAmount), 0);
-      const outstanding   = loans.filter(l => !["REPAID","REJECTED"].includes(l.status)).reduce((s, l) => s + Number(l.totalAmount), 0);
+      const totalRepaid   = loans.reduce((s, l) => s + (l.repayments||[]).reduce((rs: number, r: any) => rs + Number(r.amount), 0), 0);
+      const outstanding   = loans.filter(l => !["REPAID","REJECTED"].includes(l.status)).reduce((s, l) => { const paid = (l.repayments||[]).reduce((rs: number, r: any) => rs + Number(r.amount), 0); return s + Math.max(0, Number(l.totalAmount) - paid); }, 0);
       const byStatus      = loans.reduce((acc, l) => { acc[l.status] = (acc[l.status]||0)+1; return acc; }, {});
       const parsedClientLoans = loans.map(parseLoanPurpose);
       return NextResponse.json({ type, period, year, month, quarter, start, end, borrower, loans: parsedClientLoans, summary: { total: loans.length, totalBorrowed, totalRepaid, outstanding, byStatus } });
