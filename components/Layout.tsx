@@ -5,8 +5,8 @@ import { useLanguage } from "@/context/LanguageContext";
 import { useEffect, useState } from "react";
 import {
   LogOut, Globe, User, LayoutDashboard, FileText,
-  LogOut, Globe, User, LayoutDashboard, FileText,
   Users, Wallet, ClipboardList, ChevronRight, Menu, X, BarChart3, Receipt
+} from "lucide-react";
 
 type PortalUser = {
   firstName?: string; lastName?: string;
