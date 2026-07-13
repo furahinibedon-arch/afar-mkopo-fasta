@@ -1,12 +1,12 @@
-﻿"use client";
+"use client";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useLanguage } from "@/context/LanguageContext";
 import { useEffect, useState } from "react";
 import {
   LogOut, Globe, User, LayoutDashboard, FileText,
-  Users, Wallet, ClipboardList, ChevronRight, Menu, X, BarChart3
-} from "lucide-react";
+  LogOut, Globe, User, LayoutDashboard, FileText,
+  Users, Wallet, ClipboardList, ChevronRight, Menu, X, BarChart3, Receipt
 
 type PortalUser = {
   firstName?: string; lastName?: string;
@@ -39,6 +39,7 @@ const BORROWER_NAV = [
 const STAFF_NAV = [
   { href: "/staff", label: "Loan Queue", icon: ClipboardList, exact: true },
   { href: "/staff/apply", label: "Apply Loan", icon: FileText },
+  { href: "/staff/expenses", label: "Expenses", icon: Receipt },
 ];
 
 export default function Layout({

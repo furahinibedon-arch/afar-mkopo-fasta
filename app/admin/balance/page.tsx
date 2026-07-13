@@ -16,6 +16,7 @@ function entryLabel(e:any){
   if(ref.startsWith("LOAN_DISBURSE_"))return" Disbursement";
   if(ref==="CAPITAL")return" Capital";
   if(ref==="REPAYMENT_IN")return" Repayment";
+  if(ref.startsWith("STAFF_EXPENSE_"))return" Staff Expense";
   if(ref==="DEBIT")return" Expense";
   return" Manual";
 }
@@ -23,6 +24,7 @@ export default function CompanyBalance(){
   const{t}=useLanguage();
   const router=useRouter();
   const[entries,setEntries]=useState<any[]>([]);
+  const[loans,setLoans]=useState<any[]>([]);
   const[loading,setLoading]=useState(true);
   const[busy,setBusy]=useState(false);
   const[form,setForm]=useState({type:"CAPITAL",amount:"",description:""});
@@ -33,8 +35,9 @@ export default function CompanyBalance(){
   const fetchEntries=(silent=false)=>{
     if(!silent)setLoading(true);
     fetch(`${BASE}/api/admin/balance`,{headers:ah()})
-      .then(r=>r.json()).then(d=>{if(Array.isArray(d))setEntries(d);})
-      .catch(console.error).finally(()=>{if(!silent)setLoading(false);});
+      .then(r=>r.json()).then(d=>{if(Array.isArray(d))setEntries(d);});
+    fetch(`${BASE}/api/loans`,{headers:ah()})
+      .then(r=>r.json()).then(d=>{if(Array.isArray(d))setLoans(d);else if(d.loans&&Array.isArray(d.loans))setLoans(d.loans);}).catch(()=>{});
   };
   const load=()=>fetchEntries(false);
   useEffect(()=>{
@@ -74,7 +77,8 @@ export default function CompanyBalance(){
   const totalIn=entries.filter(e=>e.type==="CREDIT").reduce((s,e)=>s+Number(e.amount),0);
   const totalOut=entries.filter(e=>e.type==="DEBIT").reduce((s,e)=>s+Number(e.amount),0);
   const balance=totalIn-totalOut;
-  const interestEarned=Math.max(0,repaidIn-disbursedOut);
+  // Interest earned = repayments collected minus the principal portion of those repayments
+  const interestEarned=(()=>{let interest=0;loans.forEach((loan:any)=>{const loanRepaid=entries.filter(e=>e.type==="CREDIT"&&String(e.reference||"").startsWith("REPAY_INSTALLMENT_")).reduce((s:number,e:any)=>s+Number(e.amount),0);const principal=Number(loan.amount);const total=Number(loan.totalAmount);if(total>0&&principal<total){const ratio=(total-principal)/total;const loanEntries=entries.filter(e=>String(e.reference||"").includes(loan.id));const loanPaid=loanEntries.filter(e=>e.type==="CREDIT").reduce((s:number,e:any)=>s+Number(e.amount),0);interest+=loanPaid*ratio;}});return Math.max(0,interest);})();
   return(
     <Layout portal="admin">
       <div className="flex items-start justify-between mb-6">
