@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Layout from "@/components/Layout";
 import { getUsers } from "@/lib/api";
-import { BarChart3, Users, UserCheck, Download, Search, Filter, FileText, Calendar, FileBarChart2 } from "lucide-react";
+import { BarChart3, Users, UserCheck, Download, Search, Filter, FileText, Calendar, FileBarChart2, CheckCircle, XCircle, Clock } from "lucide-react";
 import { generateLoansReportPDF } from "@/lib/pdfGenerator";
 import { generateCompanyReportPDF, generateClientReportPDF, generateOfficerReportPDF } from "@/lib/reportFn";
 
@@ -271,10 +271,10 @@ export default function ReportsPage() {
               <thead><tr>
                 <th>#</th>
                 {tab==="loans"&&<th>Client</th>}
-                <th>Amount</th><th>Total</th><th>Paid</th><th>Remaining</th><th>Rate</th><th>Period</th><th>Status</th><th>Officer</th><th>Date</th>
+                <th>Principal</th><th>Total Due</th><th>Paid</th><th>Remaining</th><th>Rate</th><th>Period</th><th>Status</th><th>Officer</th><th>Date</th>
               </tr></thead>
               <tbody>
-                {filteredLoans.length===0&&<tr><td colSpan={11} className="text-center py-12 text-zinc-400">No loans found for this period.</td></tr>}
+                {filteredLoans.length===0&&<tr><td colSpan={10} className="text-center py-12 text-zinc-400">No loans found for this period.</td></tr>}
                 {filteredLoans.map((l:any,i:number)=>(
                   <tr key={l.id}>
                     <td className="text-zinc-400 text-xs">{i+1}</td>
@@ -293,6 +293,79 @@ export default function ReportsPage() {
             </table>
           </div>}
 
+
+          {/* Client instalment timeline */}
+          {tab==="client"&&(data.loans||[]).filter((l:any)=>l.repayments&&l.repayments.length>0||(l.status==="DISBURSED"||l.status==="REPAID")).map((l:any)=>{
+            const repayments=(l.repayments||[]).slice().sort((a:any,b:any)=>new Date(a.paidDate||a.createdAt).getTime()-new Date(b.paidDate||b.createdAt).getTime());
+            const totalPaid=repayments.reduce((s:number,r:any)=>s+Number(r.amount),0);
+            const remaining=Math.max(0,Number(l.totalAmount)-totalPaid);
+            const pct=Number(l.totalAmount)>0?Math.min(100,Math.round(totalPaid/Number(l.totalAmount)*100)):0;
+            const appData=l.applicationData||{};
+            const repType=appData.repaymentType||"MONTHLY";
+            return(
+              <div key={l.id} className="card p-0 overflow-hidden">
+                {/* Loan header */}
+                <div className={`px-5 py-3 flex items-center justify-between border-b border-zinc-100 ${l.status==="REPAID"?"bg-emerald-50":l.status==="DISBURSED"?"bg-sky-50":"bg-zinc-50"}`}>
+                  <div className="flex items-center gap-3">
+                    <Badge status={l.status}/>
+                    <div>
+                      <p className="font-bold text-zinc-800 text-sm">Loan of Tsh {Number(l.amount).toLocaleString()} &mdash; Total Due: Tsh {Number(l.totalAmount).toLocaleString()}</p>
+                      <p className="text-xs text-zinc-500">{repType} repayment &bull; Applied: {new Date(l.createdAt).toLocaleDateString()}{l.disbursedAt?` &bull; Disbursed: ${new Date(l.disbursedAt).toLocaleDateString()}`:""}</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs text-zinc-400">Progress</p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <div className="w-24 h-2 bg-zinc-200 rounded-full overflow-hidden"><div className={`h-full rounded-full ${pct>=100?"bg-emerald-500":pct>50?"bg-sky-500":"bg-amber-500"}`} style={{width:pct+"%"}}/></div>
+                      <span className="text-xs font-bold text-zinc-700">{pct}%</span>
+                    </div>
+                  </div>
+                </div>
+                {/* Stats row */}
+                <div className="grid grid-cols-3 divide-x divide-zinc-100 border-b border-zinc-100">
+                  <div className="px-4 py-2 text-center"><p className="text-[10px] text-zinc-400 uppercase font-semibold">Payments Made</p><p className="font-bold text-emerald-600 text-sm">{repayments.length}</p></div>
+                  <div className="px-4 py-2 text-center"><p className="text-[10px] text-zinc-400 uppercase font-semibold">Total Paid</p><p className="font-bold text-emerald-600 text-sm">Tsh {totalPaid.toLocaleString()}</p></div>
+                  <div className="px-4 py-2 text-center"><p className="text-[10px] text-zinc-400 uppercase font-semibold">Remaining</p><p className={`font-bold text-sm ${remaining>0?"text-amber-600":"text-zinc-400"}`}>Tsh {remaining.toLocaleString()}</p></div>
+                </div>
+                {/* Instalment timeline */}
+                {repayments.length>0?(
+                  <div className="overflow-x-auto">
+                    <table className="data-table">
+                      <thead><tr><th>#</th><th>Date & Time Paid</th><th>Amount</th><th>Running Total</th><th>Status</th></tr></thead>
+                      <tbody>
+                        {repayments.map((r:any,i:number)=>{
+                          const runTotal=repayments.slice(0,i+1).reduce((s:number,x:any)=>s+Number(x.amount),0);
+                          return(
+                            <tr key={r.id}>
+                              <td className="text-zinc-400 text-xs">{i+1}</td>
+                              <td className="text-zinc-600 text-xs font-medium">{new Date(r.paidDate||r.createdAt).toLocaleString("en-TZ",{dateStyle:"medium",timeStyle:"short"})}</td>
+                              <td className="font-bold text-emerald-600">+Tsh {Number(r.amount).toLocaleString()}</td>
+                              <td className="tabular-nums text-zinc-700 text-xs">Tsh {runTotal.toLocaleString()}<span className="text-zinc-400 ml-1">/ {Number(l.totalAmount).toLocaleString()}</span></td>
+                              <td><span className="inline-flex items-center gap-1 text-xs text-emerald-600 font-semibold"><CheckCircle className="w-3.5 h-3.5"/>Paid</span></td>
+                            </tr>
+                          );
+                        })}
+                        {remaining>0&&l.status==="DISBURSED"&&(
+                          <tr className="bg-amber-50/60">
+                            <td className="text-zinc-300 text-xs">-</td>
+                            <td className="text-zinc-400 text-xs italic">Balance outstanding</td>
+                            <td className="font-bold text-amber-600">Tsh {remaining.toLocaleString()}</td>
+                            <td className="text-zinc-400 text-xs">-</td>
+                            <td><span className="inline-flex items-center gap-1 text-xs text-amber-600 font-semibold"><Clock className="w-3.5 h-3.5"/>Pending</span></td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                ):(
+                  <div className="px-5 py-4 text-sm text-zinc-400 flex items-center gap-2">
+                    <XCircle className="w-4 h-4 text-zinc-300"/>
+                    {l.status==="DISBURSED"?"No payments recorded yet — loan is active and awaiting first payment.":"No payment records for this loan."}
+                  </div>
+                )}
+              </div>
+            );
+          })}
           {/* Officer loans table */}
           {tab==="officer"&&<div className="card overflow-x-auto p-0">
             <div className="flex items-center gap-2 px-4 py-3 border-b border-zinc-100">
