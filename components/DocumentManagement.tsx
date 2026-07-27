@@ -38,6 +38,7 @@ export default function DocumentManagement({ loanId, onClose }: DocumentManageme
   const [filterType, setFilterType] = useState('');
   const [editingDocument, setEditingDocument] = useState<BorrowerDocument | null>(null);
   const [editDescription, setEditDescription] = useState('');
+  const [viewingDoc, setViewingDoc] = useState<BorrowerDocument | null>(null);
   const { t } = useLanguage();
 
   const fetchDocuments = async () => {
@@ -162,7 +163,7 @@ export default function DocumentManagement({ loanId, onClose }: DocumentManageme
             </div>
           ) : documents.length === 0 ? (
             <div className="text-center py-12 text-dark-500">
-              <div className="text-6xl mb-4">📂</div>
+              <div className="text-6xl mb-4">ðŸ“‚</div>
               <p className="text-lg font-semibold text-dark-700">No Documents</p>
               <p className="text-sm">Upload your first document to get started</p>
             </div>
@@ -202,7 +203,7 @@ export default function DocumentManagement({ loanId, onClose }: DocumentManageme
                           <div>
                             <h4 className="font-semibold text-dark-800">{doc.fileName}</h4>
                             <p className="text-sm text-dark-500">
-                              {formatFileSize(doc.fileSize)} • Uploaded {new Date(doc.createdAt).toLocaleDateString()} by {doc.uploadedBy.firstName} {doc.uploadedBy.lastName}
+                              {formatFileSize(doc.fileSize)} â€¢ Uploaded {new Date(doc.createdAt).toLocaleDateString()} by {doc.uploadedBy.firstName} {doc.uploadedBy.lastName}
                             </p>
                             {doc.description && (
                               <p className="text-sm text-dark-600 mt-1">{doc.description}</p>

@@ -5,7 +5,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import { useEffect, useState } from "react";
 import {
   LogOut, Globe, User, LayoutDashboard, FileText,
-  Users, Wallet, ClipboardList, ChevronRight, Menu, X, BarChart3, Receipt
+  Users, Wallet, ClipboardList, ChevronRight, Menu, X, BarChart3, Receipt, History
 } from "lucide-react";
 
 type PortalUser = {
@@ -28,6 +28,7 @@ const ADMIN_NAV = [
   { href: "/admin/balance",   label: "Balance",   icon: Wallet },
   { href: "/admin/reports",   label: "Reports",   icon: BarChart3 },
   { href: "/admin/apply",    label: "Apply Loan", icon: ClipboardList },
+  { href: "/admin/legacy",   label: "Legacy Loans", icon: History },
 ];
 
 const BORROWER_NAV = [

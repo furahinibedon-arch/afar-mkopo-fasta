@@ -291,8 +291,8 @@ export default function StaffPortal(){
 
       {/*  INSTALLMENT PAYMENT MODAL  */}
       {repayModal&&(
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-start justify-center p-4 overflow-y-auto">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md my-8 animate-slide-up">
+        <div className="fixed inset-0 bg-black/60 z-50 flex flex-col items-stretch sm:items-center sm:justify-center overflow-y-auto">
+          <div className="mt-auto sm:mt-0 bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl w-full sm:max-w-md sm:my-8 animate-slide-up">
             <div className="flex items-center justify-between p-5 border-b border-zinc-200">
               <div>
                 <h2 className="text-lg font-bold text-zinc-900">Record Payment</h2>
