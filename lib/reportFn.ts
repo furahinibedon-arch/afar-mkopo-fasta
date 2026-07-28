@@ -8,7 +8,7 @@ export interface LoanReportData {
   companyBalance?: number;
 }
 
-// ── Palette ──────────────────────────────────────────────────────────────
+// â”€â”€ Palette â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const RP: [number,number,number] = [13, 71, 161];
 const RA: [number,number,number] = [245,158,  11];
 const RW: [number,number,number] = [255,255, 255];
@@ -82,8 +82,14 @@ export function generateLoansReportPDF(data: LoanReportData) {
   const totRepaid      = repaid.reduce((s: number, l: any) => s + Number(l.totalAmount), 0);
   const totDisbursed   = loans.filter((l: any) => ['DISBURSED','REPAID','DEFAULTED'].includes(l.status))
                               .reduce((s: number, l: any) => s + Number(l.amount), 0);
-  const totInterest    = loans.reduce((s: number, l: any) => s + (Number(l.totalAmount) - Number(l.amount)), 0);
-  const avgRate        = loans.length ? loans.reduce((s: number, l: any) => s + Number(l.interestRate), 0) / loans.length : 0;
+  // Interest expected: only from actually disbursed loans (not pending/rejected)
+  const activatedLoans = loans.filter((l: any) => ["DISBURSED","REPAID","DEFAULTED"].includes(l.status));
+  const totInterest    = activatedLoans.reduce((s: number, l: any) => s + (Number(l.totalAmount) - Number(l.amount)), 0);
+  // Weighted average rate (weighted by principal) - more accurate than simple average
+  const totWeightedRate = activatedLoans.reduce((s: number, l: any) => s + Number(l.interestRate) * Number(l.amount), 0);
+  const totWeightBase   = activatedLoans.reduce((s: number, l: any) => s + Number(l.amount), 0);
+  const avgRate         = totWeightBase > 0 ? totWeightedRate / totWeightBase : 0;
+  const rateBreakdown   = ["DAILY (20%)","WEEKLY (47%)","MONTHLY (28%)"].join(" | ");
   const colRate        = totDisbursed > 0 ? Math.round((totRepaid / totDisbursed) * 100) : 0;
   const PAGES          = 7;
   //  PAGE 1: Cover 
@@ -138,7 +144,8 @@ export function generateLoansReportPDF(data: LoanReportData) {
     ['Defaulted',                    String(defaulted.length),   ''],
     ['Total Principal Disbursed',    '',                          rfmt(totPrincipal)],
     ['Total Interest Expected',      '',                          rfmt(totInterest)],
-    ['Average Interest Rate',        '',                          avgRate.toFixed(1) + '%'],
+    ['Weighted Avg Interest Rate',   '',                          avgRate.toFixed(1) + '%'],
+    ['Rate Breakdown',               '',                          rateBreakdown],
     ['Collection Rate',              '',                          colRate + '%'],
     ['Company Balance',              '',                          rfmt(data.companyBalance || 0)],
   ];
