@@ -55,8 +55,7 @@ export default function AdminUsers() {
   const purgeBorrower = async (user: AppUser) => {
     setPurgeBusy(true); setPurgeResult("");
     try {
-      const name = encodeURIComponent(user.firstName + " " + user.lastName);
-      const r = await fetch(`${BASE}/api/admin/purge-borrower?name=${name}`, { method: "DELETE", headers: ah() });
+      const r = await fetch(`${BASE}/api/admin/purge-borrower?id=${user.id}`, { method: "DELETE", headers: ah() });
       const d = await r.json();
       if (!r.ok) throw new Error(d.error);
       setPurgeResult("Done: " + d.message);
@@ -257,8 +256,8 @@ export default function AdminUsers() {
                       <div>
                         <p className="font-semibold text-dark-800 text-sm">{doc.fileName}</p>
                         <p className="text-xs text-dark-500">
-                          {new Date(doc.createdAt).toLocaleDateString()} Ã¢â‚¬Â¢
-                          {(doc.fileSize / 1024 / 1024 > 1 ? `${(doc.fileSize / 1024 / 1024).toFixed(2)} MB` : `${(doc.fileSize / 1024).toFixed(2)} KB`)} Ã¢â‚¬Â¢
+                          {new Date(doc.createdAt).toLocaleDateString()} ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢
+                          {(doc.fileSize / 1024 / 1024 > 1 ? `${(doc.fileSize / 1024 / 1024).toFixed(2)} MB` : `${(doc.fileSize / 1024).toFixed(2)} KB`)} ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢
                           Uploaded by {doc.uploadedBy.firstName}
                         </p>
                       </div>
