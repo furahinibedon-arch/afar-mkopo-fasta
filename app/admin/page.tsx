@@ -86,10 +86,20 @@ export default function AdminDashboard() {
 
   const disbursed     = Number(data?.totalDisbursed   || 0);
   const repaid        = Number(data?.totalRepaid       || 0);
-  const balance       = disbursed - repaid;
   const companyBal    = Number(data?.companyBalance    || 0);
-  const interest      = disbursed * 0.2;
   const loans: any[]  = data?.loans || [];
+  // Outstanding = sum of remaining balance across all active (DISBURSED/APPROVED) loans
+  // Uses actual loan records so legacy loans are included
+  const balance = loans
+    .filter((l: any) => ["DISBURSED","APPROVED"].includes(l.status))
+    .reduce((s: number, l: any) => {
+      const paid = (l.repayments || []).reduce((rs: number, r: any) => rs + Number(r.amount), 0);
+      return s + Math.max(0, Number(l.totalAmount) - paid);
+    }, 0);
+  // Interest earned = sum of (totalAmount - principal) for each loan - based on actual rates
+  const interest = loans
+    .filter((l: any) => ["DISBURSED","REPAID"].includes(l.status))
+    .reduce((s: number, l: any) => s + (Number(l.totalAmount) - Number(l.amount)), 0);
   const pending       = loans.filter((l: any) => l.status === "PENDING").length;
   const active        = loans.filter((l: any) => ["DISBURSED","APPROVED"].includes(l.status)).length;
   const overdue: any[]= data?.overdueRepayments || [];
