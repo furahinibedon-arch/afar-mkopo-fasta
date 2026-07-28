@@ -1,10 +1,10 @@
-﻿"use client";
+"use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Layout from "@/components/Layout";
 import { useLanguage } from "@/context/LanguageContext";
 import { getUsers, getBorrowerDocuments, uploadBorrowerDocument, AppUser, BorrowerDocument } from "@/lib/api";
-import { Upload, FileText, Users, UserCheck } from "lucide-react";
+import { Upload, FileText, Users, UserCheck, Trash2, AlertTriangle } from "lucide-react";
 
 const ROLES = ["BORROWER", "LOAN_OFFICER", "ADMIN", "DIRECTOR", "CEO"];
 const EMPTY = { id: "", email: "", firstName: "", lastName: "", phone: "", role: "BORROWER", password: "", isActive: true };
@@ -20,6 +20,9 @@ export default function AdminUsers() {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
   const [confirm, setConfirm] = useState<string | null>(null);
+  const [purgeTarget, setPurgeTarget] = useState<AppUser | null>(null);
+  const [purgeBusy, setPurgeBusy] = useState(false);
+  const [purgeResult, setPurgeResult] = useState<string>("");
 
   useEffect(() => {
     const u = localStorage.getItem("user");
@@ -45,6 +48,22 @@ export default function AdminUsers() {
     window.addEventListener('focus', handleFocus);
     return () => window.removeEventListener('focus', handleFocus);
   }, []);
+
+  const BASE = process.env.NEXT_PUBLIC_API_URL || "";
+  function ah(){const t=typeof window!=="undefined"?localStorage.getItem("token"):null;return{"Content-Type":"application/json",...(t?{Authorization:`Bearer ${t}`}:{})}}
+
+  const purgeBorrower = async (user: AppUser) => {
+    setPurgeBusy(true); setPurgeResult("");
+    try {
+      const name = encodeURIComponent(user.firstName + " " + user.lastName);
+      const r = await fetch(`${BASE}/api/admin/purge-borrower?name=${name}`, { method: "DELETE", headers: ah() });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error);
+      setPurgeResult("Done: " + d.message);
+      setPurgeTarget(null);
+    } catch(e: any) { setPurgeResult("Error: " + e.message); }
+    finally { setPurgeBusy(false); }
+  };
 
   const load = async () => {
     setLoading(true);
@@ -161,6 +180,7 @@ export default function AdminUsers() {
                       {showDocs&&<button onClick={()=>loadDocuments(u)} className="btn-secondary text-xs py-1 px-2">Docs</button>}
                       {(currentUserRole!=="CEO"&&currentUserRole!=="DIRECTOR")&&<button onClick={()=>toggleRestrict(u)} className={`text-xs py-1 px-2 font-semibold rounded-lg transition-all ${u.isActive?"bg-amber-100 text-amber-700 hover:bg-amber-200":"bg-emerald-100 text-emerald-700 hover:bg-emerald-200"}`}>{u.isActive?t.restrict:t.activate}</button>}
                       {(currentUserRole!=="CEO"&&currentUserRole!=="DIRECTOR")&&<button onClick={()=>setConfirm(u.id)} className="btn-danger text-xs py-1 px-2">Delete</button>}
+                {u.role==="BORROWER"&&<button onClick={()=>{setPurgeTarget(u);setPurgeResult("");}} className="inline-flex items-center gap-1 text-xs px-2 py-1 bg-orange-50 hover:bg-orange-100 text-orange-700 border border-orange-200 rounded-lg font-semibold"><Trash2 className="w-3 h-3"/> Purge Loans</button>}
                     </div></td>
                   </tr>
                 ))}
@@ -237,8 +257,8 @@ export default function AdminUsers() {
                       <div>
                         <p className="font-semibold text-dark-800 text-sm">{doc.fileName}</p>
                         <p className="text-xs text-dark-500">
-                          {new Date(doc.createdAt).toLocaleDateString()} â€¢
-                          {(doc.fileSize / 1024 / 1024 > 1 ? `${(doc.fileSize / 1024 / 1024).toFixed(2)} MB` : `${(doc.fileSize / 1024).toFixed(2)} KB`)} â€¢
+                          {new Date(doc.createdAt).toLocaleDateString()} Ã¢â‚¬Â¢
+                          {(doc.fileSize / 1024 / 1024 > 1 ? `${(doc.fileSize / 1024 / 1024).toFixed(2)} MB` : `${(doc.fileSize / 1024).toFixed(2)} KB`)} Ã¢â‚¬Â¢
                           Uploaded by {doc.uploadedBy.firstName}
                         </p>
                       </div>
