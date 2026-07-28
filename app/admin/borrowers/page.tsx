@@ -285,6 +285,41 @@ export default function AdminUsers() {
           </div>
         </div>
       </div>}
+      {/* Purge Loan History Modal */}
+      {purgeTarget && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center shrink-0"><AlertTriangle className="w-6 h-6 text-orange-600"/></div>
+              <div>
+                <h3 className="text-lg font-black text-zinc-900">Purge Loan History</h3>
+                <p className="text-sm text-zinc-500 mt-0.5">{purgeTarget.firstName} {purgeTarget.lastName}</p>
+              </div>
+            </div>
+            <div className="bg-orange-50 border border-orange-200 rounded-xl p-3 mb-4 text-sm text-orange-800">
+              <p className="font-semibold mb-1">This will permanently:</p>
+              <ul className="space-y-0.5 list-disc list-inside">
+                <li>Delete ALL loans for this borrower</li>
+                <li>Delete all repayment records</li>
+                <li>Reverse all disbursement and repayment entries from company balance</li>
+              </ul>
+              <p className="mt-2 font-semibold">User account is NOT deleted.</p>
+            </div>
+            {purgeResult && (
+              <div className={`mb-4 px-3 py-2 rounded-xl text-sm font-medium ${purgeResult.startsWith("Done") ? "bg-emerald-50 text-emerald-800 border border-emerald-200" : "bg-red-50 text-red-800 border border-red-200"}`}>
+                {purgeResult}
+              </div>
+            )}
+            <div className="flex gap-3">
+              <button onClick={()=>purgeBorrower(purgeTarget)} disabled={purgeBusy} className="flex-1 bg-orange-600 hover:bg-orange-700 text-white font-bold py-2.5 rounded-xl disabled:opacity-50 flex items-center justify-center gap-2">
+                <Trash2 className="w-4 h-4"/>
+                {purgeBusy ? "Purging..." : "Yes, Purge All Loans"}
+              </button>
+              <button onClick={()=>{setPurgeTarget(null);setPurgeResult("");}} disabled={purgeBusy} className="flex-1 btn-secondary py-2.5">Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
     </Layout>
   );
 }
